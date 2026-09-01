@@ -1,0 +1,139 @@
+/* =========================
+   AUTH PAGES
+========================= */
+
+.auth-page {
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-content {
+  flex: 1;
+
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: var(--space-xl);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================
+   AUTH CONTAINER
+========================= */
+
+.auth-container {
+  width: min(100%, 420px);
+}
+
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+
+  margin-bottom: var(--space-2xl);
+
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  color: var(--text-muted);
+
+  transition: color var(--transition-fast);
+}
+
+.auth-back:hover {
+  color: var(--color-primary);
+}
+
+
+/* =========================
+   AUTH HEADER
+========================= */
+
+.auth-header {
+  margin-bottom: var(--space-xl);
+}
+
+.auth-logo {
+  margin-bottom: var(--space-sm);
+
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+
+  color: var(--text-primary);
+}
+
+.auth-title {
+  margin-bottom: var(--space-sm);
+
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.auth-description {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+
+/* =========================
+   AUTH FORM
+========================= */
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.auth-form .btn {
+  margin-top: var(--space-sm);
+}
+
+
+/* =========================
+   AUTH FOOTER
+========================= */
+
+.auth-switch {
+  margin-top: var(--space-lg);
+
+  text-align: center;
+  font-size: 0.85rem;
+
+  color: var(--text-muted);
+}
+
+.auth-switch a {
+  margin-left: var(--space-xs);
+
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+  .auth-content {
+    padding: var(--space-lg);
+  }
+
+  .auth-back {
+    margin-bottom: var(--space-xl);
+  }
+}

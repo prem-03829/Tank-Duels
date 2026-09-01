@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Tank Duel | Turn-Based Artillery Game</title>
+
+  <meta name="description" content="Tank Duel is a browser-based turn-based artillery game." />
+
+  <meta name="theme-color" content="#0b0f0d" />
+
+  <link rel="stylesheet" href="./css/main.css" />
+</head>
+
+<body>
+
+  <main class="main-menu">
+
+    <!-- =========================
+         BACKGROUND
+    ========================== -->
+
+    <canvas class="animated-background" aria-hidden="true"></canvas>
+
+    <div class="menu-grid" aria-hidden="true"></div>
+
+    <div class="menu-glow" aria-hidden="true"></div>
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+    <section class="menu-content">
+
+      <!-- Logo / Title -->
+
+      <div class="game-brand">
+
+        <div class="target-frame">
+
+          <span class="target-corner top-left"></span>
+          <span class="target-corner top-right"></span>
+          <span class="target-corner bottom-left"></span>
+          <span class="target-corner bottom-right"></span>
+
+          <span class="target-cross left"></span>
+          <span class="target-cross right"></span>
+
+          <h1 class="game-title">
+            <span>TANK</span>
+            <span>DUEL</span>
+          </h1>
+
+        </div>
+
+        <div class="game-tagline">
+          <span></span>
+          TURN-BASED ARTILLERY GAME
+          <span></span>
+        </div>
+
+      </div>
+
+
+      <!-- Menu -->
+
+      <nav class="main-menu-actions">
+
+        <a href="./pages/dashboard.html" class="menu-button menu-button-primary" data-play-guest>
+          <span>PLAY AS GUEST</span>
+          <span class="menu-arrow">›</span>
+        </a>
+
+
+        <div class="menu-divider">
+          <span></span>
+          <small>OR</small>
+          <span></span>
+        </div>
+
+
+        <a href="./pages/login.html" class="menu-button">
+          <span>LOGIN</span>
+          <span class="menu-arrow">›</span>
+        </a>
+
+
+        <a href="./pages/signup.html" class="menu-button">
+          <span>SIGN UP</span>
+          <span class="menu-arrow">›</span>
+        </a>
+
+      </nav>
+
+    </section>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
+    <footer class="main-menu-footer">
+
+      <div class="footer-brand">
+
+        <div class="footer-tank" aria-hidden="true">
+          ▰
+        </div>
+
+        <div>
+          <span class="footer-title">
+            TANK DUEL
+          </span>
+
+          <span class="footer-subtitle">
+            TURN-BASED ARTILLERY GAME
+          </span>
+        </div>
+
+      </div>
+
+
+      <div class="footer-links">
+
+        <a href="#" aria-label="GitHub">
+          ◉
+        </a>
+
+        <a href="#">
+          GITHUB
+        </a>
+
+        <span class="footer-separator"></span>
+
+        <a href="#">
+          ABOUT
+        </a>
+
+      </div>
+
+
+      <div class="footer-copy">
+        © 2026 Tank Duel
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <script src="./js/app.js"></script>
+  <script src="./js/animated-background.js"></script>
+  <script src="./js/pages/main-menu.js"></script>
+
+</body>
+
+</html>

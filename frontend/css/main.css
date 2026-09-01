@@ -1,0 +1,84 @@
+/* =========================
+   BASE
+========================= */
+
+@import url("./base/reset.css");
+@import url("./base/variables.css");
+@import url("./base/typography.css");
+
+/* =========================
+   COMPONENTS
+========================= */
+
+@import url("./components/buttons.css");
+@import url("./components/forms.css");
+@import url("./components/footer.css");
+@import url("./components/animated-background.css");
+
+/* =========================
+   PAGES
+========================= */
+
+@import url("./pages/main-menu.css");
+@import url("./pages/auth.css");
+@import url("./pages/dashboard.css");
+@import url("./pages/settings.css");
+@import url("./pages/game-setup.css");
+@import url("./pages/game.css");
+@import url("./pages/results.css");
+@import url("./pages/profile.css");
+
+/* =========================
+   GLOBAL STYLES
+========================= */
+
+html {
+  min-height: 100%;
+  background-color: var(--bg-primary);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--bg-primary);
+}
+
+/* =========================
+   REDUCED MOTION
+========================= */
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* =========================
+   PAGE LAYERING
+========================= */
+
+.main-menu,
+.auth-page,
+.dashboard-page,
+.settings-page,
+.game-setup-page,
+.game-page,
+.results-page,
+.profile-page {
+  position: relative;
+  z-index: 2;
+}
+
+/* =========================
+   FOOTER LAYERING
+========================= */
+
+.site-footer,
+.main-menu-footer {
+  position: relative;
+  z-index: 2;
+}

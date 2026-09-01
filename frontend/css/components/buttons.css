@@ -1,0 +1,119 @@
+/* =========================
+   BUTTONS
+========================= */
+
+.btn {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+
+  user-select: none;
+}
+
+/* =========================
+   PRIMARY
+========================= */
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  box-shadow: 3px 3px 0 var(--button-shadow);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-light);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--button-shadow-hover);
+}
+
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--button-shadow);
+}
+
+/* =========================
+   SECONDARY
+========================= */
+
+.btn-secondary {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-elevated);
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+/* =========================
+   OUTLINE
+========================= */
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+}
+
+.btn-outline:hover {
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  background: var(--accent-surface);
+}
+
+/* =========================
+   SIZES
+========================= */
+
+.btn-sm {
+  min-height: 38px;
+  padding: 0.5rem 1rem;
+  font-size: 0.65rem;
+}
+
+.btn-lg {
+  min-height: 58px;
+  padding: 1rem 2rem;
+  font-size: 0.85rem;
+}
+
+/* =========================
+   FULL WIDTH
+========================= */
+
+.btn-block {
+  width: 100%;
+}
+
+/* =========================
+   ACCESSIBILITY
+========================= */
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}

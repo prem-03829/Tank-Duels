@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Battle Setup | Tank Duel</title>
+
+  <meta name="description" content="Configure your battlefield and start a Tank Duel match." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="game-setup-page">
+
+    <section class="game-setup-content">
+
+      <!-- Header -->
+      <header class="game-setup-header">
+
+        <a href="./dashboard.html" class="game-setup-back">
+          ← Back to Command Center
+        </a>
+
+        <h1 class="game-setup-title">
+          Battle Setup
+        </h1>
+
+        <p class="game-setup-description">
+          Configure the battlefield and prepare for combat.
+        </p>
+
+      </header>
+
+
+      <!-- Battlefield Selection -->
+      <section class="setup-section">
+
+        <span class="setup-section-label">
+          Select Battlefield
+        </span>
+
+        <div class="setup-options" id="map-options">
+
+          <button class="setup-option active" type="button" data-map="desert">
+            <span class="setup-option-name">
+              Desert
+            </span>
+
+            <span class="setup-option-description">
+              Open terrain with rolling dunes.
+            </span>
+          </button>
+
+
+          <button class="setup-option" type="button" data-map="hills">
+            <span class="setup-option-name">
+              Highlands
+            </span>
+
+            <span class="setup-option-description">
+              Uneven terrain and steep slopes.
+            </span>
+          </button>
+
+
+          <button class="setup-option" type="button" data-map="random">
+            <span class="setup-option-name">
+              Random
+            </span>
+
+            <span class="setup-option-description">
+              Generate an unpredictable battlefield.
+            </span>
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- Match Format -->
+      <section class="setup-section">
+
+        <span class="setup-section-label">
+          Match Format
+        </span>
+
+        <div class="match-options">
+
+          <button class="match-option active" type="button" data-rounds="1">
+            Quick Match
+          </button>
+
+          <button class="match-option" type="button" data-rounds="3">
+            Best of 3
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- Start -->
+      <div class="setup-start">
+
+        <a href="./game.html" class="btn btn-primary btn-lg btn-block" id="start-battle">
+          Start Battle →
+        </a>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/game-setup.js"></script>
+
+</body>
+
+</html>

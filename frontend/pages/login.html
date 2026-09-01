@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Login | Tank Duel</title>
+
+  <meta name="description" content="Log in to your Tank Duel account and continue your battle." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+
+  <!-- From pages/ → go back one level to frontend/ -->
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="auth-page">
+
+    <section class="auth-content">
+
+      <div class="auth-container">
+
+        <!-- Back -->
+        <a href="../index.html" class="auth-back">
+          ← Back to Main Menu
+        </a>
+
+        <!-- Header -->
+        <header class="auth-header">
+          <div class="auth-logo">TANK DUEL</div>
+
+          <h1 class="auth-title">Welcome Back</h1>
+
+          <p class="auth-description">
+            Log in to continue your battle.
+          </p>
+        </header>
+
+        <!-- Form -->
+        <form class="auth-form" id="login-form">
+
+          <div class="form-group">
+            <label class="form-label" for="email">
+              Email
+            </label>
+
+            <input class="form-input" type="email" id="email" name="email" placeholder="Enter your email"
+              autocomplete="email" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">
+              Password
+            </label>
+
+            <input class="form-input" type="password" id="password" name="password" placeholder="Enter your password"
+              autocomplete="current-password" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Login
+          </button>
+
+        </form>
+
+        <!-- Switch -->
+        <p class="auth-switch">
+          New to Tank Duel?
+          <a href="./signup.html">Create Account</a>
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/auth.js"></script>
+
+</body>
+
+</html>

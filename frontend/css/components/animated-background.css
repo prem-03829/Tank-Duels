@@ -1,0 +1,33 @@
+/* =========================
+   GLOBAL ANIMATED BACKGROUND
+========================= */
+
+.animated-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* =========================
+   GLOBAL GRID BACKGROUND
+========================= */
+
+body::before {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(var(--grid-line-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-color) 1px, transparent 1px);
+
+  background-size: 32px 32px;
+}

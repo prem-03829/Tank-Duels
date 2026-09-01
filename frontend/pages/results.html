@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Battle Results | Tank Duel</title>
+
+  <meta name="description" content="View the results of your Tank Duel battle." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="results-page">
+
+    <section class="results-content">
+
+      <div class="results-card">
+
+        <!-- Result -->
+        <span class="result-label">
+          Battle Complete
+        </span>
+
+        <h1 class="result-title" id="result-title">
+          Victory
+        </h1>
+
+        <p class="result-description" id="result-description">
+          You dominated the battlefield.
+        </p>
+
+
+        <!-- Score -->
+        <div class="result-score">
+
+          <div class="score-player">
+
+            <span class="score-name" id="player-score-name">
+              Player
+            </span>
+
+            <span class="score-value" id="player-score">
+              1
+            </span>
+
+          </div>
+
+
+          <span class="score-divider">
+            —
+          </span>
+
+
+          <div class="score-player">
+
+            <span class="score-name">
+              Opponent
+            </span>
+
+            <span class="score-value" id="opponent-score">
+              0
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- Actions -->
+        <div class="result-actions">
+
+          <a href="./game-setup.html" class="btn btn-primary">
+            Play Again
+          </a>
+
+          <a href="./dashboard.html" class="btn btn-outline">
+            Command Center
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/results.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Create Account | Tank Duel</title>
+
+  <meta name="description" content="Create a Tank Duel account and save your battle progress." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="auth-page">
+
+    <section class="auth-content">
+
+      <div class="auth-container">
+
+        <!-- Back -->
+        <a href="../index.html" class="auth-back">
+          ← Back to Main Menu
+        </a>
+
+        <!-- Header -->
+        <header class="auth-header">
+          <div class="auth-logo">TANK DUEL</div>
+
+          <h1 class="auth-title">Create Account</h1>
+
+          <p class="auth-description">
+            Create your profile and start battling.
+          </p>
+        </header>
+
+        <!-- Signup Form -->
+        <form class="auth-form" id="signup-form">
+
+          <div class="form-group">
+            <label class="form-label" for="username">
+              Username
+            </label>
+
+            <input class="form-input" type="text" id="username" name="username" placeholder="Choose a username"
+              autocomplete="username" minlength="3" maxlength="20" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">
+              Email
+            </label>
+
+            <input class="form-input" type="email" id="email" name="email" placeholder="Enter your email"
+              autocomplete="email" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">
+              Password
+            </label>
+
+            <input class="form-input" type="password" id="password" name="password" placeholder="Create a password"
+              autocomplete="new-password" minlength="6" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirm-password">
+              Confirm Password
+            </label>
+
+            <input class="form-input" type="password" id="confirm-password" name="confirm-password"
+              placeholder="Confirm your password" autocomplete="new-password" minlength="6" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Create Account
+          </button>
+
+        </form>
+
+        <!-- Switch -->
+        <p class="auth-switch">
+          Already have an account?
+          <a href="./login.html">Login</a>
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/auth.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,181 @@
+/* =========================
+   GAME SETUP
+========================= */
+
+.game-setup-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-setup-content {
+  flex: 1;
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-xl);
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.game-setup-header {
+  margin-bottom: var(--space-2xl);
+}
+
+.game-setup-back {
+  display: inline-flex;
+  margin-bottom: var(--space-xl);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.game-setup-back:hover {
+  color: var(--color-primary);
+}
+
+.game-setup-title {
+  margin-bottom: var(--space-sm);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+.game-setup-description {
+  color: var(--text-muted);
+}
+
+/* =========================
+   SETUP SECTIONS
+========================= */
+
+.setup-section {
+  margin-bottom: var(--space-2xl);
+}
+
+.setup-section-label {
+  display: block;
+  margin-bottom: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* =========================
+   SELECTION CARDS
+========================= */
+
+.setup-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+.setup-option {
+  min-height: 130px;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.setup-option:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-primary);
+}
+
+.setup-option.active {
+  border-color: var(--color-primary);
+  background: var(--bg-elevated);
+}
+
+.setup-option-name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.setup-option-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* =========================
+   MATCH OPTIONS
+========================= */
+
+.match-options {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.match-option {
+  flex: 1;
+  min-height: 50px;
+
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.match-option:hover {
+  border-color: var(--border-primary);
+}
+
+.match-option.active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* =========================
+   START ACTION
+========================= */
+
+.setup-start {
+  margin-top: var(--space-3xl);
+}
+
+.setup-start .btn {
+  min-height: 64px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 700px) {
+  .game-setup-content {
+    padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .setup-options {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-option {
+    min-height: 100px;
+  }
+}

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Battle | Tank Duel</title>
+
+  <meta name="description" content="Play Tank Duel — aim, fire, and destroy your opponent." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <main class="game-page">
+
+    <!-- =========================
+         GAME HUD
+    ========================== -->
+
+    <header class="game-header">
+
+      <!-- Player 1 -->
+      <div class="player-info">
+        <span class="player-label">Player 1</span>
+        <span class="player-name" id="player-one-name">
+          PLAYER
+        </span>
+      </div>
+
+      <!-- Center Status -->
+      <div class="game-status" id="game-status">
+        Player 1's Turn
+      </div>
+
+      <!-- Right Side -->
+      <div class="game-header-right">
+
+        <!-- Player 2 -->
+        <div class="player-info right">
+          <span class="player-label">Player 2</span>
+          <span class="player-name">
+            OPPONENT
+          </span>
+        </div>
+
+        <!-- Quit -->
+        <button class="game-quit-btn" id="quit-game-btn" type="button" aria-label="Quit battle">
+          QUIT
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- =========================
+         BATTLEFIELD
+    ========================== -->
+
+    <section class="game-area">
+
+      <div class="game-canvas-container">
+
+        <!-- Canvas will replace this later -->
+
+        <div class="game-placeholder">
+          Battlefield Loading
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         GAME CONTROLS
+    ========================== -->
+
+    <footer class="game-controls">
+
+      <!-- Left Controls -->
+      <div class="control-group">
+
+        <div class="control-item">
+          <span class="control-label">Angle</span>
+          <span class="control-value" id="angle-value">
+            45°
+          </span>
+        </div>
+
+        <div class="control-item">
+          <span class="control-label">Power</span>
+          <span class="control-value" id="power-value">
+            50%
+          </span>
+        </div>
+
+      </div>
+
+
+      <!-- Fire -->
+      <button class="btn btn-primary fire-button" id="fire-button" type="button">
+        Fire
+      </button>
+
+
+      <!-- Right Controls -->
+      <div class="control-group right">
+
+        <div class="control-item">
+          <span class="control-label">Map</span>
+          <span class="control-value" id="map-name">
+            Desert
+          </span>
+        </div>
+
+        <div class="control-item">
+          <span class="control-label">Round</span>
+          <span class="control-value" id="round-value">
+            1 / 1
+          </span>
+        </div>
+
+      </div>
+
+    </footer>
+
+  </main>
+
+  <!-- =========================
+     QUIT CONFIRMATION
+========================= -->
+
+  <div class="quit-modal" id="quit-modal" aria-hidden="true">
+    <div class="quit-modal-backdrop" id="quit-modal-backdrop"></div>
+
+    <div class="quit-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="quit-modal-title">
+
+      <span class="quit-modal-label">
+        BATTLE INTERRUPTION
+      </span>
+
+      <h2 id="quit-modal-title">
+        Quit Battle?
+      </h2>
+
+      <p>
+        Your current battle will be abandoned. This match will not be recorded.
+      </p>
+
+      <div class="quit-modal-actions">
+
+        <button class="btn btn-outline" id="cancel-quit-btn" type="button">
+          CONTINUE
+        </button>
+
+        <button class="btn btn-danger" id="confirm-quit-btn" type="button">
+          QUIT BATTLE
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/app.js"></script>
+  <script src="../js/pages/game.js"></script>
+
+</body>
+
+</html>

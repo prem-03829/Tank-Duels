@@ -1,0 +1,75 @@
+/* =========================
+   TYPOGRAPHY
+========================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+/* =========================
+   BASE
+========================= */
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--text-primary);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================
+   HEADINGS
+========================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+/* =========================
+   FORM ELEMENTS
+========================= */
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* =========================
+   MONOSPACE / UI
+========================= */
+
+.ui-label,
+.mono {
+  font-family: var(--font-mono);
+}
+
+.ui-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* =========================
+   TEXT UTILITIES
+========================= */
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}

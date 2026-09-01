@@ -1,0 +1,376 @@
+/* =========================
+   GAME PAGE
+========================= */
+
+.game-page {
+  width: 100%;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* =========================
+   GAME HEADER / HUD
+========================= */
+
+.game-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 86px;
+  padding: 0 var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  z-index: var(--z-content);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.player-info.right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.player-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.player-name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.game-status {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  justify-self: center;
+  text-align: center;
+  color: var(--color-primary);
+}
+
+
+/* =========================
+   GAME AREA
+========================= */
+
+.game-area {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+
+/* Canvas Placeholder */
+
+.game-canvas-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(1400px, 100%);
+  aspect-ratio: 16 / 9;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+}
+
+
+/* Temporary Placeholder */
+
+.game-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+
+/* =========================
+   GAME CONTROLS
+========================= */
+
+.game-controls {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+
+/* Control Group */
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.control-group.right {
+  justify-content: flex-end;
+}
+
+
+/* Control Item */
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.control-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.control-value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+
+/* Fire Button */
+
+.fire-button {
+  min-width: 120px;
+  min-height: 48px;
+}
+
+
+/* =========================
+   GAME HEADER RIGHT
+========================= */
+
+.game-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-lg);
+}
+
+
+/* =========================
+   QUIT BUTTON
+========================= */
+
+.game-quit-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-muted);
+
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.game-quit-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  background: var(--surface-hover);
+}
+
+
+/* =========================
+   QUIT MODAL
+========================= */
+
+.quit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-lg);
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition:
+    opacity var(--transition-normal),
+    visibility var(--transition-normal);
+}
+
+.quit-modal.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/* Backdrop */
+
+.quit-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-dark);
+}
+
+
+/* Dialog */
+
+.quit-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 440px);
+  padding: var(--space-2xl);
+  text-align: center;
+
+  background: var(--bg-modal);
+  border: 1px solid var(--border-subtle);
+
+  transform: translateY(12px) scale(0.98);
+  transition: transform var(--transition-normal);
+}
+
+.quit-modal.is-open .quit-modal-dialog {
+  transform: translateY(0) scale(1);
+}
+
+
+/* Modal Label */
+
+.quit-modal-label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-wider);
+  color: var(--color-primary);
+}
+
+
+/* Modal Title */
+
+.quit-modal-dialog h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+
+/* Modal Description */
+
+.quit-modal-dialog p {
+  margin: var(--space-md) auto var(--space-xl);
+  max-width: 340px;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+
+/* Modal Actions */
+
+.quit-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+
+/* =========================
+   DANGER ACTION
+========================= */
+
+.btn-danger {
+  color: var(--color-danger-light);
+  background: var(--danger-subtle);
+  border: 1px solid var(--danger-border);
+}
+
+.btn-danger:hover {
+  color: var(--text-primary);
+  background: var(--danger-hover);
+  border-color: var(--color-danger);
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 700px) {
+  .game-header {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+  }
+
+  .game-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: center;
+  }
+
+  .game-controls {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .control-group,
+  .control-group.right {
+    justify-content: center;
+  }
+
+  .fire-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 650px) {
+  .game-header-right {
+    gap: var(--space-sm);
+  }
+
+  .quit-modal-dialog {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  .quit-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}

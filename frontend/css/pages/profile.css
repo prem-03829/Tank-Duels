@@ -1,0 +1,206 @@
+/* =========================
+   PROFILE PAGE
+========================= */
+
+.profile-page {
+  position: relative;
+  z-index: var(--z-base);
+  min-height: 100svh;
+  width: min(100% - 3rem, 900px);
+  margin: 0 auto;
+  padding: 3.5rem 0 5rem;
+}
+
+/* =========================
+   BACK LINK
+========================= */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 3.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+}
+
+/* =========================
+   PROFILE HEADER
+========================= */
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  padding-bottom: var(--space-2xl);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+
+.profile-avatar {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--color-primary) 55%, transparent);
+  background: var(--surface-subtle);
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--color-primary);
+}
+
+.profile-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--color-primary);
+}
+
+.profile-heading h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.profile-heading p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+/* =========================
+   PROFILE SECTIONS
+========================= */
+
+.profile-section {
+  margin-top: var(--space-2xl);
+  border: var(--border-width) solid var(--border-subtle);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+}
+
+.profile-section-header {
+  padding: 1.25rem var(--space-lg);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+
+/* =========================
+   STATS
+========================= */
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.profile-stat {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  border-right: var(--border-width) solid var(--border-subtle);
+}
+
+.profile-stat:last-child {
+  border-right: none;
+}
+
+.profile-stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, var(--font-size-3xl));
+  color: var(--text-primary);
+}
+
+.profile-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+/* =========================
+   ACCOUNT
+========================= */
+
+.profile-account-row {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.profile-account-value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--color-primary);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+  .profile-page {
+    width: min(100% - 2rem, 900px);
+    padding-top: var(--space-xl);
+  }
+
+  .back-link {
+    margin-bottom: 2.5rem;
+  }
+
+  .profile-header {
+    gap: 1.25rem;
+  }
+
+  .profile-avatar {
+    width: 68px;
+    height: 68px;
+    font-size: 1.8rem;
+  }
+
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-stat {
+    min-height: 110px;
+    border-right: none;
+    border-bottom: var(--border-width) solid var(--border-subtle);
+  }
+
+  .profile-stat:last-child {
+    border-bottom: none;
+  }
+}

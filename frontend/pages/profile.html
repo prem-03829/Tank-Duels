@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Basic -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title>Profile | Tank Duel</title>
+  <meta name="description" content="View your Tank Duel player profile and battle statistics." />
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="profile-page">
+
+    <!-- Back Navigation -->
+    <a href="./dashboard.html" class="back-link">
+      ← BACK TO COMMAND CENTER
+    </a>
+
+    <!-- Page Header -->
+    <section class="profile-header">
+      <div class="profile-avatar" aria-hidden="true">
+        <span id="profile-initial">P</span>
+      </div>
+
+      <div class="profile-heading">
+        <span class="section-label">PLAYER PROFILE</span>
+
+        <h1 id="profile-name">PLAYER</h1>
+
+        <p id="profile-type">
+          GUEST OPERATIVE
+        </p>
+      </div>
+    </section>
+
+    <!-- Statistics -->
+    <section class="profile-section">
+
+      <div class="profile-section-header">
+        <span class="section-label">BATTLE RECORD</span>
+      </div>
+
+      <div class="profile-stats">
+
+        <div class="profile-stat">
+          <span class="profile-stat-value" id="profile-games">
+            0
+          </span>
+
+          <span class="profile-stat-label">
+            BATTLES
+          </span>
+        </div>
+
+        <div class="profile-stat">
+          <span class="profile-stat-value" id="profile-wins">
+            0
+          </span>
+
+          <span class="profile-stat-label">
+            VICTORIES
+          </span>
+        </div>
+
+        <div class="profile-stat">
+          <span class="profile-stat-value" id="profile-winrate">
+            —
+          </span>
+
+          <span class="profile-stat-label">
+            WIN RATE
+          </span>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Account -->
+    <section class="profile-section profile-account">
+
+      <div class="profile-section-header">
+        <span class="section-label">ACCOUNT</span>
+      </div>
+
+      <div class="profile-account-row">
+        <span>Account Type</span>
+
+        <span class="profile-account-value" id="profile-account-type">
+          Guest
+        </span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/profile.js"></script>
+
+</body>
+
+</html>

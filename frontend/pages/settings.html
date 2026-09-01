@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Settings | Tank Duel</title>
+
+  <meta name="description" content="Customize your Tank Duel game preferences." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="settings-page">
+
+    <section class="settings-content">
+
+      <!-- Header -->
+      <header class="settings-header">
+
+        <a href="./dashboard.html" class="settings-back">
+          ← Back to Command Center
+        </a>
+
+        <h1 class="settings-title">Settings</h1>
+
+        <p class="settings-description">
+          Customize your battlefield experience.
+        </p>
+
+      </header>
+
+
+      <!-- Settings Panel -->
+      <div class="settings-panel">
+
+        <!-- Appearance -->
+        <section class="settings-section">
+
+          <h2 class="settings-section-title">
+            Appearance
+          </h2>
+
+          <div class="setting-row">
+
+            <div class="setting-info">
+              <span class="setting-name">
+                Accent Color
+              </span>
+
+              <span class="setting-description">
+                Choose your interface accent.
+              </span>
+            </div>
+
+            <div class="color-options">
+              <button class="color-option active" data-color="orange" aria-label="Orange theme" type="button"></button>
+
+              <button class="color-option" data-color="blue" aria-label="Blue theme" type="button"></button>
+
+              <button class="color-option" data-color="green" aria-label="Green theme" type="button"></button>
+
+              <button class="color-option" data-color="purple" aria-label="Purple theme" type="button"></button>
+
+              <!-- Custom color -->
+              <button class="color-option color-option-custom" data-color="custom"
+                aria-label="Choose custom accent color" type="button">
+                +
+              </button>
+
+              <input type="color" id="custom-color-picker" value="#ff8933" aria-label="Custom accent color" />
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- Gameplay -->
+        <section class="settings-section">
+
+          <h2 class="settings-section-title">
+            Experience
+          </h2>
+
+          <div class="setting-row">
+
+            <div class="setting-info">
+              <span class="setting-name">
+                Sound
+              </span>
+
+              <span class="setting-description">
+                Enable interface and game sounds.
+              </span>
+            </div>
+
+            <button class="toggle active" id="sound-toggle" type="button" aria-label="Toggle sound"></button>
+
+          </div>
+
+
+          <div class="setting-row">
+
+            <div class="setting-info">
+              <span class="setting-name">
+                Reduced Motion
+              </span>
+
+              <span class="setting-description">
+                Minimize interface animations.
+              </span>
+            </div>
+
+            <button class="toggle" id="motion-toggle" type="button" aria-label="Toggle reduced motion"></button>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/settings.js"></script>
+
+</body>
+
+</html>

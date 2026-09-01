@@ -1,0 +1,165 @@
+:root {
+  /* =========================
+     COLORS
+  ========================= */
+
+  /* Backgrounds */
+  --bg-primary: #0d0f0d;
+  --bg-secondary: #141814;
+  --bg-panel: #1d211d;
+  --bg-elevated: #272c27;
+
+  /* Transparent Backgrounds */
+  --bg-panel-transparent: rgba(20, 24, 20, 0.82);
+  --bg-panel-subtle: rgba(20, 24, 20, 0.55);
+
+  /* Surfaces */
+  --surface-subtle: rgba(255, 255, 255, 0.025);
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --surface-highlight: rgba(255, 255, 255, 0.02);
+  --surface-highlight-subtle: rgba(255, 255, 255, 0.01);
+
+  /* Modal */
+  --bg-modal: linear-gradient(
+    135deg,
+    rgba(20, 26, 23, 0.96),
+    rgba(12, 16, 14, 0.96)
+  );
+
+  /* Brand */
+  --color-primary: #ff8933;
+  --color-primary-light: #ffc9a3;
+  --color-secondary: #56c8c6;
+  --color-tertiary: #ffcc33;
+
+  /* Accent Options */
+  --accent-orange: #ff8933;
+  --accent-blue: #4da3ff;
+  --accent-green: #57c785;
+  --accent-purple: #a878ff;
+
+  /* Text */
+  --text-primary: #f1eee8;
+  --text-secondary: #a7a79f;
+  --text-muted: #686d66;
+  --text-on-primary: #17120e;
+
+  /* Borders */
+  --border-primary: #3a4239;
+  --border-subtle: #252b25;
+  --border-light: rgba(241, 238, 232, 0.12);
+
+  /* Status */
+  --color-success: #7d9c62;
+  --color-danger: #e07a70;
+  --color-danger-light: #ff8a8a;
+
+  /* Danger Surfaces */
+  --danger-subtle: rgba(255, 100, 100, 0.05);
+  --danger-border: rgba(255, 100, 100, 0.25);
+  --danger-hover: rgba(255, 100, 100, 0.12);
+
+  /* Accent Surfaces */
+  --accent-surface: color-mix(in srgb, var(--color-primary) 4%, transparent);
+
+  /* =========================
+     TYPOGRAPHY
+  ========================= */
+
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Hanken Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 3rem;
+
+  /* Letter Spacing */
+  --letter-spacing-normal: 0.08em;
+  --letter-spacing-wide: 0.12em;
+  --letter-spacing-wider: 0.18em;
+
+  /* =========================
+     SPACING
+  ========================= */
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+
+  /* =========================
+     UI
+  ========================= */
+
+  --border-radius-sm: 2px;
+  --border-radius-md: 4px;
+  --border-width: 1px;
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* =========================
+     OPACITY
+  ========================= */
+
+  --opacity-muted: 0.5;
+  --opacity-subtle: 0.7;
+  --opacity-panel: 0.82;
+  --opacity-hover: 0.9;
+
+  /* =========================
+     EFFECTS
+  ========================= */
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.28);
+  --shadow-strong: rgba(0, 0, 0, 0.35);
+
+  --glow-primary: 0 0 20px rgba(255, 137, 51, 0.18);
+
+  --backdrop-blur: blur(12px);
+
+  /* Button Shadows */
+  --button-shadow: rgba(0, 0, 0, 0.3);
+  --button-shadow-hover: rgba(0, 0, 0, 0.25);
+
+  /* =========================
+     OVERLAYS
+  ========================= */
+
+  --bg-overlay: rgba(5, 7, 6, 0.72);
+  --bg-overlay-subtle: rgba(0, 0, 0, 0.08);
+  --overlay-dark: rgba(0, 0, 0, 0.72);
+
+  /* =========================
+     GRID
+  ========================= */
+
+  --grid-line-color: rgba(255, 255, 255, 0.025);
+
+  /* =========================
+   LAYOUT / LAYERS
+========================= */
+
+  --z-background: 0;
+  --z-background-content: 1;
+  --z-background-overlay: 2;
+
+  --z-base: 3;
+  --z-content: 10;
+
+  --z-header: 50;
+  --z-modal: 100;
+}

@@ -1,0 +1,124 @@
+/* =========================
+   RESULTS PAGE
+========================= */
+
+.results-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.results-content {
+  flex: 1;
+  width: min(800px, 100%);
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================
+   RESULTS CARD
+========================= */
+
+.results-card {
+  width: 100%;
+  text-align: center;
+  padding: var(--space-3xl);
+  border: var(--border-width) solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+/* =========================
+   RESULT HEADER
+========================= */
+
+.result-label {
+  display: block;
+  margin-bottom: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.result-title {
+  margin-bottom: var(--space-sm);
+  font-size: clamp(2.5rem, 7vw, 5rem);
+}
+
+.result-description {
+  color: var(--text-muted);
+}
+
+/* =========================
+   SCORE
+========================= */
+
+.result-score {
+  margin: var(--space-3xl) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl);
+}
+
+.score-player {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.score-name {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.score-value {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 700;
+}
+
+.score-divider {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  color: var(--text-muted);
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+  .results-content {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  .results-card {
+    padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .result-actions {
+    flex-direction: column;
+  }
+
+  .result-actions .btn {
+    width: 100%;
+  }
+}
