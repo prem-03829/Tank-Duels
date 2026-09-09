@@ -112,35 +112,72 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   z-index: 10;
   transition: left 0.05s linear, top 0.05s linear;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.75));
 }
 
 .tank-overlay-name {
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  text-shadow:
+    2px 2px 0 #000,
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    0 0 8px rgba(0, 0, 0, 0.9);
+  line-height: 1;
   white-space: nowrap;
+  padding: 2px 6px;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.55);
+}
+
+.tank-overlay-name::before,
+.tank-overlay-name::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 2px;
+  vertical-align: middle;
+  margin: 0 4px 2px 4px;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 #tank-overlay-0 .tank-overlay-name {
-  color: #ff9050;
+  color: #ffc080;
+  border-top-color: #ff9050;
 }
 
 #tank-overlay-1 .tank-overlay-name {
-  color: #60b8d8;
+  color: #90d8f0;
+  border-top-color: #60b8d8;
+}
+
+.tank-overlay-health {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.65) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  padding: 3px 7px;
 }
 
 .tank-overlay-hp {
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 52px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   overflow: hidden;
 }
 
@@ -153,11 +190,18 @@
 
 .tank-overlay-hp-text {
   font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  text-shadow: 1px 1px 0 #000;
-  letter-spacing: 0.05em;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow:
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    0 0 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 
@@ -577,16 +621,20 @@
   }
 
   .tank-overlay-name {
-    font-size: 8px;
+    font-size: 11px;
   }
 
   .tank-overlay-hp {
-    width: 28px;
-    height: 3px;
+    width: 38px;
+    height: 5px;
   }
 
   .tank-overlay-hp-text {
-    font-size: 7px;
+    font-size: 9px;
+  }
+
+  .tank-overlay-health {
+    padding: 2px 5px;
   }
 }
 

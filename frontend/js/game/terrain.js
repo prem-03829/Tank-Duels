@@ -34,6 +34,7 @@ TD.Terrain.prototype.generate = function (type, mapSeed) {
   this.type = resolved;
   this.palette = TD.PALETTES[resolved];
   this.seed(mapSeed);
+  this._surfaceSeed = this._s + 200;
 
   this._generateHeights(resolved);
   this._generateStars();
@@ -58,70 +59,70 @@ TD.Terrain.prototype._generateHeights = function (biome) {
 
   switch (biome) {
     case 'dustlands':
-      baseY = Math.round(H * 0.65);
+      baseY = Math.round(H * 0.77);
       layers = [
-        { amp: 28, freq: 0.008, phase: this.rng() * 6.28 },
-        { amp: 14, freq: 0.022, phase: this.rng() * 6.28 },
-        { amp: 6,  freq: 0.055, phase: this.rng() * 6.28 },
-        { amp: 2,  freq: 0.12,  phase: this.rng() * 6.28 }
+        { amp: 14, freq: 0.008, phase: this.rng() * 6.28 },
+        { amp: 7,  freq: 0.022, phase: this.rng() * 6.28 },
+        { amp: 3,  freq: 0.055, phase: this.rng() * 6.28 },
+        { amp: 1,  freq: 0.12,  phase: this.rng() * 6.28 }
       ];
       break;
 
     case 'valley':
-      baseY = Math.round(H * 0.60);
+      baseY = Math.round(H * 0.76);
       layers = [
-        { amp: 35, freq: 0.012, phase: this.rng() * 6.28 },
-        { amp: 18, freq: 0.028, phase: this.rng() * 6.28 },
-        { amp: 8,  freq: 0.06,  phase: this.rng() * 6.28 },
-        { amp: 3,  freq: 0.14,  phase: this.rng() * 6.28 }
+        { amp: 16, freq: 0.012, phase: this.rng() * 6.28 },
+        { amp: 9,  freq: 0.028, phase: this.rng() * 6.28 },
+        { amp: 4,  freq: 0.06,  phase: this.rng() * 6.28 },
+        { amp: 2,  freq: 0.14,  phase: this.rng() * 6.28 }
       ];
       break;
 
     case 'frostbite':
-      baseY = Math.round(H * 0.62);
+      baseY = Math.round(H * 0.78);
       layers = [
-        { amp: 30, freq: 0.01,  phase: this.rng() * 6.28 },
-        { amp: 15, freq: 0.025, phase: this.rng() * 6.28 },
-        { amp: 5,  freq: 0.06,  phase: this.rng() * 6.28 },
-        { amp: 2,  freq: 0.13,  phase: this.rng() * 6.28 }
+        { amp: 12, freq: 0.01,  phase: this.rng() * 6.28 },
+        { amp: 6,  freq: 0.025, phase: this.rng() * 6.28 },
+        { amp: 3,  freq: 0.06,  phase: this.rng() * 6.28 },
+        { amp: 1,  freq: 0.13,  phase: this.rng() * 6.28 }
       ];
       break;
 
     case 'ashhill':
-      baseY = Math.round(H * 0.58);
+      baseY = Math.round(H * 0.75);
       layers = [
-        { amp: 22, freq: 0.015, phase: this.rng() * 6.28 },
-        { amp: 15, freq: 0.035, phase: this.rng() * 6.28 },
-        { amp: 10, freq: 0.07,  phase: this.rng() * 6.28 },
-        { amp: 5,  freq: 0.15,  phase: this.rng() * 6.28 }
+        { amp: 12, freq: 0.015, phase: this.rng() * 6.28 },
+        { amp: 8,  freq: 0.035, phase: this.rng() * 6.28 },
+        { amp: 5,  freq: 0.07,  phase: this.rng() * 6.28 },
+        { amp: 2,  freq: 0.15,  phase: this.rng() * 6.28 }
       ];
       break;
 
     case 'moonbase':
-      baseY = Math.round(H * 0.64);
+      baseY = Math.round(H * 0.78);
       layers = [
-        { amp: 18, freq: 0.01,  phase: this.rng() * 6.28 },
-        { amp: 10, freq: 0.03,  phase: this.rng() * 6.28 },
-        { amp: 6,  freq: 0.07,  phase: this.rng() * 6.28 },
-        { amp: 3,  freq: 0.16,  phase: this.rng() * 6.28 }
+        { amp: 10, freq: 0.01,  phase: this.rng() * 6.28 },
+        { amp: 5,  freq: 0.03,  phase: this.rng() * 6.28 },
+        { amp: 3,  freq: 0.07,  phase: this.rng() * 6.28 },
+        { amp: 2,  freq: 0.16,  phase: this.rng() * 6.28 }
       ];
       break;
 
     case 'canyon':
-      baseY = Math.round(H * 0.55);
+      baseY = Math.round(H * 0.74);
       layers = [
-        { amp: 25, freq: 0.014, phase: this.rng() * 6.28 },
-        { amp: 18, freq: 0.032, phase: this.rng() * 6.28 },
-        { amp: 12, freq: 0.065, phase: this.rng() * 6.28 },
-        { amp: 4,  freq: 0.14,  phase: this.rng() * 6.28 }
+        { amp: 14, freq: 0.014, phase: this.rng() * 6.28 },
+        { amp: 10, freq: 0.032, phase: this.rng() * 6.28 },
+        { amp: 6,  freq: 0.065, phase: this.rng() * 6.28 },
+        { amp: 3,  freq: 0.14,  phase: this.rng() * 6.28 }
       ];
       break;
 
     default:
-      baseY = Math.round(H * 0.65);
+      baseY = Math.round(H * 0.77);
       layers = [
-        { amp: 28, freq: 0.008, phase: 0 },
-        { amp: 14, freq: 0.022, phase: 1.3 }
+        { amp: 14, freq: 0.008, phase: 0 },
+        { amp: 7,  freq: 0.022, phase: 1.3 }
       ];
   }
 
@@ -132,7 +133,7 @@ TD.Terrain.prototype._generateHeights = function (biome) {
       y += l.amp * Math.sin(l.freq * x + l.phase);
     }
     y = Math.round(y / step) * step;
-    y = Math.max(80, Math.min(H - 30, y));
+    y = Math.max(80, Math.min(H - 10, y));
     this.heights[x] = y;
   }
 };
@@ -174,8 +175,8 @@ TD.Terrain.prototype._generateBgMountains = function (biome) {
   this.seed(this._s + 31);
   var W = TD.W;
   var peaks = 4 + Math.floor(this.rng() * 4);
-  var baseY = TD.H * 0.5;
-  var maxH = 60 + Math.floor(this.rng() * 40);
+  var baseY = TD.H * 0.42;
+  var maxH = 50 + Math.floor(this.rng() * 35);
 
   var pts = [];
   for (var i = 0; i <= peaks * 4; i++) {
@@ -199,7 +200,7 @@ TD.Terrain.prototype._generateBgHills = function (biome) {
   this.seed(this._s + 47);
   var W = TD.W;
   var count = 6 + Math.floor(this.rng() * 5);
-  var baseY = TD.H * 0.55;
+  var baseY = TD.H * 0.48;
 
   for (var i = 0; i < count; i++) {
     var cx = this.rng() * W;
@@ -303,7 +304,7 @@ TD.Terrain.prototype._generateDetails = function (biome) {
   this.details = [];
   this.seed(this._s + 77);
   var W = TD.W;
-  var count = 40 + Math.floor(this.rng() * 30);
+  var count = 50 + Math.floor(this.rng() * 30);
   var p = this.palette;
 
   for (var i = 0; i < count; i++) {
@@ -312,12 +313,92 @@ TD.Terrain.prototype._generateDetails = function (biome) {
     if (h <= 0 || h >= TD.H) continue;
 
     var r = this.rng();
-    if (biome === 'valley' && r > 0.4) {
-      this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.detail });
-    } else if (biome === 'frostbite' && r > 0.3) {
-      this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.detail });
-    } else {
-      this.details.push({ x: x, y: h - 1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
+    switch (biome) {
+      case 'dustlands':
+        if (r < 0.25) {
+          this.details.push({ x: x, y: h - 1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
+        } else if (r < 0.45) {
+          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.grassColor });
+        } else if (r < 0.6) {
+          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.surfaceHi });
+        } else {
+          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 4), w: 1, h: 1, color: p.detail });
+        }
+        break;
+
+      case 'valley':
+        if (r < 0.2) {
+          this.details.push({ x: x, y: h - 3, w: 1, h: 3, color: p.detail });
+        } else if (r < 0.4) {
+          this.details.push({ x: x, y: h - 2, w: 2, h: 1, color: p.grassColor });
+        } else if (r < 0.55) {
+          this.details.push({ x: x, y: h - 1, w: 3, h: 1, color: p.surfaceHi });
+        } else if (r < 0.7) {
+          this.details.push({ x: x, y: h - 4, w: 1, h: 4, color: p.detail });
+          this.details.push({ x: x - 1, y: h - 5, w: 3, h: 2, color: p.grassColor });
+        } else {
+          this.details.push({ x: x, y: h + 3 + Math.floor(this.rng() * 5), w: 2, h: 1, color: p.rock });
+        }
+        break;
+
+      case 'frostbite':
+        if (r < 0.25) {
+          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.surfaceHi });
+        } else if (r < 0.45) {
+          this.details.push({ x: x, y: h - 2, w: 3, h: 2, color: p.detail });
+        } else if (r < 0.6) {
+          this.details.push({ x: x, y: h - 1, w: 1, h: 2, color: p.rock });
+        } else if (r < 0.75) {
+          this.details.push({ x: x, y: h - 3, w: 2, h: 3, color: p.surface });
+        } else {
+          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 4), w: 1, h: 1, color: p.mid });
+        }
+        break;
+
+      case 'ashhill':
+        if (r < 0.2) {
+          this.details.push({ x: x, y: h - 2, w: 2, h: 2, color: p.dark });
+        } else if (r < 0.4) {
+          this.details.push({ x: x, y: h - 1, w: 1, h: 1, color: p.lava || '#cc4420' });
+        } else if (r < 0.55) {
+          this.details.push({ x: x, y: h - 1, w: 3, h: 1, color: p.rock });
+        } else if (r < 0.7) {
+          this.details.push({ x: x, y: h + 3 + Math.floor(this.rng() * 5), w: 2, h: 1, color: p.dark });
+        } else {
+          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.detail });
+        }
+        break;
+
+      case 'moonbase':
+        if (r < 0.2) {
+          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.detail });
+        } else if (r < 0.4) {
+          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.rock });
+        } else if (r < 0.55) {
+          this.details.push({ x: x, y: h - 1, w: 3, h: 1, color: p.surfaceHi });
+        } else if (r < 0.7) {
+          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 4), w: 2, h: 1, color: p.mid });
+        } else {
+          this.details.push({ x: x, y: h - 3, w: 2, h: 2, color: p.dark });
+        }
+        break;
+
+      case 'canyon':
+        if (r < 0.2) {
+          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.surfaceHi });
+        } else if (r < 0.4) {
+          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.rock });
+        } else if (r < 0.55) {
+          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 6), w: 3, h: 1, color: p.mid });
+        } else if (r < 0.7) {
+          this.details.push({ x: x, y: h - 1, w: 1, h: 1, color: p.detail });
+        } else {
+          this.details.push({ x: x, y: h + 4 + Math.floor(this.rng() * 4), w: 2, h: 1, color: p.dark });
+        }
+        break;
+
+      default:
+        this.details.push({ x: x, y: h - 1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
     }
   }
 };
@@ -388,6 +469,33 @@ TD.Terrain.prototype.renderSky = function (ctx) {
   }
 };
 
+TD.Terrain.prototype.renderBackground = function (ctx, img) {
+  var W = TD.W;
+  var H = TD.H;
+  var imgW = img.naturalWidth;
+  var imgH = img.naturalHeight;
+  if (!imgW || !imgH) return;
+
+  var imgAspect = imgW / imgH;
+  var canvasAspect = W / H;
+  var drawW, drawH, drawX, drawY;
+
+  if (imgAspect > canvasAspect) {
+    drawH = H;
+    drawW = Math.round(H * imgAspect);
+    drawX = Math.round((W - drawW) / 2);
+    drawY = 0;
+  } else {
+    drawW = W;
+    drawH = Math.round(W / imgAspect);
+    drawX = 0;
+    drawY = H - drawH;
+  }
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+};
+
 TD.Terrain.prototype._renderPlanet = function (ctx) {
   var p = this.palette;
   var px = Math.round(TD.W * 0.82);
@@ -453,27 +561,438 @@ TD.Terrain.prototype.renderTerrain = function (ctx) {
 
   for (var x = 0; x < W; x++) {
     var sy = h[x];
+    if (sy >= H) continue;
 
-    ctx.fillStyle = p.dark;
-    ctx.fillRect(x, sy + 14, 1, H - sy - 14);
+    var depth = H - sy;
 
-    ctx.fillStyle = p.deep;
-    ctx.fillRect(x, sy + 8, 1, Math.min(6, H - sy - 8));
+    var leftH = x > 0 ? h[x - 1] : sy;
+    var rightH = x < W - 1 ? h[x + 1] : sy;
+    var slopeL = sy - leftH;
+    var slopeR = sy - rightH;
 
-    ctx.fillStyle = p.mid;
-    ctx.fillRect(x, sy + 3, 1, Math.min(5, H - sy - 3));
+    var base = p.dark;
+    var deep = p.deep;
+    var mid = p.mid;
+    var surf = p.surface;
+    var hi = p.surfaceHi;
+    var det = p.detail;
+    var rock = p.rock;
 
-    ctx.fillStyle = p.surface;
+    ctx.fillStyle = base;
+    ctx.fillRect(x, sy + 10, 1, depth - 10 > 0 ? depth - 10 : 0);
+
+    ctx.fillStyle = deep;
+    ctx.fillRect(x, sy + 7, 1, 3);
+
+    ctx.fillStyle = mid;
+    ctx.fillRect(x, sy + 3, 1, 4);
+
+    ctx.fillStyle = surf;
     ctx.fillRect(x, sy, 1, 3);
 
-    ctx.fillStyle = p.surfaceHi;
+    ctx.fillStyle = hi;
     ctx.fillRect(x, sy, 1, 1);
+
+    if (slopeL > 2) {
+      ctx.fillStyle = mid;
+      ctx.fillRect(x, sy + 1, 1, 3);
+      ctx.fillStyle = hi;
+      ctx.fillRect(x, sy, 1, 1);
+    }
+    if (slopeR > 2) {
+      ctx.fillStyle = hi;
+      ctx.fillRect(x, sy + 1, 1, 1);
+    }
   }
+
+  this._renderTerrainLayers(ctx);
+
+  this._renderTerrainSurfaceTexture(ctx);
 
   for (var d = 0; d < this.details.length; d++) {
     var det = this.details[d];
     ctx.fillStyle = det.color;
     ctx.fillRect(det.x, det.y, det.w, det.h);
+  }
+};
+
+TD.Terrain.prototype._renderTerrainLayers = function (ctx) {
+  var p = this.palette;
+  var h = this.heights;
+  var W = TD.W;
+  var H = TD.H;
+  this.seed(this._s + 150);
+
+  switch (this.type) {
+    case 'dustlands':
+      for (var i = 0; i < 50; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        var depth = H - sy;
+        if (rr < 0.3) {
+          ctx.fillStyle = p.rock;
+          var ly = sy + 4 + Math.floor(this.rng() * Math.min(depth - 6, 12));
+          var lw = 2 + Math.floor(this.rng() * 4);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.5) {
+          ctx.fillStyle = p.deep;
+          var ly = sy + 6 + Math.floor(this.rng() * Math.min(depth - 8, 16));
+          var lw = 3 + Math.floor(this.rng() * 5);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.7) {
+          ctx.fillStyle = p.mid;
+          var ly = sy + 3 + Math.floor(this.rng() * Math.min(depth - 5, 8));
+          ctx.fillRect(x, ly, 1 + Math.floor(this.rng() * 2), 1);
+        } else {
+          ctx.fillStyle = p.surface;
+          var ly = sy + 1 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, 1, 1);
+        }
+      }
+      for (var i = 0; i < 15; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H || H - sy < 12) continue;
+        ctx.fillStyle = p.dark;
+        var ry = sy + 10 + Math.floor(this.rng() * (H - sy - 12));
+        ctx.fillRect(x, ry, 2 + Math.floor(this.rng() * 3), 2);
+      }
+      break;
+
+    case 'valley':
+      for (var i = 0; i < 55; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        var depth = H - sy;
+        if (rr < 0.25) {
+          ctx.fillStyle = p.rock;
+          var ly = sy + 3 + Math.floor(this.rng() * Math.min(depth - 5, 10));
+          var lw = 2 + Math.floor(this.rng() * 4);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.45) {
+          ctx.fillStyle = p.deep;
+          var ly = sy + 5 + Math.floor(this.rng() * Math.min(depth - 7, 14));
+          var lw = 3 + Math.floor(this.rng() * 5);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.65) {
+          ctx.fillStyle = p.mid;
+          var ly = sy + 2 + Math.floor(this.rng() * Math.min(depth - 4, 7));
+          ctx.fillRect(x, ly, 1 + Math.floor(this.rng() * 3), 1);
+        } else {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(x, sy + 1, 1, 1);
+        }
+      }
+      for (var i = 0; i < 12; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H || H - sy < 10) continue;
+        ctx.fillStyle = p.dark;
+        var ry = sy + 8 + Math.floor(this.rng() * (H - sy - 10));
+        ctx.fillRect(x, ry, 2 + Math.floor(this.rng() * 3), 2);
+      }
+      break;
+
+    case 'frostbite':
+      for (var i = 0; i < 45; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        var depth = H - sy;
+        if (rr < 0.25) {
+          ctx.fillStyle = p.surfaceHi;
+          var ly = sy + 1 + Math.floor(this.rng() * 3);
+          var lw = 2 + Math.floor(this.rng() * 4);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.5) {
+          ctx.fillStyle = p.rock;
+          var ly = sy + 4 + Math.floor(this.rng() * Math.min(depth - 6, 10));
+          var lw = 2 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.7) {
+          ctx.fillStyle = p.mid;
+          var ly = sy + 5 + Math.floor(this.rng() * Math.min(depth - 7, 12));
+          ctx.fillRect(x, ly, 2, 1);
+        } else {
+          ctx.fillStyle = p.detail;
+          var ly = sy + 2 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, 1, 1);
+        }
+      }
+      for (var i = 0; i < 10; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H || H - sy < 10) continue;
+        ctx.fillStyle = p.dark;
+        var ry = sy + 8 + Math.floor(this.rng() * (H - sy - 10));
+        ctx.fillRect(x, ry, 2, 2);
+      }
+      break;
+
+    case 'ashhill':
+      for (var i = 0; i < 50; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        var depth = H - sy;
+        if (rr < 0.2) {
+          ctx.fillStyle = p.dark;
+          var ly = sy + 4 + Math.floor(this.rng() * Math.min(depth - 6, 14));
+          var lw = 2 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, lw, 2);
+        } else if (rr < 0.4) {
+          ctx.fillStyle = p.rock;
+          var ly = sy + 3 + Math.floor(this.rng() * Math.min(depth - 5, 10));
+          var lw = 3 + Math.floor(this.rng() * 4);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.6) {
+          ctx.fillStyle = p.mid;
+          var ly = sy + 2 + Math.floor(this.rng() * Math.min(depth - 4, 8));
+          ctx.fillRect(x, ly, 2, 1);
+        } else if (rr < 0.75) {
+          ctx.fillStyle = p.lava || '#cc4420';
+          var ly = sy + 3 + Math.floor(this.rng() * Math.min(depth - 5, 10));
+          ctx.fillRect(x, ly, 1, 1);
+        } else {
+          ctx.fillStyle = p.deep;
+          ctx.fillRect(x, sy + 6 + Math.floor(this.rng() * 4), 2, 1);
+        }
+      }
+      for (var i = 0; i < 8; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H || H - sy < 8) continue;
+        ctx.fillStyle = p.dark;
+        var ry = sy + 6 + Math.floor(this.rng() * (H - sy - 8));
+        ctx.fillRect(x, ry, 2 + Math.floor(this.rng() * 2), 2);
+      }
+      break;
+
+    case 'moonbase':
+      for (var i = 0; i < 40; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        var depth = H - sy;
+        if (rr < 0.25) {
+          ctx.fillStyle = p.rock;
+          var ly = sy + 3 + Math.floor(this.rng() * Math.min(depth - 5, 10));
+          var lw = 2 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.5) {
+          ctx.fillStyle = p.mid;
+          var ly = sy + 4 + Math.floor(this.rng() * Math.min(depth - 6, 10));
+          var lw = 2 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.7) {
+          ctx.fillStyle = p.dark;
+          var ly = sy + 6 + Math.floor(this.rng() * Math.min(depth - 8, 8));
+          ctx.fillRect(x, ly, 3, 1);
+        } else {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(x, sy + 1, 1, 1);
+        }
+      }
+      for (var i = 0; i < 8; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H || H - sy < 8) continue;
+        ctx.fillStyle = p.dark;
+        var ry = sy + 6 + Math.floor(this.rng() * (H - sy - 8));
+        ctx.fillRect(x, ry, 2, 2);
+      }
+      break;
+
+    case 'canyon':
+      for (var i = 0; i < 50; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        var depth = H - sy;
+        if (rr < 0.2) {
+          ctx.fillStyle = p.rock;
+          var ly = sy + 3 + Math.floor(this.rng() * Math.min(depth - 5, 12));
+          var lw = 2 + Math.floor(this.rng() * 4);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.4) {
+          ctx.fillStyle = p.mid;
+          var ly = sy + 4 + Math.floor(this.rng() * Math.min(depth - 6, 14));
+          var lw = 3 + Math.floor(this.rng() * 5);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.6) {
+          ctx.fillStyle = p.deep;
+          var ly = sy + 2 + Math.floor(this.rng() * Math.min(depth - 4, 10));
+          var lw = 2 + Math.floor(this.rng() * 3);
+          ctx.fillRect(x, ly, lw, 1);
+        } else if (rr < 0.8) {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(x, sy + 1, 1 + Math.floor(this.rng() * 2), 1);
+        } else {
+          ctx.fillStyle = p.dark;
+          ctx.fillRect(x, sy + 8 + Math.floor(this.rng() * 4), 2, 1);
+        }
+      }
+      for (var i = 0; i < 12; i++) {
+        var x = Math.floor(this.rng() * W);
+        var sy = h[x];
+        if (sy >= H || H - sy < 10) continue;
+        ctx.fillStyle = p.dark;
+        var ry = sy + 8 + Math.floor(this.rng() * (H - sy - 10));
+        ctx.fillRect(x, ry, 2 + Math.floor(this.rng() * 2), 2);
+      }
+      break;
+  }
+};
+
+TD.Terrain.prototype._renderTerrainSurfaceTexture = function (ctx) {
+  var p = this.palette;
+  var h = this.heights;
+  var W = TD.W;
+  var H = TD.H;
+  this.seed(this._surfaceSeed || 42);
+
+  switch (this.type) {
+    case 'dustlands':
+      for (var i = 0; i < 45; i++) {
+        var sx = Math.floor(this.rng() * W);
+        var sy = h[sx];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        if (rr < 0.3) {
+          ctx.fillStyle = p.rock;
+          ctx.fillRect(sx, sy - 1, 1, 1);
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 2), 1);
+        } else if (rr < 0.5) {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 3), 1);
+        } else if (rr < 0.7) {
+          ctx.fillStyle = p.mid;
+          ctx.fillRect(sx, sy + 2 + Math.floor(this.rng() * 3), 1, 1);
+        } else {
+          ctx.fillStyle = p.detail;
+          ctx.fillRect(sx, sy + 1 + Math.floor(this.rng() * 4), 1, 1);
+        }
+      }
+      break;
+
+    case 'valley':
+      for (var i = 0; i < 40; i++) {
+        var sx = Math.floor(this.rng() * W);
+        var sy = h[sx];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        if (rr < 0.3) {
+          ctx.fillStyle = p.detail;
+          ctx.fillRect(sx, sy - 1, 1, 1);
+          if (this.rng() > 0.5) ctx.fillRect(sx + 1, sy - 2, 1, 1);
+        } else if (rr < 0.5) {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 3), 1);
+        } else if (rr < 0.7) {
+          ctx.fillStyle = p.rock;
+          ctx.fillRect(sx, sy + 2 + Math.floor(this.rng() * 3), 1 + Math.floor(this.rng() * 2), 1);
+        } else {
+          ctx.fillStyle = p.mid;
+          ctx.fillRect(sx, sy + 1, 1, 1);
+        }
+      }
+      break;
+
+    case 'frostbite':
+      for (var i = 0; i < 40; i++) {
+        var sx = Math.floor(this.rng() * W);
+        var sy = h[sx];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        if (rr < 0.35) {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 3), 1);
+        } else if (rr < 0.55) {
+          ctx.fillStyle = p.detail;
+          ctx.fillRect(sx, sy - 1, 1, 1);
+        } else if (rr < 0.75) {
+          ctx.fillStyle = p.rock;
+          ctx.fillRect(sx, sy + 2 + Math.floor(this.rng() * 3), 1, 1);
+        } else {
+          ctx.fillStyle = p.mid;
+          ctx.fillRect(sx, sy + 1 + Math.floor(this.rng() * 2), 1, 1);
+        }
+      }
+      break;
+
+    case 'ashhill':
+      for (var i = 0; i < 45; i++) {
+        var sx = Math.floor(this.rng() * W);
+        var sy = h[sx];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        if (rr < 0.25) {
+          ctx.fillStyle = p.rock;
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 2), 1);
+        } else if (rr < 0.45) {
+          ctx.fillStyle = p.lava || '#cc4420';
+          ctx.fillRect(sx, sy + 1 + Math.floor(this.rng() * 4), 1, 1);
+        } else if (rr < 0.65) {
+          ctx.fillStyle = p.dark;
+          ctx.fillRect(sx, sy + 2 + Math.floor(this.rng() * 3), 2, 1);
+        } else {
+          ctx.fillStyle = p.mid;
+          ctx.fillRect(sx, sy + 1, 1, 1);
+        }
+      }
+      break;
+
+    case 'moonbase':
+      for (var i = 0; i < 35; i++) {
+        var sx = Math.floor(this.rng() * W);
+        var sy = h[sx];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        if (rr < 0.3) {
+          ctx.fillStyle = p.detail;
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 2), 1);
+        } else if (rr < 0.55) {
+          ctx.fillStyle = p.rock;
+          ctx.fillRect(sx, sy + 1 + Math.floor(this.rng() * 3), 2, 1);
+        } else if (rr < 0.75) {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(sx, sy, 1, 1);
+        } else {
+          ctx.fillStyle = p.mid;
+          ctx.fillRect(sx, sy + 2, 1, 1);
+        }
+      }
+      break;
+
+    case 'canyon':
+      for (var i = 0; i < 45; i++) {
+        var sx = Math.floor(this.rng() * W);
+        var sy = h[sx];
+        if (sy >= H) continue;
+        var rr = this.rng();
+        if (rr < 0.25) {
+          ctx.fillStyle = p.rock;
+          ctx.fillRect(sx, sy + 1 + Math.floor(this.rng() * 4), 2 + Math.floor(this.rng() * 3), 1);
+        } else if (rr < 0.5) {
+          ctx.fillStyle = p.mid;
+          ctx.fillRect(sx, sy + 2 + Math.floor(this.rng() * 3), 2, 1);
+        } else if (rr < 0.7) {
+          ctx.fillStyle = p.surfaceHi;
+          ctx.fillRect(sx, sy, 1 + Math.floor(this.rng() * 2), 1);
+        } else {
+          ctx.fillStyle = p.deep;
+          ctx.fillRect(sx, sy + 4 + Math.floor(this.rng() * 4), 2, 1);
+        }
+      }
+      break;
   }
 };
 

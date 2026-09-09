@@ -56,6 +56,15 @@ TD.resolveMap = function (key) {
   return TD.MAP_ALIASES[key] || key;
 };
 
+TD.MAP_BG = {
+  dustlands: '../assets/images/maps/dustlands.png',
+  valley:    '../assets/images/maps/green-valley.png',
+  frostbite: '../assets/images/maps/frostbite.png',
+  ashhill:   '../assets/images/maps/ashfall.png',
+  moonbase:  '../assets/images/maps/moonbase.png',
+  canyon:    '../assets/images/maps/canyon.png'
+};
+
 TD.PALETTES = {
   dustlands: {
     skyTop:    '#1a0f0a',

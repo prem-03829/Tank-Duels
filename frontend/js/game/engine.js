@@ -40,6 +40,8 @@ TD.GameEngine = function (canvas, elements) {
   this.playerOneColorId = 'orange';
   this.playerTwoColorId = 'blue';
 
+  this._bgImages = {};
+  this._bgLoaded = {};
   this._onKeyDown = this._handleKeyDown.bind(this);
   this._onKeyUp = this._handleKeyUp.bind(this);
   this._boundLoop = this._loop.bind(this);
@@ -63,6 +65,8 @@ TD.GameEngine.prototype.init = function (config) {
 
   this.audio.init();
 
+  this._preloadBackground(this.mapType);
+
   var seed = Date.now();
   this.terrain.generate(this.mapType, seed);
 
@@ -83,6 +87,46 @@ TD.GameEngine.prototype.init = function (config) {
   this.running = true;
   this.lastTime = performance.now();
   this._loop();
+};
+
+TD.GameEngine.prototype._preloadBackground = function (mapType) {
+  var resolved = TD.resolveMap(mapType);
+
+  if (resolved === 'random' || !TD.MAP_BG[resolved]) {
+    for (var i = 0; i < TD.MAP_KEYS.length; i++) {
+      this._preloadSingle(TD.MAP_KEYS[i]);
+    }
+    return;
+  }
+
+  this._preloadSingle(resolved);
+};
+
+TD.GameEngine.prototype._preloadSingle = function (key) {
+  var bgPath = TD.MAP_BG[key];
+  if (!bgPath) return;
+  if (this._bgLoaded[key]) return;
+
+  console.log('[MAP BG] Loading: ' + bgPath + ' for ' + key);
+  var self = this;
+  var img = new Image();
+  img.onload = function () {
+    self._bgLoaded[key] = true;
+    console.log('[MAP BG] Loaded OK: ' + bgPath + ' (' + img.naturalWidth + 'x' + img.naturalHeight + ')');
+  };
+  img.onerror = function () {
+    console.warn('[MAP BG] FAILED: ' + bgPath);
+    self._bgLoaded[key] = false;
+  };
+  img.src = bgPath;
+  this._bgImages[key] = img;
+};
+
+TD.GameEngine.prototype._getBgImage = function () {
+  var resolved = this.terrain.type;
+  var img = this._bgImages[resolved];
+  if (img && this._bgLoaded[resolved]) return img;
+  return null;
 };
 
 TD.GameEngine.prototype._placeTanks = function () {
@@ -233,14 +277,19 @@ TD.GameEngine.prototype._render = function () {
   ctx.translate(Math.round(this.shakeX), Math.round(this.shakeY));
   ctx.imageSmoothingEnabled = false;
 
-  // 1. Sky
-  this.terrain.renderSky(ctx);
+  // 1. Sky or background image
+  var bgImg = this._getBgImage();
+  if (bgImg) {
+    this.terrain.renderBackground(ctx, bgImg);
+  } else {
+    this.terrain.renderSky(ctx);
+  }
 
-  // 2. Background mountains
-  this.terrain.renderBgMountains(ctx);
-
-  // 3. Background hills
-  this.terrain.renderBgHills(ctx);
+  // 2. Background mountains (only when no image)
+  if (!bgImg) {
+    this.terrain.renderBgMountains(ctx);
+    this.terrain.renderBgHills(ctx);
+  }
 
   // 4. Trajectory preview (behind terrain for subtlety)
   if (this.state === TD.STATES.AIMING && this.trajectoryTrail) {
@@ -356,7 +405,7 @@ TD.GameEngine.prototype._updateOverlays = function () {
     overlay.style.opacity = '1';
 
     var px = tank.x * scaleX;
-    var py = (tank.y - tank.turretH - 20) * scaleY;
+    var py = (tank.y - tank.turretH - 24) * scaleY;
     overlay.style.left = px + 'px';
     overlay.style.top = py + 'px';
 
