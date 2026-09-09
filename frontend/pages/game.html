@@ -20,36 +20,29 @@
   <main class="game-page">
 
     <!-- =========================
-         GAME HUD
+         GAME HEADER
     ========================== -->
 
     <header class="game-header">
 
-      <!-- Player 1 -->
       <div class="player-info">
         <span class="player-label">Player 1</span>
-        <span class="player-name" id="player-one-name">
-          PLAYER
-        </span>
+        <span class="player-name" id="player-one-name">PLAYER</span>
       </div>
 
-      <!-- Center Status -->
-      <div class="game-status" id="game-status">
-        Player 1's Turn
-      </div>
+      <div class="game-status" id="game-status">Player 1's Turn</div>
 
-      <!-- Right Side -->
       <div class="game-header-right">
 
-        <!-- Player 2 -->
         <div class="player-info right">
           <span class="player-label">Player 2</span>
-          <span class="player-name">
-            OPPONENT
-          </span>
+          <span class="player-name" id="player-two-name">OPPONENT</span>
         </div>
 
-        <!-- Quit -->
+        <button class="game-icon-btn" id="fullscreen-btn" type="button" aria-label="Toggle fullscreen">
+          FULL
+        </button>
+
         <button class="game-quit-btn" id="quit-game-btn" type="button" aria-label="Quit battle">
           QUIT
         </button>
@@ -67,10 +60,22 @@
 
       <div class="game-canvas-container">
 
-        <!-- Canvas will replace this later -->
+        <canvas id="game-canvas" class="game-canvas"></canvas>
 
-        <div class="game-placeholder">
-          Battlefield Loading
+        <div class="tank-overlay" id="tank-overlay-0">
+          <span class="tank-overlay-name" id="tank-overlay-name-0">PLAYER</span>
+          <div class="tank-overlay-hp">
+            <div class="tank-overlay-hp-fill"></div>
+          </div>
+          <span class="tank-overlay-hp-text">100 HP</span>
+        </div>
+
+        <div class="tank-overlay" id="tank-overlay-1">
+          <span class="tank-overlay-name" id="tank-overlay-name-1">OPPONENT</span>
+          <div class="tank-overlay-hp">
+            <div class="tank-overlay-hp-fill"></div>
+          </div>
+          <span class="tank-overlay-hp-text">100 HP</span>
         </div>
 
       </div>
@@ -84,49 +89,36 @@
 
     <footer class="game-controls">
 
-      <!-- Left Controls -->
-      <div class="control-group">
+      <div class="controls-row controls-main">
 
-        <div class="control-item">
-          <span class="control-label">Angle</span>
-          <span class="control-value" id="angle-value">
-            45°
-          </span>
+        <div class="slider-group">
+          <span class="slider-label">ANGLE</span>
+          <button class="adj-btn" id="angle-minus" type="button" aria-label="Decrease angle">&minus;</button>
+          <input type="range" id="angle-slider" class="game-range" min="0" max="180" value="45" step="1" />
+          <button class="adj-btn" id="angle-plus" type="button" aria-label="Increase angle">+</button>
+          <span class="slider-value" id="angle-value">45&deg;</span>
         </div>
 
-        <div class="control-item">
-          <span class="control-label">Power</span>
-          <span class="control-value" id="power-value">
-            50%
-          </span>
+        <div class="fire-btn-wrap">
+          <button class="btn btn-primary fire-button" id="fire-button" type="button">
+            FIRE
+          </button>
+        </div>
+
+        <div class="slider-group">
+          <span class="slider-label">POWER</span>
+          <button class="adj-btn" id="power-minus" type="button" aria-label="Decrease power">&minus;</button>
+          <input type="range" id="power-slider" class="game-range" min="5" max="100" value="50" step="1" />
+          <button class="adj-btn" id="power-plus" type="button" aria-label="Increase power">+</button>
+          <span class="slider-value" id="power-value">50%</span>
         </div>
 
       </div>
 
-
-      <!-- Fire -->
-      <button class="btn btn-primary fire-button" id="fire-button" type="button">
-        Fire
-      </button>
-
-
-      <!-- Right Controls -->
-      <div class="control-group right">
-
-        <div class="control-item">
-          <span class="control-label">Map</span>
-          <span class="control-value" id="map-name">
-            Desert
-          </span>
-        </div>
-
-        <div class="control-item">
-          <span class="control-label">Round</span>
-          <span class="control-value" id="round-value">
-            1 / 1
-          </span>
-        </div>
-
+      <div class="controls-row controls-info">
+        <span class="info-item"><span class="info-label">MAP</span> <span class="info-value" id="map-name">Desert</span></span>
+        <span class="info-item"><span class="info-label">WIND</span> <span class="info-value" id="wind-display">&mdash;</span></span>
+        <span class="info-item"><span class="info-label">ROUND</span> <span class="info-value" id="round-value">1 / 1</span></span>
       </div>
 
     </footer>
@@ -134,8 +126,8 @@
   </main>
 
   <!-- =========================
-     QUIT CONFIRMATION
-========================= -->
+       QUIT CONFIRMATION
+  ========================== -->
 
   <div class="quit-modal" id="quit-modal" aria-hidden="true">
     <div class="quit-modal-backdrop" id="quit-modal-backdrop"></div>
@@ -171,6 +163,13 @@
 
   <!-- Scripts -->
   <script src="../js/app.js"></script>
+  <script src="../js/game/constants.js"></script>
+  <script src="../js/game/audio.js"></script>
+  <script src="../js/game/terrain.js"></script>
+  <script src="../js/game/tank.js"></script>
+  <script src="../js/game/projectile.js"></script>
+  <script src="../js/game/particles.js"></script>
+  <script src="../js/game/engine.js"></script>
   <script src="../js/pages/game.js"></script>
 
 </body>

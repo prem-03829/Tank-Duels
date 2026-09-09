@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Customize Battle | Tank Duel</title>
+
+  <meta name="description" content="Customize your tanks and prepare for a Tank Duel battle." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="game-customization-page">
+
+    <section class="game-customization-content">
+
+      <!-- Header -->
+      <header class="game-customization-header">
+
+        <a href="./game-setup.html" class="game-customization-back">
+          ← Back to Setup
+        </a>
+
+        <h1 class="game-customization-title">
+          Game Customization
+        </h1>
+
+        <p class="game-customization-description">
+          Configure your commanders and prepare for battle.
+        </p>
+
+      </header>
+
+
+      <!-- Player Cards -->
+      <div class="player-cards">
+
+        <!-- Player 1 -->
+        <div class="player-card" id="player-card-0">
+
+          <span class="player-card-header p1">Player 1</span>
+
+          <div class="field-group">
+            <label class="field-label" for="player-one-name-input">Name</label>
+            <input
+              type="text"
+              id="player-one-name-input"
+              class="field-input"
+              placeholder="Guest"
+              maxlength="16"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="field-group">
+            <span class="field-label">Tank Color</span>
+            <div class="color-swatches" id="color-swatches-0" role="radiogroup" aria-label="Player 1 tank color"></div>
+          </div>
+
+          <div class="tank-preview-area">
+            <canvas class="tank-preview-canvas" id="tank-preview-0" width="80" height="40"></canvas>
+          </div>
+
+        </div>
+
+        <!-- Player 2 -->
+        <div class="player-card" id="player-card-1">
+
+          <span class="player-card-header p2">Player 2</span>
+
+          <div class="field-group">
+            <label class="field-label" for="player-two-name-input">Name</label>
+            <input
+              type="text"
+              id="player-two-name-input"
+              class="field-input"
+              placeholder="Opponent"
+              maxlength="16"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="field-group">
+            <span class="field-label">Tank Color</span>
+            <div class="color-swatches" id="color-swatches-1" role="radiogroup" aria-label="Player 2 tank color"></div>
+          </div>
+
+          <div class="tank-preview-area">
+            <canvas class="tank-preview-canvas" id="tank-preview-1" width="80" height="40"></canvas>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Same Color Warning -->
+      <div class="same-color-warning" id="same-color-warning">
+        Both players are using the same color.
+      </div>
+
+      <!-- Trajectory Trail -->
+      <div class="trajectory-section">
+        <span class="field-label" style="display:block; margin-bottom: var(--space-sm);">Trajectory Trail</span>
+        <div class="trajectory-toggle" role="radiogroup" aria-label="Trajectory trail">
+          <button class="trajectory-btn active" type="button" data-trail="on" role="radio" aria-checked="true">ON</button>
+          <button class="trajectory-btn" type="button" data-trail="off" role="radio" aria-checked="false">OFF</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="game-customization-actions">
+        <a href="./game-setup.html" class="btn btn-outline" id="back-btn">
+          BACK
+        </a>
+        <button class="btn btn-primary" id="start-game-btn" type="button">
+          START GAME
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/game/constants.js"></script>
+  <script src="../js/game/tank.js"></script>
+  <script src="../js/pages/game-customization.js"></script>
+
+</body>
+
+</html>
