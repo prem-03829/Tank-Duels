@@ -1,0 +1,317 @@
+/* =========================
+   GAME CUSTOMIZATION
+========================== */
+
+.game-customization-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-customization-content {
+  flex: 1;
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-xl);
+}
+
+/* =========================
+   HEADER
+========================== */
+
+.game-customization-header {
+  margin-bottom: var(--space-2xl);
+  text-align: center;
+}
+
+.game-customization-back {
+  display: inline-flex;
+  margin-bottom: var(--space-xl);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.game-customization-back:hover {
+  color: var(--color-primary);
+}
+
+.game-customization-title {
+  margin-bottom: var(--space-sm);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.game-customization-description {
+  color: var(--text-muted);
+}
+
+/* =========================
+   PLAYER CARDS GRID
+========================== */
+
+.player-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+}
+
+/* =========================
+   PLAYER CARD
+========================== */
+
+.player-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.player-card-header {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.player-card-header.p1 {
+  color: #ff9050;
+}
+
+.player-card-header.p2 {
+  color: #60b8d8;
+}
+
+/* =========================
+   NAME INPUT
+========================== */
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.field-input:focus {
+  border-color: var(--color-primary);
+}
+
+.field-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* =========================
+   COLOR SELECTION
+========================== */
+
+.color-swatches {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+  outline: none;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.color-swatch:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}
+
+.color-swatch.selected {
+  border-color: #fff;
+  transform: scale(1.15);
+}
+
+.color-swatch.selected::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+/* =========================
+   TANK PREVIEW
+========================== */
+
+.tank-preview-area {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-md) 0;
+}
+
+.tank-preview-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: 120px;
+  height: 60px;
+  background: transparent;
+}
+
+/* =========================
+   TRAJECTORY TOGGLE
+========================== */
+
+.trajectory-section {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.trajectory-toggle {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-primary);
+}
+
+.trajectory-btn {
+  padding: var(--space-sm) var(--space-lg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: none;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.trajectory-btn + .trajectory-btn {
+  border-left: 1px solid var(--border-primary);
+}
+
+.trajectory-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.trajectory-btn.active {
+  color: var(--color-primary);
+  background: var(--bg-elevated);
+}
+
+.trajectory-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* =========================
+   SAME COLOR WARNING
+========================== */
+
+.same-color-warning {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--color-tertiary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  min-height: 1.2em;
+}
+
+.same-color-warning.visible {
+  opacity: 1;
+}
+
+/* =========================
+   ACTIONS
+========================== */
+
+.game-customization-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.game-customization-actions .btn {
+  min-width: 140px;
+  min-height: 48px;
+}
+
+/* =========================
+   RESPONSIVE
+========================== */
+
+@media (max-width: 700px) {
+  .game-customization-content {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  .player-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .game-customization-actions {
+    flex-direction: column;
+  }
+
+  .game-customization-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 500px) {
+  .game-customization-content {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .player-card {
+    padding: var(--space-lg);
+  }
+
+  .color-swatch {
+    width: 28px;
+    height: 28px;
+  }
+}

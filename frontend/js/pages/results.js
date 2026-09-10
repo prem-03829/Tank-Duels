@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultDescription = document.querySelector("#result-description");
 
   const playerScoreName = document.querySelector("#player-score-name");
+  const opponentScoreName = document.querySelector("#opponent-score-name");
 
   const playerScore = document.querySelector("#player-score");
   const opponentScore = document.querySelector("#opponent-score");
@@ -11,10 +12,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // PLAYER
   // =========================
 
-  const playerName = localStorage.getItem("tankDuelPlayerName") || "Player";
+  var cust = null;
+  try {
+    var raw = localStorage.getItem('tankDuelGameCustomization');
+    if (raw) cust = JSON.parse(raw);
+  } catch (e) { /* fall through */ }
+
+  var playerName = (cust && cust.playerOneName && cust.playerOneName.trim()) ||
+                   localStorage.getItem('tankDuelPlayerName') || 'Player';
+  var opponentName = (cust && cust.playerTwoName && cust.playerTwoName.trim()) || 'Opponent';
 
   if (playerScoreName) {
     playerScoreName.textContent = playerName;
+  }
+
+  if (opponentScoreName) {
+    opponentScoreName.textContent = opponentName;
   }
 
   // =========================

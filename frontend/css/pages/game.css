@@ -1,10 +1,10 @@
 /* =========================
    GAME PAGE
-========================= */
+========================== */
 
 .game-page {
   width: 100%;
-  min-height: 100svh;
+  height: 100svh;
   display: grid;
   grid-template-rows: auto 1fr auto;
   position: relative;
@@ -14,14 +14,14 @@
 
 /* =========================
    GAME HEADER / HUD
-========================= */
+========================== */
 
 .game-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: 86px;
-  padding: 0 var(--space-lg);
+  min-height: 52px;
+  padding: 0 var(--space-md);
   border-bottom: 1px solid var(--border-subtle);
   position: relative;
   z-index: var(--z-content);
@@ -30,7 +30,7 @@
 .player-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 2px;
 }
 
 .player-info.right {
@@ -48,7 +48,7 @@
 
 .player-name {
   font-family: var(--font-display);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   font-weight: 700;
 }
 
@@ -66,7 +66,7 @@
 
 /* =========================
    GAME AREA
-========================= */
+========================== */
 
 .game-area {
   position: relative;
@@ -74,80 +74,311 @@
   flex: 1;
   width: 100%;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding: var(--space-lg);
+  padding: var(--space-xs) var(--space-sm);
 }
-
-
-/* Canvas Placeholder */
 
 .game-canvas-container {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(1400px, 100%);
+  width: 100%;
   aspect-ratio: 16 / 9;
-  background: var(--bg-secondary);
+  background: #0a0a0a;
   border: 1px solid var(--border-primary);
   overflow: hidden;
 }
 
+.game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  cursor: crosshair;
+}
 
-/* Temporary Placeholder */
 
-.game-placeholder {
+/* =========================
+   TANK OVERLAYS
+========================== */
+
+.tank-overlay {
   position: absolute;
-  inset: 0;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 3px;
+  z-index: 10;
+  transition: left 0.05s linear, top 0.05s linear;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.75));
+}
+
+.tank-overlay-name {
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  letter-spacing: var(--letter-spacing-wide);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #fff;
+  text-shadow:
+    2px 2px 0 #000,
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    0 0 8px rgba(0, 0, 0, 0.9);
+  line-height: 1;
+  white-space: nowrap;
+  padding: 2px 6px;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.55);
+}
+
+.tank-overlay-name::before,
+.tank-overlay-name::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 2px;
+  vertical-align: middle;
+  margin: 0 4px 2px 4px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+#tank-overlay-0 .tank-overlay-name {
+  color: #ffc080;
+  border-top-color: #ff9050;
+}
+
+#tank-overlay-1 .tank-overlay-name {
+  color: #90d8f0;
+  border-top-color: #60b8d8;
+}
+
+.tank-overlay-health {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.65) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  padding: 3px 7px;
+}
+
+.tank-overlay-hp {
+  width: 52px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+}
+
+.tank-overlay-hp-fill {
+  height: 100%;
+  width: 100%;
+  background: #4a8;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.tank-overlay-hp-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow:
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    0 0 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 
 /* =========================
    GAME CONTROLS
-========================= */
+========================== */
 
 .game-controls {
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  padding: var(--space-sm) var(--space-md);
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-secondary);
 }
 
-
-/* Control Group */
-
-.control-group {
+.controls-row {
   display: flex;
   align-items: center;
+}
+
+.controls-main {
+  justify-content: center;
   gap: var(--space-lg);
 }
 
-.control-group.right {
-  justify-content: flex-end;
+.controls-info {
+  justify-content: center;
+  gap: var(--space-xl);
+  margin-top: var(--space-xs);
 }
 
 
-/* Control Item */
+/* =========================
+   SLIDER GROUPS
+========================== */
 
-.control-item {
+.slider-group {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-xs);
 }
 
-.control-label {
+.slider-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 40px;
+}
+
+.slider-value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 36px;
+  text-align: right;
+}
+
+
+/* Adjustment Buttons */
+
+.adj-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.adj-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--color-primary);
+}
+
+.adj-btn:active {
+  background: var(--surface-active, var(--surface-hover));
+}
+
+.adj-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+
+/* Range Input Styling */
+
+.game-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.game-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 16px;
+  background: var(--color-primary, #ff8933);
+  border: 1px solid var(--color-primary-light, #ffaa60);
+  cursor: pointer;
+}
+
+.game-range::-moz-range-thumb {
+  width: 10px;
+  height: 16px;
+  background: var(--color-primary, #ff8933);
+  border: 1px solid var(--color-primary-light, #ffaa60);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.game-range:focus {
+  border-color: var(--color-primary);
+}
+
+.game-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.game-range:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+
+/* Fire Button */
+
+.fire-btn-wrap {
+  flex-shrink: 0;
+}
+
+.fire-button {
+  min-width: 100px;
+  min-height: 36px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.fire-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+
+/* Info Items */
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.info-label {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: var(--letter-spacing-normal);
@@ -155,40 +386,65 @@
   color: var(--text-muted);
 }
 
-.control-value {
+.info-value {
   font-family: var(--font-mono);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--text-primary);
 }
 
-
-/* Fire Button */
-
-.fire-button {
-  min-width: 120px;
-  min-height: 48px;
+#wind-display {
+  font-size: 11px;
+  letter-spacing: 0.15em;
 }
 
 
 /* =========================
-   GAME HEADER RIGHT
-========================= */
+   HEADER RIGHT
+========================== */
 
 .game-header-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-lg);
+  gap: var(--space-sm);
+}
+
+
+/* =========================
+   ICON BUTTON (FULLSCREEN)
+========================== */
+
+.game-icon-btn {
+  padding: var(--space-xs) var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.game-icon-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  background: var(--surface-hover);
 }
 
 
 /* =========================
    QUIT BUTTON
-========================= */
+========================== */
 
 .game-quit-btn {
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -214,7 +470,7 @@
 
 /* =========================
    QUIT MODAL
-========================= */
+========================== */
 
 .quit-modal {
   position: fixed;
@@ -315,7 +571,7 @@
 
 /* =========================
    DANGER ACTION
-========================= */
+========================== */
 
 .btn-danger {
   color: var(--color-danger-light);
@@ -332,12 +588,13 @@
 
 /* =========================
    RESPONSIVE
-========================= */
+========================== */
 
 @media (max-width: 700px) {
   .game-header {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-sm);
+    min-height: 44px;
   }
 
   .game-status {
@@ -346,24 +603,78 @@
     text-align: center;
   }
 
-  .game-controls {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
+  .controls-main {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
   }
 
-  .control-group,
-  .control-group.right {
-    justify-content: center;
+  .game-range {
+    width: 80px;
+  }
+
+  .fire-button {
+    min-width: 80px;
+  }
+
+  .game-area {
+    padding: var(--space-xs);
+  }
+
+  .tank-overlay-name {
+    font-size: 11px;
+  }
+
+  .tank-overlay-hp {
+    width: 38px;
+    height: 5px;
+  }
+
+  .tank-overlay-hp-text {
+    font-size: 9px;
+  }
+
+  .tank-overlay-health {
+    padding: 2px 5px;
+  }
+}
+
+@media (max-width: 500px) {
+  .slider-group {
+    gap: 4px;
+  }
+
+  .game-range {
+    width: 60px;
+  }
+
+  .slider-label {
+    font-size: 5px;
+    min-width: 28px;
+  }
+
+  .adj-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .controls-main {
+    flex-direction: column;
+    gap: var(--space-xs);
   }
 
   .fire-button {
     width: 100%;
   }
+
+  .controls-info {
+    gap: var(--space-sm);
+  }
 }
 
 @media (max-width: 650px) {
   .game-header-right {
-    gap: var(--space-sm);
+    gap: var(--space-xs);
   }
 
   .quit-modal-dialog {
