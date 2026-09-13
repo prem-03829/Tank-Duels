@@ -125,15 +125,17 @@
       <div class="controls-row controls-main">
 
         <div class="slider-group">
-          <span class="slider-label">ANGLE</span>
-          <button class="adj-btn" id="angle-minus" type="button" aria-label="Decrease angle">&minus;</button>
-          <div class="dial-control angle-dial" id="angle-control" data-control="angle" role="button" tabindex="0"
-               aria-label="Angle control. Click and drag around the dial to aim.">
-            <span class="dial-ring" aria-hidden="true"></span>
-            <span class="dial-hand" aria-hidden="true"></span>
-            <span class="dial-value" id="angle-value">45&deg;</span>
+          <div class="slider-controls-row">
+            <button class="adj-btn" id="angle-minus" type="button" aria-label="Decrease angle">&minus;</button>
+            <div class="dial-control angle-dial" id="angle-control" data-control="angle" role="button" tabindex="0"
+                 aria-label="Angle control. Click and drag around the dial to aim.">
+              <span class="dial-ring" aria-hidden="true"></span>
+              <span class="dial-hand" aria-hidden="true"></span>
+              <span class="dial-value" id="angle-value">45&deg;</span>
+            </div>
+            <button class="adj-btn" id="angle-plus" type="button" aria-label="Increase angle">+</button>
           </div>
-          <button class="adj-btn" id="angle-plus" type="button" aria-label="Increase angle">+</button>
+          <span class="slider-label">ANGLE</span>
         </div>
 
         <div class="fire-btn-wrap">
@@ -143,16 +145,18 @@
         </div>
 
         <div class="slider-group">
-          <span class="slider-label">POWER</span>
-          <button class="adj-btn" id="power-minus" type="button" aria-label="Decrease power">&minus;</button>
-          <div class="dial-control power-control" id="power-control" data-control="power" role="button" tabindex="0"
-               aria-label="Power control. Click, then move the mouse left or right to adjust power.">
-            <span class="power-bar" aria-hidden="true">
-              <span class="power-bar-fill" id="power-bar-fill"></span>
-            </span>
-            <span class="dial-value" id="power-value">50%</span>
+          <div class="slider-controls-row">
+            <button class="adj-btn" id="power-minus" type="button" aria-label="Decrease power">&minus;</button>
+            <div class="dial-control power-control" id="power-control" data-control="power" role="button" tabindex="0"
+                 aria-label="Power control. Click, then move the mouse left or right to adjust power.">
+              <span class="power-bar" aria-hidden="true">
+                <span class="power-bar-fill" id="power-bar-fill"></span>
+              </span>
+              <span class="dial-value" id="power-value">50%</span>
+            </div>
+            <button class="adj-btn" id="power-plus" type="button" aria-label="Increase power">+</button>
           </div>
-          <button class="adj-btn" id="power-plus" type="button" aria-label="Increase power">+</button>
+          <span class="slider-label">POWER</span>
         </div>
 
       </div>

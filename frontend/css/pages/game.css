@@ -310,6 +310,13 @@ body.motion-reduced .tank-overlay-indicator-glow {
 
 .slider-group {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.slider-controls-row {
+  display: flex;
   align-items: center;
   gap: var(--space-xs);
 }
@@ -321,7 +328,8 @@ body.motion-reduced .tank-overlay-indicator-glow {
   letter-spacing: var(--letter-spacing-normal);
   text-transform: uppercase;
   color: var(--text-muted);
-  min-width: 40px;
+  min-width: 0;
+  text-align: center;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -874,7 +882,7 @@ body.motion-reduced .angle-cursor {
 
   .slider-label {
     font-size: 5px;
-    min-width: 28px;
+    min-width: 0;
   }
 
   .adj-btn {
