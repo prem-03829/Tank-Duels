@@ -38,15 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // PLAYER STATISTICS
   // =========================
 
-  const games = Number(localStorage.getItem("tankDuelGames")) || 0;
+  const stats = getPlayerStats();
 
-  const wins = Number(localStorage.getItem("tankDuelWins")) || 0;
+  document.querySelector("#profile-games").textContent = stats.battles;
 
-  const winRate = games > 0 ? `${Math.round((wins / games) * 100)}%` : "—";
+  document.querySelector("#profile-wins").textContent = stats.victories;
 
-  document.querySelector("#profile-games").textContent = games;
-
-  document.querySelector("#profile-wins").textContent = wins;
-
-  document.querySelector("#profile-winrate").textContent = winRate;
+  document.querySelector("#profile-winrate").textContent = stats.winRate;
 });

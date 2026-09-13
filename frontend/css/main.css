@@ -25,9 +25,11 @@
 @import url("./pages/settings.css");
 @import url("./pages/game-setup.css");
 @import url("./pages/game-customization.css");
+@import url("./pages/game-mode.css");
 @import url("./pages/game.css");
 @import url("./pages/results.css");
 @import url("./pages/profile.css");
+@import url("./pages/history.css");
 
 /* =========================
    GLOBAL STYLES
@@ -68,9 +70,11 @@ body {
 .settings-page,
 .game-setup-page,
 .game-customization-page,
+.game-mode-page,
 .game-page,
 .results-page,
-.profile-page {
+.profile-page,
+.history-page {
   position: relative;
   z-index: 2;
 }

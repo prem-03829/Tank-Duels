@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Battle Mode | Tank Duel</title>
+
+  <meta name="description" content="Choose how you want to play Tank Duel." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="game-mode-page">
+
+    <section class="game-mode-content">
+
+      <!-- Header -->
+      <header class="game-mode-header">
+
+        <a href="./dashboard.html" class="game-mode-back">
+          ← Back to Command Center
+        </a>
+
+        <h1 class="game-mode-title">
+          Choose Battle Mode
+        </h1>
+
+        <p class="game-mode-description">
+          Select how you want to play.
+        </p>
+
+      </header>
+
+
+      <!-- Mode Options -->
+      <div class="game-mode-options">
+
+        <!-- Option 1 — Same Device (available) -->
+        <a href="./game-setup.html" class="game-mode-card">
+          <span class="game-mode-card-title">
+            1v1
+          </span>
+          <span class="game-mode-card-subtitle">
+            Same Device
+          </span>
+          <span class="game-mode-card-description">
+            Two players take turns on the same device.
+          </span>
+          <span class="game-mode-card-status available">
+            Available
+          </span>
+        </a>
+
+        <!-- Option 2 — Online (visual-only for now) -->
+        <button class="game-mode-card mode-disabled" id="online-mode" type="button" aria-disabled="true">
+          <span class="game-mode-card-title">
+            Online
+          </span>
+          <span class="game-mode-card-subtitle">
+            Multiplayer
+          </span>
+          <span class="game-mode-card-description">
+            Play against another player online.
+          </span>
+          <span class="game-mode-card-status coming-soon">
+            Coming Soon
+          </span>
+        </button>
+
+      </div>
+
+      <!-- Online indicator message (UI only) -->
+      <p class="game-mode-notice" id="online-message" aria-live="polite">
+        Online multiplayer is coming soon.
+      </p>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/pages/game-mode.js"></script>
+
+</body>
+
+</html>

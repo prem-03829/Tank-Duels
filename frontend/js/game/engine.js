@@ -877,6 +877,20 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   localStorage.setItem('tankDuelGames', String(games + 1));
   if (result === 'win') localStorage.setItem('tankDuelWins', String(wins + 1));
 
+  // Record the completed match in the centralized history (only reached when
+  // the match actually finishes — never on quit/refresh/interruption).
+  TD.addLocalMatchToHistory({
+    playerOne: this.playerName,
+    playerTwo: this.opponentName,
+    playerOneScore: this.scores[0],
+    playerTwoScore: this.scores[1],
+    playerOneColor: findPlayerColorHex(this.playerOneColorId),
+    playerTwoColor: findPlayerColorHex(this.playerTwoColorId),
+    mapKey: TD.resolveMap(this.mapType),
+    rounds: this.maxRounds,
+    completedAt: new Date().toISOString()
+  });
+
   TD.clearActiveMatch();
 
   this.cleanup();
