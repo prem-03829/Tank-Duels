@@ -502,30 +502,30 @@ body.motion-reduced .tank-overlay-indicator-glow {
   pointer-events: none;
 }
 
-/* Aim crosshair */
+/* Angle cursor: fixed-radius aiming indicator orbiting the active tank */
 
-.aim-crosshair {
+.angle-cursor {
   position: fixed;
   left: 0;
   top: 0;
   z-index: var(--z-modal);
   color: #ff8933;
   pointer-events: none;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) rotate(calc(90deg - var(--cursor-angle, 90deg)));
   opacity: 0;
   transition: opacity var(--transition-fast);
 }
 
-.aim-crosshair.is-visible {
+.angle-cursor.is-visible {
   opacity: 1;
 }
 
-body.motion-reduced .aim-crosshair {
+body.motion-reduced .angle-cursor {
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aim-crosshair {
+  .angle-cursor {
     transition: none;
   }
 }

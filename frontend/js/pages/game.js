@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var powerPlus = document.querySelector('#power-plus');
   var angleControl = document.querySelector('#angle-control');
   var powerControl = document.querySelector('#power-control');
-  var aimCrosshair = document.querySelector('#aim-crosshair');
+  var angleCursor = document.querySelector('#angle-cursor');
 
   var fullscreenBtn = document.querySelector('#fullscreen-btn');
   var windDisplay = document.querySelector('#wind-display');
@@ -255,24 +255,23 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* =========================
-     DIAL MOUSE CONTROL
+     POINTER AIM CONTROL
 
-     ANGLE: click the circular dial and drag. The pointer direction around the
-     dial maps to the angle via atan2 (0 = right, 90 = up, 180 = left,
-     270 = down). Pointer capture keeps tracking even when the pointer leaves
-     the dial.
+     Both ANGLE and POWER use click-activated aiming modes:
 
-     POWER: click the power value once to ENTER POWER CONTROL MODE (no need to
-     hold the button). While active, horizontal mouse movement changes the
-     power continuously. A left click anywhere CONFIRMS; ESC cancels and
-     restores the value captured when the mode started.
+       Click the control value, release, then move the mouse freely.
+       A second left click anywhere CONFIRMS; ESC cancels and restores
+       the value captured when the mode started.
+
+     ANGLE: relative horizontal mouse movement steers the aim (mouse right
+     swings the cannon/trajectory right, mouse left swings left); the
+     fixed-radius "+" cursor orbits the tank.
+     POWER: horizontal mouse movement changes the power.
   ========================= */
 
   var activeControl = null;
   var activeControlEl = null;
   var activePointerId = null;
-  var dragCenterX = 0;
-  var dragCenterY = 0;
 
   var powerBaseValue = 0;
   var powerAccum = 0;
@@ -283,18 +282,30 @@ document.addEventListener('DOMContentLoaded', function () {
     return engine && engine.state === TD.STATES.AIMING;
   }
 
-  function showAimCrosshair(x, y) {
-    if (!aimCrosshair) return;
-    if (engine) {
-      aimCrosshair.style.color = engine.currentTurn === 0 ? '#ff8050' : '#50a0ff';
-    }
-    aimCrosshair.style.left = x + 'px';
-    aimCrosshair.style.top = y + 'px';
-    aimCrosshair.classList.add('is-visible');
+  /* The angle cursor rides the PREDICTED trajectory at a fixed radius from the
+     active tank. The mouse only controls the ANGLE; the cursor's position is
+     the point on the actual projectile arc (same launch vector, gravity and
+     wind as the preview) that is exactly ANGLE_CURSOR_RADIUS from the pivot. */
+
+  function placeAngleCursor(deg) {
+    if (!angleCursor || !engine) return;
+    var tank = engine.tanks[engine.currentTurn];
+    if (!tank || !tank.alive) return;
+    /* Ride the EXACT predicted trajectory: the engine steps the same launch
+       vector (cos/-sin of the shared angle), gravity and wind as the preview,
+       and returns the point on that arc at the fixed radius from the pivot.
+       No independent angle-to-vector conversion is done here. */
+    var pt = engine.getTrajectoryPointAtRadius(tank, TD.ANGLE_CURSOR_RADIUS);
+    var rect = canvas.getBoundingClientRect();
+    angleCursor.style.color = engine.currentTurn === 0 ? '#ff8050' : '#50a0ff';
+    angleCursor.style.left = (rect.left + pt.x * (rect.width / TD.W)) + 'px';
+    angleCursor.style.top = (rect.top + pt.y * (rect.height / TD.H)) + 'px';
+    angleCursor.style.setProperty('--cursor-angle', deg + 'deg');
+    angleCursor.classList.add('is-visible');
   }
 
-  function hideAimCrosshair() {
-    if (aimCrosshair) aimCrosshair.classList.remove('is-visible');
+  function hideAngleCursor() {
+    if (angleCursor) angleCursor.classList.remove('is-visible');
   }
 
   function endControlMode() {
@@ -306,70 +317,93 @@ document.addEventListener('DOMContentLoaded', function () {
     activeControl = null;
     activeControlEl = null;
     activePointerId = null;
-    hideAimCrosshair();
+    hideAngleCursor();
     if (angleControl) angleControl.classList.remove('is-active');
     if (powerControl) powerControl.classList.remove('is-active');
   }
 
-  /* ---------------- ANGLE (unchanged) ---------------- */
+  /* ---------------- ANGLE (click-activated, horizontal-delta mouse aim) ---------------- */
 
-  function beginControlMode(type, el, e) {
+  var angleBaseValue = 0;
+  var angleAccum = 0;
+  var lastAnglePointerX = 0;
+
+  /* Wrap a value into 0..360 so passing past either end wraps circularly
+     (359 + 2 -> 1, 1 - 2 -> 359); never produce -1 or 361. */
+
+  function wrapDeg(d) {
+    d = Math.round(d) % 360;
+    if (d < 0) d += 360;
+    return d;
+  }
+
+  function enterAngleControl(e) {
     if (!controlInputEnabled()) return;
     endControlMode();
-    activeControl = type;
-    activeControlEl = el;
-    activePointerId = e.pointerId;
-    el.classList.add('is-active');
-    if (el.setPointerCapture) {
-      try {
-        el.setPointerCapture(e.pointerId);
-      } catch (err) { /* ignore */ }
+    activeControl = 'angle';
+    activeControlEl = angleControl;
+    activePointerId = null;
+    if (angleControl) angleControl.classList.add('is-active');
+    angleBaseValue = engine ? engine.getAngle() : TD.ANGLE_DEFAULT;
+    /* The click's X position is the reference; the current angle is kept
+       exactly as-is until the mouse moves after this moment. */
+    angleAccum = 0;
+    lastAnglePointerX = e.clientX;
+    placeAngleCursor(engine.getAngle());
+  }
+
+  function confirmAngleControl() {
+    if (activeControl !== 'angle') return;
+    endControlMode();
+    suppressNextClick = true;
+  }
+
+  function cancelAngleControl() {
+    if (activeControl !== 'angle') return;
+    if (engine) engine.setAngle(angleBaseValue);
+    endControlMode();
+  }
+
+  function handleAngleControlDown(e) {
+    if (e.button !== 0) return;
+    if (activeControl === 'angle') {
+      confirmAngleControl();
+      return;
     }
-    showAimCrosshair(e.clientX, e.clientY);
-
-    var rect = el.getBoundingClientRect();
-    dragCenterX = rect.left + rect.width / 2;
-    dragCenterY = rect.top + rect.height / 2;
-    updateAngleFromPoint(e);
+    if (activeControl) return;
+    if (!controlInputEnabled()) return;
+    enterAngleControl(e);
   }
 
-  function updateAngleFromPoint(e) {
-    if (!engine) return;
-    var dx = e.clientX - dragCenterX;
-    var dy = e.clientY - dragCenterY;
-    var deg = Math.round((Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360);
-    engine.setAngle(deg);
-    showAimCrosshair(e.clientX, e.clientY);
+  if (angleControl) {
+    angleControl.addEventListener('pointerdown', handleAngleControlDown);
   }
 
-  function handleDialMove(e) {
-    if (activeControl !== 'angle' || e.pointerId !== activePointerId) return;
+  /* ANGLE is controlled by RELATIVE HORIZONTAL mouse movement only:
+     moving the mouse LEFT increases the angle (cannon/trajectory swings
+     left); moving RIGHT decreases it (cannon/trajectory swings right).
+     The mouse's absolute position never determines the angle, so entering
+     adjustment mode cannot cause a 57 -> 360 jump. */
+
+  function handleAngleMove(e) {
+    if (activeControl !== 'angle') return;
     if (!controlInputEnabled()) {
       endControlMode();
       return;
     }
-    updateAngleFromPoint(e);
+    var dx = e.clientX - lastAnglePointerX;
+    lastAnglePointerX = e.clientX;
+    /* Increasing the angle rotates the aim counter-clockwise on screen
+       (0 = right, 90 = up, 180 = left), so moving the mouse RIGHT must
+       DECREASE the angle to swing the cannon/trajectory right, and moving
+       LEFT must INCREASE it to swing left. */
+    angleAccum -= dx * TD.ANGLE_MOUSE_SENSITIVITY;
+    var deg = wrapDeg(angleBaseValue + angleAccum);
+    engine.setAngle(deg);
+    placeAngleCursor(deg);
   }
 
-  function handleDialUp(e) {
-    if (activeControl === 'angle' && e.pointerId === activePointerId) {
-      endControlMode();
-    }
-  }
-
-  function attachAngleDialControl(el) {
-    if (!el) return;
-    el.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0) return;
-      beginControlMode('angle', el, e);
-    });
-    el.addEventListener('pointermove', handleDialMove);
-    el.addEventListener('pointerup', handleDialUp);
-    el.addEventListener('pointercancel', handleDialUp);
-    el.addEventListener('lostpointercapture', handleDialUp);
-  }
-
-  attachAngleDialControl(angleControl);
+  document.addEventListener('pointermove', handleAngleMove);
 
   /* ---------------- POWER (click-activated, horizontal delta) ---------------- */
 
@@ -432,15 +466,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.addEventListener('pointermove', handlePowerMove);
 
-  /* A left click anywhere while power mode is active CONFIRMS the power.
+  /* A left click anywhere while aim mode (ANGLE or POWER) is active CONFIRMS.
      Run in the capture phase and swallow the event so the confirming click
      cannot also trigger FIRE, the +/- buttons, or a new control mode. */
 
   function handleConfirmMouseDown(e) {
-    if (e.button !== 0 || activeControl !== 'power') return;
+    if (e.button !== 0 || !activeControl) return;
     e.preventDefault();
     e.stopPropagation();
-    confirmPowerControl();
+    if (activeControl === 'angle') {
+      confirmAngleControl();
+    } else if (activeControl === 'power') {
+      confirmPowerControl();
+    }
   }
 
   document.addEventListener('pointerdown', handleConfirmMouseDown, true);
@@ -456,32 +494,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.addEventListener('click', handleConsumeConfirmClick, true);
 
-  /* ESC exits dial control mode (before the engine's quit-modal handler).
-     For POWER it cancels and restores the value captured at mode start. */
+  /* ESC exits aim control mode (before the engine's quit-modal handler).
+     For ANGLE / POWER it cancels and restores the value at mode start. */
 
   document.addEventListener('keydown', function (e) {
     if (e.code === 'Escape' && activeControl) {
       e.preventDefault();
       e.stopPropagation();
-      if (activeControl === 'power') {
+      if (activeControl === 'angle') {
+        cancelAngleControl();
+      } else if (activeControl === 'power') {
         cancelPowerControl();
-      } else {
-        endControlMode();
       }
     }
   }, true);
 
-  /* +/- buttons. POWER's buttons only act when power control mode is NOT
-     active (a click while active confirms instead). ANGLE is unchanged. */
+  /* +/- buttons. ANGLE and POWER buttons only act when their mode is NOT
+     active (a click while active confirms instead). */
 
   if (angleMinus && engine) {
     angleMinus.addEventListener('click', function () {
+      if (activeControl === 'angle') return;
       engine.adjustAngle(-TD.ANGLE_STEP);
     });
   }
 
   if (anglePlus && engine) {
     anglePlus.addEventListener('click', function () {
+      if (activeControl === 'angle') return;
       engine.adjustAngle(TD.ANGLE_STEP);
     });
   }

@@ -331,6 +331,52 @@ TD.GameEngine.prototype._render = function () {
   ctx.restore();
 };
 
+/* Point ON the predicted projectile path at exactly `radius` from the turret
+   pivot. Uses the SAME stepping math as _renderTrajectoryPreview (speed from
+   power, gravity, wind, terrain break), so the fixed-radius "+" crosshair can
+   sit exactly on the real trajectory instead of the straight launch ray. */
+
+TD.GameEngine.prototype.getTrajectoryPointAtRadius = function (tank, radius) {
+  var pivot = tank.getTurretPivot();
+  var rad = tank.angle * Math.PI / 180;
+  var speed = (tank.power / 100) * TD.PROJECTILE_SPEED_CAP;
+  var vx = Math.cos(rad) * speed;
+  var vy = -Math.sin(rad) * speed;
+  var px = pivot.x;
+  var py = pivot.y;
+  var steps = 0;
+  var maxSteps = 250;
+
+  while (steps < maxSteps) {
+    var prevX = px;
+    var prevY = py;
+    px += vx;
+    py += vy;
+    vy += TD.GRAVITY;
+    vx += this.wind * 0.008;
+    steps++;
+
+    var ix = Math.round(px);
+    if (ix >= 0 && ix < TD.W && py >= this.terrain.getHeight(ix)) {
+      return { x: px, y: py };
+    }
+
+    var dx = px - pivot.x;
+    var dy = py - pivot.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist >= radius) {
+      // Interpolate between the straddling steps to land exactly on `radius`.
+      var pdx = prevX - pivot.x;
+      var pdy = prevY - pivot.y;
+      var pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+      var t = (radius - pdist) / (dist - pdist || 1);
+      return { x: prevX + (px - prevX) * t, y: prevY + (py - prevY) * t };
+    }
+  }
+
+  return { x: px, y: py };
+};
+
 TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
   var pivot = tank.getTurretPivot();
   var rad = tank.angle * Math.PI / 180;
