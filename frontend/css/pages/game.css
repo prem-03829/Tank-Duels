@@ -161,6 +161,77 @@
   border-top-color: #60b8d8;
 }
 
+/* =========================
+   ACTIVE PLAYER INDICATOR
+   Pixel-art down arrow anchored above each player's nameplate.
+========================== */
+
+.tank-overlay-indicator {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s linear;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
+}
+
+.tank-overlay-indicator svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+}
+
+.tank-overlay-indicator-glow {
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  right: -4px;
+  bottom: -3px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, currentColor 0%, transparent 60%);
+  opacity: 0.45;
+  pointer-events: none;
+  animation: tank-indicator-breathe 2.2s ease-in-out infinite;
+}
+
+@keyframes tank-indicator-breathe {
+  0%, 100% { opacity: 0.28; }
+  50%      { opacity: 0.6; }
+}
+
+body.motion-reduced .tank-overlay-indicator-glow {
+  animation: none;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tank-overlay-indicator-glow {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+#tank-overlay-0 .tank-overlay-indicator {
+  color: #ff9050;
+  --ind-hi: #ffdcbd;
+  --ind-fill: #ff9050;
+  --ind-mid: #d06a28;
+  --ind-shade: #8a3d10;
+}
+
+#tank-overlay-1 .tank-overlay-indicator {
+  color: #60b8d8;
+  --ind-hi: #cbefff;
+  --ind-fill: #60b8d8;
+  --ind-mid: #2f88ab;
+  --ind-shade: #174f66;
+}
+
 .tank-overlay-health {
   display: flex;
   flex-direction: column;

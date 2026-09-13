@@ -33,6 +33,82 @@ document.addEventListener('DOMContentLoaded', function () {
   var tankOverlay1 = document.querySelector('#tank-overlay-1');
 
   /* =========================
+     ACTIVE-PLAYER INDICATOR SPRITE
+     Builds the multi-shade pixel-art arrow into the shared SVG <defs> so both
+     player overlays can reference it through <use>. Per-player colors are
+     resolved via CSS custom properties (--ind-hi/--ind-fill/--ind-mid/--ind-shade).
+  ========================= */
+
+  (function buildActiveIndicatorSprite() {
+    var defsGroup = document.getElementById('active-player-indicator');
+    if (!defsGroup || !defsGroup.ownerDocument) return;
+
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var map = [
+      '......obo......',
+      '......obo......',
+      '......obo......',
+      '......obo......',
+      '..ooHbbbbbmoo..',
+      '...ooHbbbmoo...',
+      '....ooHbmoo....',
+      '.....ooboo.....',
+      '.....ooboo.....',
+      '...............'
+    ];
+    var colors = {
+      o: '#0a0a0a',
+      H: 'var(--ind-hi)',
+      b: 'var(--ind-fill)',
+      m: 'var(--ind-mid)',
+      s: 'var(--ind-shade)'
+    };
+
+    var rows = [];
+    for (var ri = 0; ri < map.length; ri++) {
+      var line = map[ri];
+      var runs = [];
+      var c = 0;
+      while (c < line.length) {
+        if (line[c] === '.') { c++; continue; }
+        var ch = line[c];
+        var start = c;
+        while (c < line.length && line[c] === ch) c++;
+        runs.push({ x: start, y: ri, w: c - start, h: 1, ch: ch, merged: false });
+      }
+      rows.push(runs);
+    }
+
+    for (var ri = 1; ri < rows.length; ri++) {
+      for (var a = 0; a < rows[ri].length; a++) {
+        var run = rows[ri][a];
+        for (var b = 0; b < rows[ri - 1].length; b++) {
+          var up = rows[ri - 1][b];
+          if (!up.merged && up.x === run.x && up.w === run.w && up.ch === run.ch) {
+            up.h += 1;
+            run.merged = true;
+            break;
+          }
+        }
+      }
+    }
+
+    for (var ri = 0; ri < rows.length; ri++) {
+      for (var a = 0; a < rows[ri].length; a++) {
+        var run = rows[ri][a];
+        if (run.merged || !colors[run.ch]) continue;
+        var rect = defsGroup.ownerDocument.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', run.x);
+        rect.setAttribute('y', run.y);
+        rect.setAttribute('width', run.w);
+        rect.setAttribute('height', run.h);
+        rect.setAttribute('fill', colors[run.ch]);
+        defsGroup.appendChild(rect);
+      }
+    }
+  })();
+
+  /* =========================
      PLAYER
   ========================= */
 

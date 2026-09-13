@@ -58,7 +58,22 @@
 
         <canvas id="game-canvas" class="game-canvas"></canvas>
 
+        <!-- Shared pixel-art arrow used by the active-player indicator.
+             The <g> is populated from a pixel map at runtime (js/pages/game.js). -->
+        <svg width="0" height="0" aria-hidden="true" focusable="false"
+             style="position:absolute;width:0;height:0;overflow:hidden">
+          <defs>
+            <g id="active-player-indicator" shape-rendering="crispEdges"></g>
+          </defs>
+        </svg>
+
         <div class="tank-overlay" id="tank-overlay-0">
+          <div class="tank-overlay-indicator" role="presentation">
+            <div class="tank-overlay-indicator-glow"></div>
+            <svg viewBox="0 0 15 10" aria-hidden="true" focusable="false">
+              <use href="#active-player-indicator"></use>
+            </svg>
+          </div>
           <span class="tank-overlay-name" id="tank-overlay-name-0">PLAYER</span>
           <div class="tank-overlay-health">
             <div class="tank-overlay-hp">
@@ -69,6 +84,12 @@
         </div>
 
         <div class="tank-overlay" id="tank-overlay-1">
+          <div class="tank-overlay-indicator" role="presentation">
+            <div class="tank-overlay-indicator-glow"></div>
+            <svg viewBox="0 0 15 10" aria-hidden="true" focusable="false">
+              <use href="#active-player-indicator"></use>
+            </svg>
+          </div>
           <span class="tank-overlay-name" id="tank-overlay-name-1">OPPONENT</span>
           <div class="tank-overlay-health">
             <div class="tank-overlay-hp">

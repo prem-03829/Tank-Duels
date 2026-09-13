@@ -54,6 +54,7 @@ TD.GameEngine.prototype.init = function (config) {
   this.maxRounds = config.maxRounds || 1;
   this.accentColor = config.accentColor || '#ff8933';
   this.reducedMotion = config.reducedMotion || false;
+  this._applyMotionPref();
   this.mapType = config.mapType || 'dustlands';
   this.playerOneColorId = config.playerOneColor || 'orange';
   this.playerTwoColorId = config.playerTwoColor || 'blue';
@@ -186,6 +187,12 @@ TD.GameEngine.prototype.cleanup = function () {
   }
   document.removeEventListener('keydown', this._onKeyDown);
   document.removeEventListener('keyup', this._onKeyUp);
+  if (document.body) document.body.classList.remove('motion-reduced');
+};
+
+TD.GameEngine.prototype._applyMotionPref = function () {
+  if (!document.body) return;
+  document.body.classList.toggle('motion-reduced', !!this.reducedMotion);
 };
 
 TD.GameEngine.prototype._loop = function () {
@@ -321,14 +328,6 @@ TD.GameEngine.prototype._render = function () {
   // 9. Particles
   this.particles.render(ctx);
 
-  // 10. Active player indicator
-  if (this.state === TD.STATES.AIMING) {
-    var activeTank = this.tanks[this.currentTurn];
-    if (activeTank && activeTank.alive) {
-      this._renderActiveIndicator(ctx, activeTank);
-    }
-  }
-
   ctx.restore();
 };
 
@@ -372,17 +371,6 @@ TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
   }
 };
 
-TD.GameEngine.prototype._renderActiveIndicator = function (ctx, tank) {
-  var pulse = Math.sin(this.frame * 0.12) * 0.3 + 0.7;
-  ctx.fillStyle = this.accentColor;
-  ctx.globalAlpha = pulse;
-  var ix = Math.round(tank.x);
-  var iy = Math.round(tank.y - tank.turretH - 22);
-  ctx.fillRect(ix - 1, iy, 2, 3);
-  ctx.fillRect(ix - 2, iy + 3, 4, 1);
-  ctx.globalAlpha = 1;
-};
-
 /* =========================
    HTML OVERLAYS
 ========================== */
@@ -396,13 +384,19 @@ TD.GameEngine.prototype._updateOverlays = function () {
   var scaleX = displayW / TD.W;
   var scaleY = displayH / TD.H;
 
+  // Active-player indicator: show during an active turn, hide at start/end
+  var turnActive = this.state !== TD.STATES.SETUP && this.state !== TD.STATES.GAME_OVER;
+
   for (var i = 0; i < this.tanks.length; i++) {
     var tank = this.tanks[i];
     var overlay = this.el['tankOverlay' + i];
     if (!overlay) continue;
 
+    var indicator = overlay.querySelector('.tank-overlay-indicator');
+
     if (!tank.alive) {
       overlay.style.opacity = '0';
+      if (indicator) indicator.style.opacity = '0';
       continue;
     }
     overlay.style.opacity = '1';
@@ -411,6 +405,10 @@ TD.GameEngine.prototype._updateOverlays = function () {
     var py = (tank.y - tank.turretH - 24) * scaleY;
     overlay.style.left = px + 'px';
     overlay.style.top = py + 'px';
+
+    if (indicator) {
+      indicator.style.opacity = (turnActive && i === this.currentTurn) ? '1' : '0';
+    }
 
     var nameEl = overlay.querySelector('.tank-overlay-name');
     if (nameEl) nameEl.textContent = tank.name.toUpperCase();
@@ -842,6 +840,7 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   config = config || {};
   this.accentColor = config.accentColor || '#ff8933';
   this.reducedMotion = config.reducedMotion || false;
+  this._applyMotionPref();
 
   this.playerName = saved.players.player1.name;
   this.opponentName = saved.players.player2.name;
