@@ -58,6 +58,11 @@
 
         <canvas id="game-canvas" class="game-canvas"></canvas>
 
+        <!-- Compact wind-status group at the top-center of the battlefield -->
+        <div class="match-status" role="status" aria-label="Wind status">
+          <span class="info-item"><span class="info-label">WIND</span> <span class="info-value" id="wind-display">&mdash;</span></span>
+        </div>
+
         <!-- Shared pixel-art arrow used by the active-player indicator.
              The <g> is populated from a pixel map at runtime (js/pages/game.js). -->
         <svg width="0" height="0" aria-hidden="true" focusable="false"
@@ -139,6 +144,10 @@
         </div>
 
         <div class="fire-btn-wrap">
+          <div class="round-block">
+            <span class="round-label">ROUND</span>
+            <span class="round-display" id="round-value">1 / 1</span>
+          </div>
           <button class="btn btn-primary fire-button" id="fire-button" type="button">
             FIRE
           </button>
@@ -163,8 +172,6 @@
 
       <div class="controls-row controls-info">
         <span class="info-item"><span class="info-label">MAP</span> <span class="info-value" id="map-name">Desert</span></span>
-        <span class="info-item"><span class="info-label">WIND</span> <span class="info-value" id="wind-display">&mdash;</span></span>
-        <span class="info-item"><span class="info-label">ROUND</span> <span class="info-value" id="round-value">1 / 1</span></span>
       </div>
 
     </footer>

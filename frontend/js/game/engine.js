@@ -500,7 +500,9 @@ TD.GameEngine.prototype._updateOverlays = function () {
     if (this.wind > 0) arrow = '\u25B6'.repeat(absW);
     else if (this.wind < 0) arrow = '\u25C0'.repeat(absW);
     else arrow = '\u2014';
-    windEl.textContent = arrow + ' ' + absW;
+    /* The numeric value is wrapped so the HUD can color it white while the
+       arrows keep their direction-based accent color below. */
+    windEl.innerHTML = arrow + ' <span class="wind-value">' + absW + '</span>';
     windEl.style.color = this.wind > 0 ? '#ff8050' : this.wind < 0 ? '#50a0ff' : '#888';
   }
 };

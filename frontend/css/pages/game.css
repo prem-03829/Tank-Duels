@@ -101,6 +101,74 @@
 }
 
 
+/* Match status (ROUND / WIND) — compact vertical panel at top-center */
+
+.match-status {
+  position: absolute;
+  top: var(--space-sm);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-content);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 118px;
+  padding: 5px 14px 6px;
+  background: rgba(9, 11, 9, 0.6);
+  border: 1px solid var(--border-primary);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Each section stacks its small label above the larger value. */
+.match-status .info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.match-status .info-item + .info-item {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.match-status .info-label {
+  font-size: 9px;
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+}
+
+.match-status .info-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.match-status #round-value {
+  font-size: 19px;
+  letter-spacing: 0.08em;
+}
+
+/* The arrows keep the engine's direction-based accent color; the value is
+   white/high-contrast. */
+.match-status #wind-display {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.match-status #wind-display .wind-value {
+  color: var(--text-primary);
+}
+
+
 /* =========================
    TANK OVERLAYS
 ========================== */
@@ -542,6 +610,10 @@ body.motion-reduced .angle-cursor {
 /* Fire Button */
 
 .fire-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
   flex-shrink: 0;
 }
 
@@ -557,6 +629,35 @@ body.motion-reduced .angle-cursor {
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* ROUND — plain HUD text above FIRE (no box/panel/border) */
+
+.round-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.round-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.round-display {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-shadow: 1px 1px 0 #000;
 }
 
 
@@ -902,6 +1003,27 @@ body.motion-reduced .angle-cursor {
 
   .controls-info {
     gap: var(--space-sm);
+  }
+
+  .match-status {
+    top: 2px;
+    padding: 3px 8px 4px;
+  }
+
+  .match-status .info-label {
+    font-size: 8px;
+  }
+
+  .match-status .info-value {
+    font-size: 14px;
+  }
+
+  .match-status #round-value {
+    font-size: 16px;
+  }
+
+  .match-status #wind-display {
+    font-size: 14px;
   }
 }
 
