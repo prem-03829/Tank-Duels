@@ -543,7 +543,34 @@ TD.GameEngine.prototype._updateHUD = function () {
 
   if (this.el.turnLabel) {
     this.el.turnLabel.textContent = name.toUpperCase() + "'S TURN";
-    this.el.turnLabel.style.color = this.currentTurn === 0 ? '#ff8050' : '#50a0ff';
+  }
+
+  /* Per-PLAYER identity colors: both players' own resolved tank colors, kept
+     constant regardless of who is active (arrows, nameplates, top HUD). */
+  var p1Colors = TD.makeTankColors(findPlayerColorHex(this.playerOneColorId));
+  var p2Colors = TD.makeTankColors(findPlayerColorHex(this.playerTwoColorId));
+
+  /* ACTIVE-player theme: the current turn owner's tank color drives the
+     tank-related controls (ANGLE / POWER / FIRE / turn indicator). */
+  var activeColors = this.currentTurn === 0 ? p1Colors : p2Colors;
+
+  var rootEl = document.documentElement;
+  if (rootEl) {
+    var props = [
+      ['--player-one-color', p1Colors.body],
+      ['--player-one-color-light', p1Colors.light],
+      ['--player-one-color-dark', p1Colors.dark],
+      ['--player-one-color-shade', TD.adjustBrightness(p1Colors.body, 0.35)],
+      ['--player-two-color', p2Colors.body],
+      ['--player-two-color-light', p2Colors.light],
+      ['--player-two-color-dark', p2Colors.dark],
+      ['--player-two-color-shade', TD.adjustBrightness(p2Colors.body, 0.35)],
+      ['--active-player-color', activeColors.body],
+      ['--active-player-color-light', activeColors.light]
+    ];
+    for (var i = 0; i < props.length; i++) {
+      rootEl.style.setProperty(props[i][0], props[i][1]);
+    }
   }
 
   var tank = this.tanks[this.currentTurn];

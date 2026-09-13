@@ -297,7 +297,6 @@ document.addEventListener('DOMContentLoaded', function () {
        No independent angle-to-vector conversion is done here. */
     var pt = engine.getTrajectoryPointAtRadius(tank, TD.ANGLE_CURSOR_RADIUS);
     var rect = canvas.getBoundingClientRect();
-    angleCursor.style.color = engine.currentTurn === 0 ? '#ff8050' : '#50a0ff';
     angleCursor.style.left = (rect.left + pt.x * (rect.width / TD.W)) + 'px';
     angleCursor.style.top = (rect.top + pt.y * (rect.height / TD.H)) + 'px';
     angleCursor.style.setProperty('--cursor-angle', deg + 'deg');

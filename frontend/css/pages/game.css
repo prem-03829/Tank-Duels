@@ -2,6 +2,33 @@
    GAME PAGE
 ========================== */
 
+/* Accent colors for the two SEPARATE player-color systems:
+   - --player-*-color/light/dark/shade: each player's OWN identity color
+     (top HUD labels/names, in-game nameplates and arrows). Constant; never
+     swaps with the turn.
+   - --active-player-color/-light: the CURRENT turn owner's color (ANGLE /
+     POWER / FIRE / turn indicator); follows the active player.
+   The engine writes all of these as INLINE styles on <html> from the same
+   resolved tank colors the tanks use. They are declared here at :root only
+   as a pre-init fallback — inline styles on <html> override this stylesheet
+   declaration, and descendants inherit the result. Do NOT redeclare them on
+   .game-page (a local declaration there shadows the player colors). */
+
+:root {
+  --active-player-color: var(--color-primary);
+  --active-player-color-light: var(--color-primary-light);
+
+  --player-one-color: var(--color-primary);
+  --player-one-color-light: var(--color-primary-light);
+  --player-one-color-dark: color-mix(in srgb, var(--color-primary) 60%, black);
+  --player-one-color-shade: color-mix(in srgb, var(--color-primary) 35%, black);
+
+  --player-two-color: var(--color-primary);
+  --player-two-color-light: var(--color-primary-light);
+  --player-two-color-dark: color-mix(in srgb, var(--color-primary) 60%, black);
+  --player-two-color-shade: color-mix(in srgb, var(--color-primary) 35%, black);
+}
+
 .game-page {
   width: 100%;
   height: 100svh;
@@ -38,18 +65,30 @@
   align-items: flex-end;
 }
 
+/* Only the player NAMES carry the player color accents; the PLAYER 1 / PLAYER 2
+   labels stay neutral white. */
+.player-info .player-name {
+  color: var(--player-one-color-light);
+}
+
+.player-info.right .player-name {
+  color: var(--player-two-color-light);
+}
+
 .player-label {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: var(--letter-spacing-normal);
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-primary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .player-name {
   font-family: var(--font-display);
   font-size: var(--font-size-sm);
   font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .game-status {
@@ -60,7 +99,7 @@
   text-transform: uppercase;
   justify-self: center;
   text-align: center;
-  color: var(--color-primary);
+  color: var(--active-player-color);
 }
 
 
@@ -219,14 +258,26 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
+/* Each nameplate uses its OWN player's tank color (identity color — does not
+   follow the active-turn theme). */
 #tank-overlay-0 .tank-overlay-name {
-  color: #ffc080;
-  border-top-color: #ff9050;
+  color: var(--player-one-color-light);
+  border-top-color: var(--player-one-color);
 }
 
 #tank-overlay-1 .tank-overlay-name {
-  color: #90d8f0;
-  border-top-color: #60b8d8;
+  color: var(--player-two-color-light);
+  border-top-color: var(--player-two-color);
+}
+
+#tank-overlay-0 .tank-overlay-name::before,
+#tank-overlay-0 .tank-overlay-name::after {
+  background: var(--player-one-color);
+}
+
+#tank-overlay-1 .tank-overlay-name::before,
+#tank-overlay-1 .tank-overlay-name::after {
+  background: var(--player-two-color);
 }
 
 /* =========================
@@ -284,20 +335,23 @@ body.motion-reduced .tank-overlay-indicator-glow {
   }
 }
 
+/* The arrow above each tank is a PLAYER-SPECIFIC indicator: its base shades
+   come from that player's own resolved tank color. The active-turn emphasis
+   (opacity/glow) is applied on top by the engine; it never recolors the base. */
 #tank-overlay-0 .tank-overlay-indicator {
-  color: #ff9050;
-  --ind-hi: #ffdcbd;
-  --ind-fill: #ff9050;
-  --ind-mid: #d06a28;
-  --ind-shade: #8a3d10;
+  color: var(--player-one-color-light);
+  --ind-hi: var(--player-one-color-light);
+  --ind-fill: var(--player-one-color);
+  --ind-mid: var(--player-one-color-dark);
+  --ind-shade: var(--player-one-color-shade);
 }
 
 #tank-overlay-1 .tank-overlay-indicator {
-  color: #60b8d8;
-  --ind-hi: #cbefff;
-  --ind-fill: #60b8d8;
-  --ind-mid: #2f88ab;
-  --ind-shade: #174f66;
+  color: var(--player-two-color-light);
+  --ind-hi: var(--player-two-color-light);
+  --ind-fill: var(--player-two-color);
+  --ind-mid: var(--player-two-color-dark);
+  --ind-shade: var(--player-two-color-shade);
 }
 
 .tank-overlay-health {
@@ -395,7 +449,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
   font-weight: 600;
   letter-spacing: var(--letter-spacing-normal);
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--active-player-color);
   min-width: 0;
   text-align: center;
   user-select: none;
@@ -424,7 +478,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
-  color: var(--text-primary);
+  color: var(--active-player-color);
   background: var(--bg-elevated);
   border: 1px solid var(--border-primary);
   cursor: pointer;
@@ -437,7 +491,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
 
 .adj-btn:hover {
   background: var(--surface-hover);
-  border-color: var(--color-primary);
+  border-color: var(--active-player-color);
 }
 
 .adj-btn:active {
@@ -481,7 +535,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
   position: absolute;
   inset: 4px;
   border-radius: 50%;
-  border: 2px dashed var(--border-primary);
+  border: 2px dashed var(--active-player-color);
   pointer-events: none;
 }
 
@@ -492,7 +546,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
   width: 44%;
   height: 3px;
   margin-top: -2px;
-  background: var(--color-primary);
+  background: var(--active-player-color);
   box-shadow: 0 0 0 1px #0a0a0a;
   transform-origin: 0 50%;
   transform: rotate(calc(var(--dial-deg, 0deg) * -1));
@@ -542,7 +596,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
       rgba(0, 0, 0, 0.18) 0 2px,
       transparent 2px 8px
     ),
-    linear-gradient(to right, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    linear-gradient(to right, var(--active-player-color) 0%, var(--active-player-color-light) 100%);
 }
 
 .power-control .dial-value {
@@ -561,14 +615,14 @@ body.motion-reduced .tank-overlay-indicator-glow {
 /* Active / disabled states */
 
 .dial-control:hover {
-  border-color: var(--color-primary);
+  border-color: var(--active-player-color);
 }
 
 .dial-control.is-active {
-  border-color: var(--color-primary);
+  border-color: var(--active-player-color);
   background: var(--surface-hover);
   box-shadow:
-    0 0 0 1px var(--color-primary),
+    0 0 0 1px var(--active-player-color),
     var(--glow-primary);
 }
 
@@ -585,7 +639,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
   left: 0;
   top: 0;
   z-index: var(--z-modal);
-  color: #ff8933;
+  color: var(--active-player-color);
   pointer-events: none;
   transform: translate(-50%, -50%) rotate(calc(90deg - var(--cursor-angle, 90deg)));
   opacity: 0;
@@ -627,6 +681,18 @@ body.motion-reduced .angle-cursor {
   font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.15em;
+  /* Primary accent follows the ACTIVE player's tank color (base .btn-primary
+     uses the global site accent; this scopes it to the current turn). */
+  background: var(--active-player-color);
+}
+
+.fire-button:hover:not(:disabled) {
+  background: var(--active-player-color-light);
+}
+
+.fire-button:focus-visible {
+  outline: 2px solid var(--active-player-color);
+  outline-offset: 2px;
 }
 
 .fire-button:disabled {
