@@ -29,6 +29,7 @@
 @import url("./pages/game.css");
 @import url("./pages/results.css");
 @import url("./pages/profile.css");
+@import url("./pages/history.css");
 
 /* =========================
    GLOBAL STYLES
@@ -72,7 +73,8 @@ body {
 .game-mode-page,
 .game-page,
 .results-page,
-.profile-page {
+.profile-page,
+.history-page {
   position: relative;
   z-index: 2;
 }

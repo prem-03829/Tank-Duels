@@ -1,0 +1,286 @@
+/* =========================
+   HISTORY PAGE
+========================= */
+
+.history-page {
+  position: relative;
+  z-index: var(--z-base);
+  min-height: 100svh;
+  width: min(100% - 3rem, 960px);
+  margin: 0 auto;
+  padding: 3rem 0 4rem;
+}
+
+/* =========================
+   BACK CONTROL
+========================= */
+
+.history-back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.history-back:hover {
+  color: var(--color-primary);
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.history-header {
+  margin-bottom: var(--space-lg);
+}
+
+.history-title {
+  margin: 0 0 var(--space-xs);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.1;
+}
+
+.history-description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* =========================
+   ENTRY LIST
+========================= */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* =========================
+   MATCH ROW
+   One compact horizontal row per match: player result leads, then
+   MODE / MAP / SCORE / DATE with subtle vertical dividers.
+========================= */
+
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.6fr) repeat(4, minmax(0, 1fr));
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+
+  transition: border-color var(--transition-fast);
+}
+
+.history-row:hover {
+  border-color: var(--border-primary);
+}
+
+/* ---- PLAYER RESULT ([crown] winner vs loser on one line) ---- */
+
+.history-player {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding-right: 0.85rem;
+}
+
+.history-winner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.history-crown {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #e8c64a;
+  text-shadow: 0 0 8px rgba(232, 198, 74, 0.45);
+}
+
+.history-name {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.history-name.is-winner {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.history-name:not(.is-winner) {
+  opacity: 0.72;
+}
+
+.history-vs {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+/* ---- METADATA SECTIONS ---- */
+
+.history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding-left: 0.85rem;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.history-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+.history-section-value {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- MAP THUMBNAIL ---- */
+
+.history-map {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.history-map-thumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 36px;
+  background-color: var(--bg-elevated);
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+  border: 1px solid var(--border-subtle);
+}
+
+.history-map-name {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-thumb-dustlands {
+  background-image: url('../../assets/images/maps/dustlands.png');
+}
+
+.map-thumb-valley {
+  background-image: url('../../assets/images/maps/green-valley.png');
+}
+
+.map-thumb-frostbite {
+  background-image: url('../../assets/images/maps/frostbite.png');
+}
+
+.map-thumb-ashhill {
+  background-image: url('../../assets/images/maps/ashfall.png');
+}
+
+.map-thumb-moonbase {
+  background-image: url('../../assets/images/maps/moonbase.png');
+}
+
+.map-thumb-canyon {
+  background-image: url('../../assets/images/maps/canyon.png');
+}
+
+/* =========================
+   EMPTY STATE
+========================= */
+
+.history-empty {
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  border: 1px dashed var(--border-subtle);
+  background: var(--surface-subtle);
+}
+
+.history-empty-title {
+  margin: 0 0 var(--space-xs);
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.history-empty-message {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 700px) {
+  .history-page {
+    width: min(100% - 2rem, 960px);
+    padding-top: var(--space-xl);
+  }
+
+  .history-back {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Stack the player result on top; metadata drops to a 2x2 grid. */
+
+  .history-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 0.9rem;
+    padding: 0.6rem 0.7rem;
+  }
+
+  .history-player {
+    grid-column: 1 / -1;
+    padding: 0 0 0.55rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .history-section {
+    padding-left: 0;
+    border-left: none;
+  }
+}
