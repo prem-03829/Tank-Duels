@@ -2,6 +2,33 @@
    GAME PAGE
 ========================== */
 
+/* Accent colors for the two SEPARATE player-color systems:
+   - --player-*-color/light/dark/shade: each player's OWN identity color
+     (top HUD labels/names, in-game nameplates and arrows). Constant; never
+     swaps with the turn.
+   - --active-player-color/-light: the CURRENT turn owner's color (ANGLE /
+     POWER / FIRE / turn indicator); follows the active player.
+   The engine writes all of these as INLINE styles on <html> from the same
+   resolved tank colors the tanks use. They are declared here at :root only
+   as a pre-init fallback — inline styles on <html> override this stylesheet
+   declaration, and descendants inherit the result. Do NOT redeclare them on
+   .game-page (a local declaration there shadows the player colors). */
+
+:root {
+  --active-player-color: var(--color-primary);
+  --active-player-color-light: var(--color-primary-light);
+
+  --player-one-color: var(--color-primary);
+  --player-one-color-light: var(--color-primary-light);
+  --player-one-color-dark: color-mix(in srgb, var(--color-primary) 60%, black);
+  --player-one-color-shade: color-mix(in srgb, var(--color-primary) 35%, black);
+
+  --player-two-color: var(--color-primary);
+  --player-two-color-light: var(--color-primary-light);
+  --player-two-color-dark: color-mix(in srgb, var(--color-primary) 60%, black);
+  --player-two-color-shade: color-mix(in srgb, var(--color-primary) 35%, black);
+}
+
 .game-page {
   width: 100%;
   height: 100svh;
@@ -38,18 +65,30 @@
   align-items: flex-end;
 }
 
+/* Only the player NAMES carry the player color accents; the PLAYER 1 / PLAYER 2
+   labels stay neutral white. */
+.player-info .player-name {
+  color: var(--player-one-color-light);
+}
+
+.player-info.right .player-name {
+  color: var(--player-two-color-light);
+}
+
 .player-label {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: var(--letter-spacing-normal);
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-primary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .player-name {
   font-family: var(--font-display);
   font-size: var(--font-size-sm);
   font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .game-status {
@@ -60,7 +99,7 @@
   text-transform: uppercase;
   justify-self: center;
   text-align: center;
-  color: var(--color-primary);
+  color: var(--active-player-color);
 }
 
 
@@ -98,6 +137,74 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   cursor: crosshair;
+}
+
+
+/* Match status (ROUND / WIND) — compact vertical panel at top-center */
+
+.match-status {
+  position: absolute;
+  top: var(--space-sm);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-content);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 118px;
+  padding: 5px 14px 6px;
+  background: rgba(9, 11, 9, 0.6);
+  border: 1px solid var(--border-primary);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Each section stacks its small label above the larger value. */
+.match-status .info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.match-status .info-item + .info-item {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.match-status .info-label {
+  font-size: 9px;
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+}
+
+.match-status .info-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.match-status #round-value {
+  font-size: 19px;
+  letter-spacing: 0.08em;
+}
+
+/* The arrows keep the engine's direction-based accent color; the value is
+   white/high-contrast. */
+.match-status #wind-display {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.match-status #wind-display .wind-value {
+  color: var(--text-primary);
 }
 
 
@@ -151,14 +258,100 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
+/* Each nameplate uses its OWN player's tank color (identity color — does not
+   follow the active-turn theme). */
 #tank-overlay-0 .tank-overlay-name {
-  color: #ffc080;
-  border-top-color: #ff9050;
+  color: var(--player-one-color-light);
+  border-top-color: var(--player-one-color);
 }
 
 #tank-overlay-1 .tank-overlay-name {
-  color: #90d8f0;
-  border-top-color: #60b8d8;
+  color: var(--player-two-color-light);
+  border-top-color: var(--player-two-color);
+}
+
+#tank-overlay-0 .tank-overlay-name::before,
+#tank-overlay-0 .tank-overlay-name::after {
+  background: var(--player-one-color);
+}
+
+#tank-overlay-1 .tank-overlay-name::before,
+#tank-overlay-1 .tank-overlay-name::after {
+  background: var(--player-two-color);
+}
+
+/* =========================
+   ACTIVE PLAYER INDICATOR
+   Pixel-art down arrow anchored above each player's nameplate.
+========================== */
+
+.tank-overlay-indicator {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s linear;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
+}
+
+.tank-overlay-indicator svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+}
+
+.tank-overlay-indicator-glow {
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  right: -4px;
+  bottom: -3px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, currentColor 0%, transparent 60%);
+  opacity: 0.45;
+  pointer-events: none;
+  animation: tank-indicator-breathe 2.2s ease-in-out infinite;
+}
+
+@keyframes tank-indicator-breathe {
+  0%, 100% { opacity: 0.28; }
+  50%      { opacity: 0.6; }
+}
+
+body.motion-reduced .tank-overlay-indicator-glow {
+  animation: none;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tank-overlay-indicator-glow {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+/* The arrow above each tank is a PLAYER-SPECIFIC indicator: its base shades
+   come from that player's own resolved tank color. The active-turn emphasis
+   (opacity/glow) is applied on top by the engine; it never recolors the base. */
+#tank-overlay-0 .tank-overlay-indicator {
+  color: var(--player-one-color-light);
+  --ind-hi: var(--player-one-color-light);
+  --ind-fill: var(--player-one-color);
+  --ind-mid: var(--player-one-color-dark);
+  --ind-shade: var(--player-one-color-shade);
+}
+
+#tank-overlay-1 .tank-overlay-indicator {
+  color: var(--player-two-color-light);
+  --ind-hi: var(--player-two-color-light);
+  --ind-fill: var(--player-two-color);
+  --ind-mid: var(--player-two-color-dark);
+  --ind-shade: var(--player-two-color-shade);
 }
 
 .tank-overlay-health {
@@ -223,7 +416,7 @@
 
 .controls-main {
   justify-content: center;
-  gap: var(--space-lg);
+  gap: calc(var(--space-4xl) * 2);
 }
 
 .controls-info {
@@ -239,6 +432,13 @@
 
 .slider-group {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.slider-controls-row {
+  display: flex;
   align-items: center;
   gap: var(--space-xs);
 }
@@ -249,8 +449,11 @@
   font-weight: 600;
   letter-spacing: var(--letter-spacing-normal);
   text-transform: uppercase;
-  color: var(--text-muted);
-  min-width: 40px;
+  color: var(--active-player-color);
+  min-width: 0;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .slider-value {
@@ -275,7 +478,7 @@
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
-  color: var(--text-primary);
+  color: var(--active-player-color);
   background: var(--bg-elevated);
   border: 1px solid var(--border-primary);
   cursor: pointer;
@@ -288,7 +491,7 @@
 
 .adj-btn:hover {
   background: var(--surface-hover);
-  border-color: var(--color-primary);
+  border-color: var(--active-player-color);
 }
 
 .adj-btn:active {
@@ -302,57 +505,174 @@
 }
 
 
-/* Range Input Styling */
+/* Dial Controls (mouse aim) */
 
-.game-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 120px;
-  height: 6px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-primary);
-  outline: none;
-  cursor: pointer;
+.dial-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 92px;
+  height: 92px;
+  border: 2px solid var(--border-primary);
+  background: var(--bg-elevated);
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.game-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 10px;
-  height: 16px;
-  background: var(--color-primary, #ff8933);
-  border: 1px solid var(--color-primary-light, #ffaa60);
+.angle-dial {
+  border-radius: 50%;
+}
+
+.angle-dial .dial-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 2px dashed var(--active-player-color);
+  pointer-events: none;
+}
+
+.angle-dial .dial-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44%;
+  height: 3px;
+  margin-top: -2px;
+  background: var(--active-player-color);
+  box-shadow: 0 0 0 1px #0a0a0a;
+  transform-origin: 0 50%;
+  transform: rotate(calc(var(--dial-deg, 0deg) * -1));
+  pointer-events: none;
+}
+
+.dial-control .dial-value {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* Power horizontal bar gauge */
+
+.power-control {
+  width: 130px;
+  height: 44px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
 }
 
-.game-range::-moz-range-thumb {
-  width: 10px;
-  height: 16px;
-  background: var(--color-primary, #ff8933);
-  border: 1px solid var(--color-primary-light, #ffaa60);
-  border-radius: 0;
-  cursor: pointer;
+.power-bar {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  right: 5px;
+  bottom: 5px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.game-range:focus {
-  border-color: var(--color-primary);
+.power-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--power-pct, 50%);
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.18) 0 2px,
+      transparent 2px 8px
+    ),
+    linear-gradient(to right, var(--active-player-color) 0%, var(--active-player-color-light) 100%);
 }
 
-.game-range:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 1px var(--color-primary);
+.power-control .dial-value {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  background: rgba(13, 15, 13, 0.6);
+  border: 1px solid var(--border-subtle);
 }
 
-.game-range:disabled {
-  opacity: 0.35;
+/* Active / disabled states */
+
+.dial-control:hover {
+  border-color: var(--active-player-color);
+}
+
+.dial-control.is-active {
+  border-color: var(--active-player-color);
+  background: var(--surface-hover);
+  box-shadow:
+    0 0 0 1px var(--active-player-color),
+    var(--glow-primary);
+}
+
+.dial-control.is-disabled {
+  opacity: 0.45;
   cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Angle cursor: fixed-radius aiming indicator orbiting the active tank */
+
+.angle-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--z-modal);
+  color: var(--active-player-color);
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(calc(90deg - var(--cursor-angle, 90deg)));
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.angle-cursor.is-visible {
+  opacity: 1;
+}
+
+body.motion-reduced .angle-cursor {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .angle-cursor {
+    transition: none;
+  }
 }
 
 
 /* Fire Button */
 
 .fire-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
+}
+
+.round-block {
+  margin-bottom: 16px;
 }
 
 .fire-button {
@@ -361,12 +681,59 @@
   font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.15em;
+  /* Primary accent follows the ACTIVE player's tank color (base .btn-primary
+     uses the global site accent; this scopes it to the current turn). */
+  background: var(--active-player-color);
+}
+
+.fire-button:hover:not(:disabled) {
+  background: var(--active-player-color-light);
+}
+
+.fire-button:focus-visible {
+  outline: 2px solid var(--active-player-color);
+  outline-offset: 2px;
 }
 
 .fire-button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* ROUND — plain HUD text above FIRE (no box/panel/border) */
+
+.round-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.round-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.round-display {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.map-name {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 
@@ -621,6 +988,16 @@
    RESPONSIVE
 ========================== */
 
+@media (max-width: 900px) {
+  /* With the large desktop gap the controls cluster can overflow the footer,
+     forcing justify-content:center to clip it off-center — which also throws
+     the MAP label (centered in its own row) out of alignment with FIRE. Cap
+     the gap here so the three groups always fit and stay truly centered. */
+  .controls-main {
+    gap: var(--space-xl);
+  }
+}
+
 @media (max-width: 700px) {
   .game-header {
     grid-template-columns: 1fr 1fr;
@@ -639,8 +1016,14 @@
     gap: var(--space-sm);
   }
 
-  .game-range {
-    width: 80px;
+  .dial-control {
+    width: 76px;
+    height: 76px;
+  }
+
+  .power-control {
+    width: 96px;
+    height: 40px;
   }
 
   .fire-button {
@@ -674,13 +1057,19 @@
     gap: 4px;
   }
 
-  .game-range {
-    width: 60px;
+  .dial-control {
+    width: 68px;
+    height: 68px;
+  }
+
+  .power-control {
+    width: 82px;
+    height: 38px;
   }
 
   .slider-label {
     font-size: 5px;
-    min-width: 28px;
+    min-width: 0;
   }
 
   .adj-btn {
@@ -700,6 +1089,27 @@
 
   .controls-info {
     gap: var(--space-sm);
+  }
+
+  .match-status {
+    top: 2px;
+    padding: 3px 8px 4px;
+  }
+
+  .match-status .info-label {
+    font-size: 8px;
+  }
+
+  .match-status .info-value {
+    font-size: 14px;
+  }
+
+  .match-status #round-value {
+    font-size: 16px;
+  }
+
+  .match-status #wind-display {
+    font-size: 14px;
   }
 }
 

@@ -54,6 +54,7 @@ TD.GameEngine.prototype.init = function (config) {
   this.maxRounds = config.maxRounds || 1;
   this.accentColor = config.accentColor || '#ff8933';
   this.reducedMotion = config.reducedMotion || false;
+  this._applyMotionPref();
   this.mapType = config.mapType || 'dustlands';
   this.playerOneColorId = config.playerOneColor || 'orange';
   this.playerTwoColorId = config.playerTwoColor || 'blue';
@@ -186,6 +187,12 @@ TD.GameEngine.prototype.cleanup = function () {
   }
   document.removeEventListener('keydown', this._onKeyDown);
   document.removeEventListener('keyup', this._onKeyUp);
+  if (document.body) document.body.classList.remove('motion-reduced');
+};
+
+TD.GameEngine.prototype._applyMotionPref = function () {
+  if (!document.body) return;
+  document.body.classList.toggle('motion-reduced', !!this.reducedMotion);
 };
 
 TD.GameEngine.prototype._loop = function () {
@@ -321,15 +328,53 @@ TD.GameEngine.prototype._render = function () {
   // 9. Particles
   this.particles.render(ctx);
 
-  // 10. Active player indicator
-  if (this.state === TD.STATES.AIMING) {
-    var activeTank = this.tanks[this.currentTurn];
-    if (activeTank && activeTank.alive) {
-      this._renderActiveIndicator(ctx, activeTank);
+  ctx.restore();
+};
+
+/* Point ON the predicted projectile path at exactly `radius` from the turret
+   pivot. Uses the SAME stepping math as _renderTrajectoryPreview (speed from
+   power, gravity, wind, terrain break), so the fixed-radius "+" crosshair can
+   sit exactly on the real trajectory instead of the straight launch ray. */
+
+TD.GameEngine.prototype.getTrajectoryPointAtRadius = function (tank, radius) {
+  var pivot = tank.getTurretPivot();
+  var rad = tank.angle * Math.PI / 180;
+  var speed = (tank.power / 100) * TD.PROJECTILE_SPEED_CAP;
+  var vx = Math.cos(rad) * speed;
+  var vy = -Math.sin(rad) * speed;
+  var px = pivot.x;
+  var py = pivot.y;
+  var steps = 0;
+  var maxSteps = 250;
+
+  while (steps < maxSteps) {
+    var prevX = px;
+    var prevY = py;
+    px += vx;
+    py += vy;
+    vy += TD.GRAVITY;
+    vx += this.wind * 0.008;
+    steps++;
+
+    var ix = Math.round(px);
+    if (ix >= 0 && ix < TD.W && py >= this.terrain.getHeight(ix)) {
+      return { x: px, y: py };
+    }
+
+    var dx = px - pivot.x;
+    var dy = py - pivot.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist >= radius) {
+      // Interpolate between the straddling steps to land exactly on `radius`.
+      var pdx = prevX - pivot.x;
+      var pdy = prevY - pivot.y;
+      var pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+      var t = (radius - pdist) / (dist - pdist || 1);
+      return { x: prevX + (px - prevX) * t, y: prevY + (py - prevY) * t };
     }
   }
 
-  ctx.restore();
+  return { x: px, y: py };
 };
 
 TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
@@ -344,8 +389,13 @@ TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
   var maxSteps = 250;
   var dotInterval = 5;
   var dotCounter = 0;
+  var markerIndex = 0;
 
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  // Per-player accent colors (existing tank palette) with a dark backing so
+  // the trail stays visible over both bright terrain and dark sky.
+  var core = tank.colors ? tank.colors.light : '#ff9050';
+  var hint = tank.colors ? tank.colors.body : '#e07030';
+  var SHADOW = 'rgba(5,5,5,0.85)';
 
   while (steps < maxSteps) {
     px += vx;
@@ -360,27 +410,33 @@ TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
       var ix = Math.round(px);
       if (ix >= 0 && ix < TD.W && py >= 0 && py < TD.H) {
         if (py >= this.terrain.getHeight(ix)) {
-          ctx.fillStyle = 'rgba(255,100,50,0.25)';
-          ctx.fillRect(ix - 1, Math.round(py) - 1, 3, 2);
+          // Landing marker: a crisp block in the player accent color.
+          var iy = Math.round(py);
+          ctx.fillStyle = SHADOW;
+          ctx.fillRect(ix - 2, iy - 1, 5, 3);
+          ctx.fillStyle = hint;
+          ctx.fillRect(ix - 1, iy - 1, 3, 1);
+          ctx.fillStyle = core;
+          ctx.fillRect(ix - 1, iy, 3, 1);
           break;
         }
-        ctx.fillRect(ix, Math.round(py), 1, 1);
+        // Staggered pixel blocks: dark outline + bright accent core.
+        var ox = markerIndex % 2;
+        var oy = 1 - ox;
+        var mx = ix + ox;
+        var my = Math.round(py) + oy;
+        if (mx + 1 < TD.W && my + 1 < TD.H) {
+          ctx.fillStyle = SHADOW;
+          ctx.fillRect(mx - 1, my - 1, 3, 3);
+          ctx.fillStyle = core;
+          ctx.fillRect(mx, my, 2, 2);
+        }
+        markerIndex++;
       } else {
         break;
       }
     }
   }
-};
-
-TD.GameEngine.prototype._renderActiveIndicator = function (ctx, tank) {
-  var pulse = Math.sin(this.frame * 0.12) * 0.3 + 0.7;
-  ctx.fillStyle = this.accentColor;
-  ctx.globalAlpha = pulse;
-  var ix = Math.round(tank.x);
-  var iy = Math.round(tank.y - tank.turretH - 22);
-  ctx.fillRect(ix - 1, iy, 2, 3);
-  ctx.fillRect(ix - 2, iy + 3, 4, 1);
-  ctx.globalAlpha = 1;
 };
 
 /* =========================
@@ -396,13 +452,19 @@ TD.GameEngine.prototype._updateOverlays = function () {
   var scaleX = displayW / TD.W;
   var scaleY = displayH / TD.H;
 
+  // Active-player indicator: show during an active turn, hide at start/end
+  var turnActive = this.state !== TD.STATES.SETUP && this.state !== TD.STATES.GAME_OVER;
+
   for (var i = 0; i < this.tanks.length; i++) {
     var tank = this.tanks[i];
     var overlay = this.el['tankOverlay' + i];
     if (!overlay) continue;
 
+    var indicator = overlay.querySelector('.tank-overlay-indicator');
+
     if (!tank.alive) {
       overlay.style.opacity = '0';
+      if (indicator) indicator.style.opacity = '0';
       continue;
     }
     overlay.style.opacity = '1';
@@ -411,6 +473,10 @@ TD.GameEngine.prototype._updateOverlays = function () {
     var py = (tank.y - tank.turretH - 24) * scaleY;
     overlay.style.left = px + 'px';
     overlay.style.top = py + 'px';
+
+    if (indicator) {
+      indicator.style.opacity = (turnActive && i === this.currentTurn) ? '1' : '0';
+    }
 
     var nameEl = overlay.querySelector('.tank-overlay-name');
     if (nameEl) nameEl.textContent = tank.name.toUpperCase();
@@ -434,7 +500,9 @@ TD.GameEngine.prototype._updateOverlays = function () {
     if (this.wind > 0) arrow = '\u25B6'.repeat(absW);
     else if (this.wind < 0) arrow = '\u25C0'.repeat(absW);
     else arrow = '\u2014';
-    windEl.textContent = arrow + ' ' + absW;
+    /* The numeric value is wrapped so the HUD can color it white while the
+       arrows keep their direction-based accent color below. */
+    windEl.innerHTML = arrow + ' <span class="wind-value">' + absW + '</span>';
     windEl.style.color = this.wind > 0 ? '#ff8050' : this.wind < 0 ? '#50a0ff' : '#888';
   }
 };
@@ -475,15 +543,42 @@ TD.GameEngine.prototype._updateHUD = function () {
 
   if (this.el.turnLabel) {
     this.el.turnLabel.textContent = name.toUpperCase() + "'S TURN";
-    this.el.turnLabel.style.color = this.currentTurn === 0 ? '#ff8050' : '#50a0ff';
+  }
+
+  /* Per-PLAYER identity colors: both players' own resolved tank colors, kept
+     constant regardless of who is active (arrows, nameplates, top HUD). */
+  var p1Colors = TD.makeTankColors(findPlayerColorHex(this.playerOneColorId));
+  var p2Colors = TD.makeTankColors(findPlayerColorHex(this.playerTwoColorId));
+
+  /* ACTIVE-player theme: the current turn owner's tank color drives the
+     tank-related controls (ANGLE / POWER / FIRE / turn indicator). */
+  var activeColors = this.currentTurn === 0 ? p1Colors : p2Colors;
+
+  var rootEl = document.documentElement;
+  if (rootEl) {
+    var props = [
+      ['--player-one-color', p1Colors.body],
+      ['--player-one-color-light', p1Colors.light],
+      ['--player-one-color-dark', p1Colors.dark],
+      ['--player-one-color-shade', TD.adjustBrightness(p1Colors.body, 0.35)],
+      ['--player-two-color', p2Colors.body],
+      ['--player-two-color-light', p2Colors.light],
+      ['--player-two-color-dark', p2Colors.dark],
+      ['--player-two-color-shade', TD.adjustBrightness(p2Colors.body, 0.35)],
+      ['--active-player-color', activeColors.body],
+      ['--active-player-color-light', activeColors.light]
+    ];
+    for (var i = 0; i < props.length; i++) {
+      rootEl.style.setProperty(props[i][0], props[i][1]);
+    }
   }
 
   var tank = this.tanks[this.currentTurn];
   if (tank) {
     if (this.el.angleValue) this.el.angleValue.textContent = tank.angle + '\u00B0';
     if (this.el.powerValue) this.el.powerValue.textContent = tank.power + '%';
-    if (this.el.angleSlider) this.el.angleSlider.value = tank.angle;
-    if (this.el.powerSlider) this.el.powerSlider.value = tank.power;
+    if (this.el.angleControl) this.el.angleControl.style.setProperty('--dial-deg', tank.angle + 'deg');
+    if (this.el.powerControl) this.el.powerControl.style.setProperty('--power-pct', tank.power + '%');
   }
 
   if (this.el.roundValue) {
@@ -502,8 +597,13 @@ TD.GameEngine.prototype._showRound = function () {
 TD.GameEngine.prototype._enableControls = function (enabled) {
   var fb = document.getElementById('fire-button');
   if (fb) fb.disabled = !enabled;
-  if (this.el.angleSlider) this.el.angleSlider.disabled = !enabled;
-  if (this.el.powerSlider) this.el.powerSlider.disabled = !enabled;
+  if (this.el.angleControl) this.el.angleControl.classList.toggle('is-disabled', !enabled);
+  if (this.el.powerControl) this.el.powerControl.classList.toggle('is-disabled', !enabled);
+  var ids = ['angle-minus', 'angle-plus', 'power-minus', 'power-plus'];
+  for (var i = 0; i < ids.length; i++) {
+    var btn = document.getElementById(ids[i]);
+    if (btn) btn.disabled = !enabled;
+  }
 };
 
 TD.GameEngine.prototype.setAngle = function (value) {
@@ -543,7 +643,7 @@ TD.GameEngine.prototype.fire = function () {
   this.audio.playShoot();
 
   var tip = tank.getCannonTip();
-  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind);
+  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind, tank.colors);
 
   this.state = TD.STATES.FLYING;
   this._updateHUD();
@@ -842,6 +942,7 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   config = config || {};
   this.accentColor = config.accentColor || '#ff8933';
   this.reducedMotion = config.reducedMotion || false;
+  this._applyMotionPref();
 
   this.playerName = saved.players.player1.name;
   this.opponentName = saved.players.player2.name;
