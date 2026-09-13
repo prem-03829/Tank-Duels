@@ -22,24 +22,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // =========================
   // PLAYER STATS
-  // Reserved for the future online multiplayer system. Storage reads and the
-  // win-rate calculation are preserved below, but the dashboard always renders
-  // the "—" placeholder because there is no online-match statistics system yet.
   // =========================
 
-  const games = Number(localStorage.getItem("tankDuelGames")) || 0;
-  const wins = Number(localStorage.getItem("tankDuelWins")) || 0;
-
-  const winRate = games > 0 ? `${Math.round((wins / games) * 100)}%` : "—";
+  const stats = getPlayerStats();
 
   const statGamesElement = document.querySelector("#stat-games");
   const statWinsElement = document.querySelector("#stat-wins");
   const statWinRateElement = document.querySelector("#stat-winrate");
 
   if (statGamesElement && statWinsElement && statWinRateElement) {
-    statGamesElement.textContent = "—";
-    statWinsElement.textContent = "—";
-    statWinRateElement.textContent = "—";
+    statGamesElement.textContent = stats.battles;
+    statWinsElement.textContent = stats.victories;
+    statWinRateElement.textContent = stats.winRate;
   }
 
   // =========================
