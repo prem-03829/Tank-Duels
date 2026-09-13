@@ -343,8 +343,13 @@ TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
   var maxSteps = 250;
   var dotInterval = 5;
   var dotCounter = 0;
+  var markerIndex = 0;
 
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  // Per-player accent colors (existing tank palette) with a dark backing so
+  // the trail stays visible over both bright terrain and dark sky.
+  var core = tank.colors ? tank.colors.light : '#ff9050';
+  var hint = tank.colors ? tank.colors.body : '#e07030';
+  var SHADOW = 'rgba(5,5,5,0.85)';
 
   while (steps < maxSteps) {
     px += vx;
@@ -359,11 +364,28 @@ TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
       var ix = Math.round(px);
       if (ix >= 0 && ix < TD.W && py >= 0 && py < TD.H) {
         if (py >= this.terrain.getHeight(ix)) {
-          ctx.fillStyle = 'rgba(255,100,50,0.25)';
-          ctx.fillRect(ix - 1, Math.round(py) - 1, 3, 2);
+          // Landing marker: a crisp block in the player accent color.
+          var iy = Math.round(py);
+          ctx.fillStyle = SHADOW;
+          ctx.fillRect(ix - 2, iy - 1, 5, 3);
+          ctx.fillStyle = hint;
+          ctx.fillRect(ix - 1, iy - 1, 3, 1);
+          ctx.fillStyle = core;
+          ctx.fillRect(ix - 1, iy, 3, 1);
           break;
         }
-        ctx.fillRect(ix, Math.round(py), 1, 1);
+        // Staggered pixel blocks: dark outline + bright accent core.
+        var ox = markerIndex % 2;
+        var oy = 1 - ox;
+        var mx = ix + ox;
+        var my = Math.round(py) + oy;
+        if (mx + 1 < TD.W && my + 1 < TD.H) {
+          ctx.fillStyle = SHADOW;
+          ctx.fillRect(mx - 1, my - 1, 3, 3);
+          ctx.fillStyle = core;
+          ctx.fillRect(mx, my, 2, 2);
+        }
+        markerIndex++;
       } else {
         break;
       }
