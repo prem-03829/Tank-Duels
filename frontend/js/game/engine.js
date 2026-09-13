@@ -643,7 +643,7 @@ TD.GameEngine.prototype.fire = function () {
   this.audio.playShoot();
 
   var tip = tank.getCannonTip();
-  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind);
+  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind, tank.colors);
 
   this.state = TD.STATES.FLYING;
   this._updateHUD();

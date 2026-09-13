@@ -11,10 +11,14 @@ TD.Projectile = function () {
   this.vy = 0;
   this.active = false;
   this.trail = [];
-  this.maxTrail = 20;
+  this.maxTrail = 26;
+  /* Accent palette from the FIRING player's selected tank color. Falls back
+     to the default orange only if launch is never given colors. */
+  this._colors = { body: '#e07030', dark: '#a04a18', light: '#ff9050' };
+  this._bodyRGB = '224,112,48';
 };
 
-TD.Projectile.prototype.launch = function (x, y, angle, power, wind) {
+TD.Projectile.prototype.launch = function (x, y, angle, power, wind, colors) {
   this.x = x;
   this.y = y;
   var rad = angle * Math.PI / 180;
@@ -24,6 +28,12 @@ TD.Projectile.prototype.launch = function (x, y, angle, power, wind) {
   this.active = true;
   this.trail = [];
   this._wind = wind || 0;
+
+  if (colors && colors.body) {
+    this._colors = colors;
+    var rgb = TD.hexToRgb(colors.body);
+    this._bodyRGB = rgb.r + ',' + rgb.g + ',' + rgb.b;
+  }
 };
 
 TD.Projectile.prototype.update = function () {
@@ -49,6 +59,7 @@ TD.Projectile.prototype.update = function () {
 
   if (this.x < -30 || this.x > TD.W + 30 || this.y > TD.H + 30) {
     this.active = false;
+    this.trail = [];
     return true;
   }
 
@@ -74,22 +85,50 @@ TD.Projectile.prototype.checkTankHit = function (tank) {
 };
 
 TD.Projectile.prototype.render = function (ctx) {
+  /* Fire trail: pixel-art particles on the projectile's ACTUAL previous
+     positions. Oldest points are smaller and dimmer, and each one gets a dark
+     backing so it stays visible against both bright and dark skies. Uses the
+     firing player's tank color; never the aiming-assist palette. */
   for (var i = 0; i < this.trail.length; i++) {
     var t = this.trail[i];
-    var alpha = t.life * 0.4;
-    ctx.fillStyle = 'rgba(255,180,80,' + alpha + ')';
-    ctx.fillRect(Math.round(t.x), Math.round(t.y), 1, 1);
+    var life = t.life;
+    if (life <= 0) continue;
+
+    var px = Math.round(t.x);
+    var py = Math.round(t.y);
+    var size = life > 0.7 ? 2 : 1;
+
+    var backingAlpha = (life * 0.8).toFixed(3);
+    ctx.fillStyle = 'rgba(5,5,5,' + backingAlpha + ')';
+    ctx.fillRect(px - 1, py - 1, size + 2, size + 2);
+
+    var accentAlpha = (life * 0.75).toFixed(3);
+    ctx.fillStyle = 'rgba(' + this._bodyRGB + ',' + accentAlpha + ')';
+    ctx.fillRect(px, py, size, size);
   }
 
   if (!this.active) return;
 
-  ctx.fillStyle = '#ffe090';
-  ctx.fillRect(Math.round(this.x) - 1, Math.round(this.y) - 1, 2, 2);
+  /* Projectile core: small pixel-art shell with a 1px dark outline, the
+     player's tank-color body, a bright highlight and a white-hot center so it
+     reads clearly against every background. */
+  var cx = Math.round(this.x);
+  var cy = Math.round(this.y);
 
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(Math.round(this.x), Math.round(this.y), 1, 1);
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(cx - 2, cy - 2, 5, 5);
+
+  ctx.fillStyle = this._colors.body;
+  ctx.fillRect(cx - 1, cy - 1, 3, 3);
+
+  ctx.fillStyle = this._colors.light;
+  ctx.fillRect(cx - 1, cy - 1, 2, 2);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.fillRect(cx, cy, 1, 1);
 };
 
 TD.Projectile.prototype.deactivate = function () {
   this.active = false;
+  this.trail = [];
 };
