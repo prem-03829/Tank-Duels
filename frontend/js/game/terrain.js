@@ -250,11 +250,9 @@ TD.Terrain.prototype._generateDecorations = function (biome) {
 
   for (var i = 0; i < count; i++) {
     var x = Math.floor(this.rng() * (W - 40)) + 20;
-    var h = this.heights[Math.min(x, W - 1)];
     var kind = this._pickDeco(biome);
     this.decorations.push({
       x: x,
-      y: h,
       type: kind,
       size: 1 + Math.floor(this.rng() * 2)
     });
@@ -316,89 +314,89 @@ TD.Terrain.prototype._generateDetails = function (biome) {
     switch (biome) {
       case 'dustlands':
         if (r < 0.25) {
-          this.details.push({ x: x, y: h - 1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
+          this.details.push({ x: x, off: -1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
         } else if (r < 0.45) {
-          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.grassColor });
+          this.details.push({ x: x, off: -2, w: 1, h: 2, color: p.grassColor });
         } else if (r < 0.6) {
-          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.surfaceHi });
+          this.details.push({ x: x, off: -1, w: 2, h: 1, color: p.surfaceHi });
         } else {
-          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 4), w: 1, h: 1, color: p.detail });
+          this.details.push({ x: x, off: 2 + Math.floor(this.rng() * 4), w: 1, h: 1, color: p.detail });
         }
         break;
 
       case 'valley':
         if (r < 0.2) {
-          this.details.push({ x: x, y: h - 3, w: 1, h: 3, color: p.detail });
+          this.details.push({ x: x, off: -3, w: 1, h: 3, color: p.detail });
         } else if (r < 0.4) {
-          this.details.push({ x: x, y: h - 2, w: 2, h: 1, color: p.grassColor });
+          this.details.push({ x: x, off: -2, w: 2, h: 1, color: p.grassColor });
         } else if (r < 0.55) {
-          this.details.push({ x: x, y: h - 1, w: 3, h: 1, color: p.surfaceHi });
+          this.details.push({ x: x, off: -1, w: 3, h: 1, color: p.surfaceHi });
         } else if (r < 0.7) {
-          this.details.push({ x: x, y: h - 4, w: 1, h: 4, color: p.detail });
-          this.details.push({ x: x - 1, y: h - 5, w: 3, h: 2, color: p.grassColor });
+          this.details.push({ x: x, off: -4, w: 1, h: 4, color: p.detail });
+          this.details.push({ x: x - 1, off: -5, w: 3, h: 2, color: p.grassColor });
         } else {
-          this.details.push({ x: x, y: h + 3 + Math.floor(this.rng() * 5), w: 2, h: 1, color: p.rock });
+          this.details.push({ x: x, off: 3 + Math.floor(this.rng() * 5), w: 2, h: 1, color: p.rock });
         }
         break;
 
       case 'frostbite':
         if (r < 0.25) {
-          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.surfaceHi });
+          this.details.push({ x: x, off: -1, w: 2, h: 1, color: p.surfaceHi });
         } else if (r < 0.45) {
-          this.details.push({ x: x, y: h - 2, w: 3, h: 2, color: p.detail });
+          this.details.push({ x: x, off: -2, w: 3, h: 2, color: p.detail });
         } else if (r < 0.6) {
-          this.details.push({ x: x, y: h - 1, w: 1, h: 2, color: p.rock });
+          this.details.push({ x: x, off: -1, w: 1, h: 2, color: p.rock });
         } else if (r < 0.75) {
-          this.details.push({ x: x, y: h - 3, w: 2, h: 3, color: p.surface });
+          this.details.push({ x: x, off: -3, w: 2, h: 3, color: p.surface });
         } else {
-          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 4), w: 1, h: 1, color: p.mid });
+          this.details.push({ x: x, off: 2 + Math.floor(this.rng() * 4), w: 1, h: 1, color: p.mid });
         }
         break;
 
       case 'ashhill':
         if (r < 0.2) {
-          this.details.push({ x: x, y: h - 2, w: 2, h: 2, color: p.dark });
+          this.details.push({ x: x, off: -2, w: 2, h: 2, color: p.dark });
         } else if (r < 0.4) {
-          this.details.push({ x: x, y: h - 1, w: 1, h: 1, color: p.lava || '#cc4420' });
+          this.details.push({ x: x, off: -1, w: 1, h: 1, color: p.lava || '#cc4420' });
         } else if (r < 0.55) {
-          this.details.push({ x: x, y: h - 1, w: 3, h: 1, color: p.rock });
+          this.details.push({ x: x, off: -1, w: 3, h: 1, color: p.rock });
         } else if (r < 0.7) {
-          this.details.push({ x: x, y: h + 3 + Math.floor(this.rng() * 5), w: 2, h: 1, color: p.dark });
+          this.details.push({ x: x, off: 3 + Math.floor(this.rng() * 5), w: 2, h: 1, color: p.dark });
         } else {
-          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.detail });
+          this.details.push({ x: x, off: -2, w: 1, h: 2, color: p.detail });
         }
         break;
 
       case 'moonbase':
         if (r < 0.2) {
-          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.detail });
+          this.details.push({ x: x, off: -1, w: 2, h: 1, color: p.detail });
         } else if (r < 0.4) {
-          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.rock });
+          this.details.push({ x: x, off: -2, w: 1, h: 2, color: p.rock });
         } else if (r < 0.55) {
-          this.details.push({ x: x, y: h - 1, w: 3, h: 1, color: p.surfaceHi });
+          this.details.push({ x: x, off: -1, w: 3, h: 1, color: p.surfaceHi });
         } else if (r < 0.7) {
-          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 4), w: 2, h: 1, color: p.mid });
+          this.details.push({ x: x, off: 2 + Math.floor(this.rng() * 4), w: 2, h: 1, color: p.mid });
         } else {
-          this.details.push({ x: x, y: h - 3, w: 2, h: 2, color: p.dark });
+          this.details.push({ x: x, off: -3, w: 2, h: 2, color: p.dark });
         }
         break;
 
       case 'canyon':
         if (r < 0.2) {
-          this.details.push({ x: x, y: h - 1, w: 2, h: 1, color: p.surfaceHi });
+          this.details.push({ x: x, off: -1, w: 2, h: 1, color: p.surfaceHi });
         } else if (r < 0.4) {
-          this.details.push({ x: x, y: h - 2, w: 1, h: 2, color: p.rock });
+          this.details.push({ x: x, off: -2, w: 1, h: 2, color: p.rock });
         } else if (r < 0.55) {
-          this.details.push({ x: x, y: h + 2 + Math.floor(this.rng() * 6), w: 3, h: 1, color: p.mid });
+          this.details.push({ x: x, off: 2 + Math.floor(this.rng() * 6), w: 3, h: 1, color: p.mid });
         } else if (r < 0.7) {
-          this.details.push({ x: x, y: h - 1, w: 1, h: 1, color: p.detail });
+          this.details.push({ x: x, off: -1, w: 1, h: 1, color: p.detail });
         } else {
-          this.details.push({ x: x, y: h + 4 + Math.floor(this.rng() * 4), w: 2, h: 1, color: p.dark });
+          this.details.push({ x: x, off: 4 + Math.floor(this.rng() * 4), w: 2, h: 1, color: p.dark });
         }
         break;
 
       default:
-        this.details.push({ x: x, y: h - 1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
+        this.details.push({ x: x, off: -1, w: 1 + Math.floor(this.rng() * 2), h: 1, color: p.rock });
     }
   }
 };
@@ -611,8 +609,12 @@ TD.Terrain.prototype.renderTerrain = function (ctx) {
 
   for (var d = 0; d < this.details.length; d++) {
     var det = this.details[d];
+    var dix = det.x;
+    if (dix < 0) dix = 0;
+    else if (dix > W - 1) dix = W - 1;
+    if (h[dix] >= H) continue;
     ctx.fillStyle = det.color;
-    ctx.fillRect(det.x, det.y, det.w, det.h);
+    ctx.fillRect(det.x, h[dix] + det.off, det.w, det.h);
   }
 };
 
@@ -998,10 +1000,12 @@ TD.Terrain.prototype._renderTerrainSurfaceTexture = function (ctx) {
 
 TD.Terrain.prototype.renderDecorations = function (ctx) {
   var p = this.palette;
+  var H = TD.H;
   for (var i = 0; i < this.decorations.length; i++) {
     var d = this.decorations[i];
     var dx = d.x;
-    var dy = d.y;
+    var dy = this.getHeight(dx);
+    if (dy >= H) continue;
     switch (d.type) {
       case 'rock':
         ctx.fillStyle = p.rock;
