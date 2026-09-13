@@ -613,8 +613,12 @@ body.motion-reduced .angle-cursor {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
   flex-shrink: 0;
+}
+
+.round-block {
+  margin-bottom: 16px;
 }
 
 .fire-button {
@@ -658,6 +662,12 @@ body.motion-reduced .angle-cursor {
   font-weight: 800;
   color: var(--text-primary);
   text-shadow: 1px 1px 0 #000;
+}
+
+.map-name {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 
@@ -911,6 +921,16 @@ body.motion-reduced .angle-cursor {
 /* =========================
    RESPONSIVE
 ========================== */
+
+@media (max-width: 900px) {
+  /* With the large desktop gap the controls cluster can overflow the footer,
+     forcing justify-content:center to clip it off-center — which also throws
+     the MAP label (centered in its own row) out of alignment with FIRE. Cap
+     the gap here so the three groups always fit and stay truly centered. */
+  .controls-main {
+    gap: var(--space-xl);
+  }
+}
 
 @media (max-width: 700px) {
   .game-header {
