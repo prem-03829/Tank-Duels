@@ -11,14 +11,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var fireButton = document.querySelector('#fire-button');
   var canvas = document.querySelector('#game-canvas');
 
-  var angleSlider = document.querySelector('#angle-slider');
-  var powerSlider = document.querySelector('#power-slider');
   var angleValue = document.querySelector('#angle-value');
   var powerValue = document.querySelector('#power-value');
   var angleMinus = document.querySelector('#angle-minus');
   var anglePlus = document.querySelector('#angle-plus');
   var powerMinus = document.querySelector('#power-minus');
   var powerPlus = document.querySelector('#power-plus');
+  var angleControl = document.querySelector('#angle-control');
+  var powerControl = document.querySelector('#power-control');
+  var aimCrosshair = document.querySelector('#aim-crosshair');
 
   var fullscreenBtn = document.querySelector('#fullscreen-btn');
   var windDisplay = document.querySelector('#wind-display');
@@ -206,8 +207,8 @@ document.addEventListener('DOMContentLoaded', function () {
       turnLabel: gameStatusElement,
       angleValue: angleValue,
       powerValue: powerValue,
-      angleSlider: angleSlider,
-      powerSlider: powerSlider,
+      angleControl: angleControl,
+      powerControl: powerControl,
       roundValue: roundValueElement,
       mapName: mapNameElement,
       windDisplay: windDisplay,
@@ -247,56 +248,255 @@ document.addEventListener('DOMContentLoaded', function () {
     fireButton.addEventListener('click', function () {
       if (engine) {
         engine.audio.resume();
+        endControlMode();
         engine.fire();
       }
     });
   }
 
   /* =========================
-     ANGLE SLIDER
+     DIAL MOUSE CONTROL
+
+     ANGLE: click the circular dial and drag. The pointer direction around the
+     dial maps to the angle via atan2 (0 = right, 90 = up, 180 = left,
+     270 = down). Pointer capture keeps tracking even when the pointer leaves
+     the dial.
+
+     POWER: click the power value once to ENTER POWER CONTROL MODE (no need to
+     hold the button). While active, horizontal mouse movement changes the
+     power continuously. A left click anywhere CONFIRMS; ESC cancels and
+     restores the value captured when the mode started.
   ========================= */
 
-  if (angleSlider && engine) {
-    angleSlider.addEventListener('input', function () {
-      engine.setAngle(Number(this.value));
-    });
+  var activeControl = null;
+  var activeControlEl = null;
+  var activePointerId = null;
+  var dragCenterX = 0;
+  var dragCenterY = 0;
+
+  var powerBaseValue = 0;
+  var powerAccum = 0;
+  var lastPointerX = 0;
+  var suppressNextClick = false;
+
+  function controlInputEnabled() {
+    return engine && engine.state === TD.STATES.AIMING;
   }
+
+  function showAimCrosshair(x, y) {
+    if (!aimCrosshair) return;
+    if (engine) {
+      aimCrosshair.style.color = engine.currentTurn === 0 ? '#ff8050' : '#50a0ff';
+    }
+    aimCrosshair.style.left = x + 'px';
+    aimCrosshair.style.top = y + 'px';
+    aimCrosshair.classList.add('is-visible');
+  }
+
+  function hideAimCrosshair() {
+    if (aimCrosshair) aimCrosshair.classList.remove('is-visible');
+  }
+
+  function endControlMode() {
+    if (activeControlEl && activePointerId !== null && activeControlEl.releasePointerCapture) {
+      try {
+        activeControlEl.releasePointerCapture(activePointerId);
+      } catch (e) { /* capture already released */ }
+    }
+    activeControl = null;
+    activeControlEl = null;
+    activePointerId = null;
+    hideAimCrosshair();
+    if (angleControl) angleControl.classList.remove('is-active');
+    if (powerControl) powerControl.classList.remove('is-active');
+  }
+
+  /* ---------------- ANGLE (unchanged) ---------------- */
+
+  function beginControlMode(type, el, e) {
+    if (!controlInputEnabled()) return;
+    endControlMode();
+    activeControl = type;
+    activeControlEl = el;
+    activePointerId = e.pointerId;
+    el.classList.add('is-active');
+    if (el.setPointerCapture) {
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch (err) { /* ignore */ }
+    }
+    showAimCrosshair(e.clientX, e.clientY);
+
+    var rect = el.getBoundingClientRect();
+    dragCenterX = rect.left + rect.width / 2;
+    dragCenterY = rect.top + rect.height / 2;
+    updateAngleFromPoint(e);
+  }
+
+  function updateAngleFromPoint(e) {
+    if (!engine) return;
+    var dx = e.clientX - dragCenterX;
+    var dy = e.clientY - dragCenterY;
+    var deg = Math.round((Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360);
+    engine.setAngle(deg);
+    showAimCrosshair(e.clientX, e.clientY);
+  }
+
+  function handleDialMove(e) {
+    if (activeControl !== 'angle' || e.pointerId !== activePointerId) return;
+    if (!controlInputEnabled()) {
+      endControlMode();
+      return;
+    }
+    updateAngleFromPoint(e);
+  }
+
+  function handleDialUp(e) {
+    if (activeControl === 'angle' && e.pointerId === activePointerId) {
+      endControlMode();
+    }
+  }
+
+  function attachAngleDialControl(el) {
+    if (!el) return;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      beginControlMode('angle', el, e);
+    });
+    el.addEventListener('pointermove', handleDialMove);
+    el.addEventListener('pointerup', handleDialUp);
+    el.addEventListener('pointercancel', handleDialUp);
+    el.addEventListener('lostpointercapture', handleDialUp);
+  }
+
+  attachAngleDialControl(angleControl);
+
+  /* ---------------- POWER (click-activated, horizontal delta) ---------------- */
+
+  function getPowerFromAccum() {
+    var raw = powerBaseValue + powerAccum;
+    return Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, Math.round(raw)));
+  }
+
+  function enterPowerControl(e) {
+    if (!controlInputEnabled()) return;
+    endControlMode();
+    activeControl = 'power';
+    activeControlEl = powerControl;
+    activePointerId = null;
+    if (powerControl) powerControl.classList.add('is-active');
+    powerBaseValue = engine ? engine.getPower() : TD.POWER_DEFAULT;
+    powerAccum = 0;
+    lastPointerX = e.clientX;
+  }
+
+  function confirmPowerControl() {
+    if (activeControl !== 'power') return;
+    if (engine) engine.setPower(getPowerFromAccum());
+    endControlMode();
+    suppressNextClick = true;
+  }
+
+  function cancelPowerControl() {
+    if (activeControl !== 'power') return;
+    if (engine) engine.setPower(powerBaseValue);
+    endControlMode();
+  }
+
+  function handlePowerControlDown(e) {
+    if (e.button !== 0) return;
+    if (activeControl === 'power') {
+      confirmPowerControl();
+      return;
+    }
+    if (activeControl) return;
+    if (!controlInputEnabled()) return;
+    enterPowerControl(e);
+  }
+
+  if (powerControl) {
+    powerControl.addEventListener('pointerdown', handlePowerControlDown);
+  }
+
+  function handlePowerMove(e) {
+    if (activeControl !== 'power') return;
+    if (!controlInputEnabled()) {
+      endControlMode();
+      return;
+    }
+    var dx = e.clientX - lastPointerX;
+    lastPointerX = e.clientX;
+    powerAccum += dx * TD.POWER_MOUSE_SENSITIVITY;
+    if (engine) engine.setPower(getPowerFromAccum());
+  }
+
+  document.addEventListener('pointermove', handlePowerMove);
+
+  /* A left click anywhere while power mode is active CONFIRMS the power.
+     Run in the capture phase and swallow the event so the confirming click
+     cannot also trigger FIRE, the +/- buttons, or a new control mode. */
+
+  function handleConfirmMouseDown(e) {
+    if (e.button !== 0 || activeControl !== 'power') return;
+    e.preventDefault();
+    e.stopPropagation();
+    confirmPowerControl();
+  }
+
+  document.addEventListener('pointerdown', handleConfirmMouseDown, true);
+
+  /* The confirming click still dispatches a click event; eat it once. */
+
+  function handleConsumeConfirmClick(e) {
+    if (!suppressNextClick) return;
+    suppressNextClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  document.addEventListener('click', handleConsumeConfirmClick, true);
+
+  /* ESC exits dial control mode (before the engine's quit-modal handler).
+     For POWER it cancels and restores the value captured at mode start. */
+
+  document.addEventListener('keydown', function (e) {
+    if (e.code === 'Escape' && activeControl) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeControl === 'power') {
+        cancelPowerControl();
+      } else {
+        endControlMode();
+      }
+    }
+  }, true);
+
+  /* +/- buttons. POWER's buttons only act when power control mode is NOT
+     active (a click while active confirms instead). ANGLE is unchanged. */
 
   if (angleMinus && engine) {
     angleMinus.addEventListener('click', function () {
       engine.adjustAngle(-TD.ANGLE_STEP);
-      if (angleSlider) angleSlider.value = engine.getAngle();
     });
   }
 
   if (anglePlus && engine) {
     anglePlus.addEventListener('click', function () {
       engine.adjustAngle(TD.ANGLE_STEP);
-      if (angleSlider) angleSlider.value = engine.getAngle();
-    });
-  }
-
-  /* =========================
-     POWER SLIDER
-  ========================= */
-
-  if (powerSlider && engine) {
-    powerSlider.addEventListener('input', function () {
-      engine.setPower(Number(this.value));
     });
   }
 
   if (powerMinus && engine) {
     powerMinus.addEventListener('click', function () {
+      if (activeControl === 'power') return;
       engine.adjustPower(-TD.POWER_STEP);
-      if (powerSlider) powerSlider.value = engine.getPower();
     });
   }
 
   if (powerPlus && engine) {
     powerPlus.addEventListener('click', function () {
+      if (activeControl === 'power') return;
       engine.adjustPower(TD.POWER_STEP);
-      if (powerSlider) powerSlider.value = engine.getPower();
     });
   }
 

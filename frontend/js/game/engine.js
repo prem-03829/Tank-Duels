@@ -480,8 +480,8 @@ TD.GameEngine.prototype._updateHUD = function () {
   if (tank) {
     if (this.el.angleValue) this.el.angleValue.textContent = tank.angle + '\u00B0';
     if (this.el.powerValue) this.el.powerValue.textContent = tank.power + '%';
-    if (this.el.angleSlider) this.el.angleSlider.value = tank.angle;
-    if (this.el.powerSlider) this.el.powerSlider.value = tank.power;
+    if (this.el.angleControl) this.el.angleControl.style.setProperty('--dial-deg', tank.angle + 'deg');
+    if (this.el.powerControl) this.el.powerControl.style.setProperty('--power-pct', tank.power + '%');
   }
 
   if (this.el.roundValue) {
@@ -500,8 +500,13 @@ TD.GameEngine.prototype._showRound = function () {
 TD.GameEngine.prototype._enableControls = function (enabled) {
   var fb = document.getElementById('fire-button');
   if (fb) fb.disabled = !enabled;
-  if (this.el.angleSlider) this.el.angleSlider.disabled = !enabled;
-  if (this.el.powerSlider) this.el.powerSlider.disabled = !enabled;
+  if (this.el.angleControl) this.el.angleControl.classList.toggle('is-disabled', !enabled);
+  if (this.el.powerControl) this.el.powerControl.classList.toggle('is-disabled', !enabled);
+  var ids = ['angle-minus', 'angle-plus', 'power-minus', 'power-plus'];
+  for (var i = 0; i < ids.length; i++) {
+    var btn = document.getElementById(ids[i]);
+    if (btn) btn.disabled = !enabled;
+  }
 };
 
 TD.GameEngine.prototype.setAngle = function (value) {

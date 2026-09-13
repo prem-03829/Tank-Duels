@@ -322,6 +322,8 @@ body.motion-reduced .tank-overlay-indicator-glow {
   text-transform: uppercase;
   color: var(--text-muted);
   min-width: 40px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .slider-value {
@@ -373,50 +375,159 @@ body.motion-reduced .tank-overlay-indicator-glow {
 }
 
 
-/* Range Input Styling */
+/* Dial Controls (mouse aim) */
 
-.game-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 120px;
-  height: 6px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-primary);
-  outline: none;
-  cursor: pointer;
+.dial-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 92px;
+  height: 92px;
+  border: 2px solid var(--border-primary);
+  background: var(--bg-elevated);
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.game-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 10px;
-  height: 16px;
-  background: var(--color-primary, #ff8933);
-  border: 1px solid var(--color-primary-light, #ffaa60);
+.angle-dial {
+  border-radius: 50%;
+}
+
+.angle-dial .dial-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 2px dashed var(--border-primary);
+  pointer-events: none;
+}
+
+.angle-dial .dial-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44%;
+  height: 3px;
+  margin-top: -2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 1px #0a0a0a;
+  transform-origin: 0 50%;
+  transform: rotate(calc(var(--dial-deg, 0deg) * -1));
+  pointer-events: none;
+}
+
+.dial-control .dial-value {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* Power horizontal bar gauge */
+
+.power-control {
+  width: 130px;
+  height: 44px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
 }
 
-.game-range::-moz-range-thumb {
-  width: 10px;
-  height: 16px;
-  background: var(--color-primary, #ff8933);
-  border: 1px solid var(--color-primary-light, #ffaa60);
-  border-radius: 0;
-  cursor: pointer;
+.power-bar {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  right: 5px;
+  bottom: 5px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.game-range:focus {
+.power-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--power-pct, 50%);
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.18) 0 2px,
+      transparent 2px 8px
+    ),
+    linear-gradient(to right, var(--color-primary) 0%, var(--color-primary-light) 100%);
+}
+
+.power-control .dial-value {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  background: rgba(13, 15, 13, 0.6);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Active / disabled states */
+
+.dial-control:hover {
   border-color: var(--color-primary);
 }
 
-.game-range:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 1px var(--color-primary);
+.dial-control.is-active {
+  border-color: var(--color-primary);
+  background: var(--surface-hover);
+  box-shadow:
+    0 0 0 1px var(--color-primary),
+    var(--glow-primary);
 }
 
-.game-range:disabled {
-  opacity: 0.35;
+.dial-control.is-disabled {
+  opacity: 0.45;
   cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Aim crosshair */
+
+.aim-crosshair {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--z-modal);
+  color: #ff8933;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.aim-crosshair.is-visible {
+  opacity: 1;
+}
+
+body.motion-reduced .aim-crosshair {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aim-crosshair {
+    transition: none;
+  }
 }
 
 
@@ -710,8 +821,14 @@ body.motion-reduced .tank-overlay-indicator-glow {
     gap: var(--space-sm);
   }
 
-  .game-range {
-    width: 80px;
+  .dial-control {
+    width: 76px;
+    height: 76px;
+  }
+
+  .power-control {
+    width: 96px;
+    height: 40px;
   }
 
   .fire-button {
@@ -745,8 +862,14 @@ body.motion-reduced .tank-overlay-indicator-glow {
     gap: 4px;
   }
 
-  .game-range {
-    width: 60px;
+  .dial-control {
+    width: 68px;
+    height: 68px;
+  }
+
+  .power-control {
+    width: 82px;
+    height: 38px;
   }
 
   .slider-label {
