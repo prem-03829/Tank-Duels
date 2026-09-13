@@ -22,6 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // =========================
   // PLAYER STATS
+  // Reserved for the future online multiplayer system. Storage reads and the
+  // win-rate calculation are preserved below, but the dashboard always renders
+  // the "—" placeholder because there is no online-match statistics system yet.
   // =========================
 
   const games = Number(localStorage.getItem("tankDuelGames")) || 0;
@@ -29,9 +32,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const winRate = games > 0 ? `${Math.round((wins / games) * 100)}%` : "—";
 
-  document.querySelector("#stat-games").textContent = games;
-  document.querySelector("#stat-wins").textContent = wins;
-  document.querySelector("#stat-winrate").textContent = winRate;
+  const statGamesElement = document.querySelector("#stat-games");
+  const statWinsElement = document.querySelector("#stat-wins");
+  const statWinRateElement = document.querySelector("#stat-winrate");
+
+  if (statGamesElement && statWinsElement && statWinRateElement) {
+    statGamesElement.textContent = "—";
+    statWinsElement.textContent = "—";
+    statWinRateElement.textContent = "—";
+  }
 
   // =========================
   // LOGOUT

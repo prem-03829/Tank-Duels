@@ -109,6 +109,8 @@
 
 /* =========================
    STATS
+   Reserved for the future online multiplayer system. Local 1v1 values are
+   never displayed here — the panel always shows the "—" placeholder.
 ========================= */
 
 .dashboard-stats {
