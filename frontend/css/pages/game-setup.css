@@ -115,6 +115,158 @@
 }
 
 /* =========================
+   MAP PREVIEW CARDS
+   Existing map background images sit behind the text via pseudo-layers:
+   ::before = the pixel-art cover image (dimensions stay put, subtle zoom on
+   hover), ::after = a semi-transparent dark overlay that keeps the text
+   readable and the style dark. Text renders above both. Random deliberately
+   has no image and keeps the plain dark card.
+========================= */
+
+.setup-option.map-preview {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.setup-option.map-preview::before,
+.setup-option.map-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.setup-option.map-preview::before {
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+  transform: scale(1);
+  transition:
+    transform var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.setup-option.map-preview::after {
+  z-index: 1;
+  background: rgba(8, 10, 8, 0.62);
+  transition: background var(--transition-fast);
+}
+
+.setup-option.map-preview > span {
+  position: relative;
+  z-index: 2;
+}
+
+/* Description reads a touch brighter over images without losing its muted role. */
+.setup-option.map-preview .setup-option-description {
+  color: var(--text-secondary);
+}
+
+/* Image sources */
+
+.setup-option.map-preview-dustlands::before {
+  background-image: url('../../assets/images/maps/dustlands.png');
+}
+
+.setup-option.map-preview-green-valley::before {
+  background-image: url('../../assets/images/maps/green-valley.png');
+}
+
+.setup-option.map-preview-frostbite::before {
+  background-image: url('../../assets/images/maps/frostbite.png');
+}
+
+.setup-option.map-preview-ashfall::before {
+  background-image: url('../../assets/images/maps/ashfall.png');
+}
+
+.setup-option.map-preview-moonbase::before {
+  background-image: url('../../assets/images/maps/moonbase.png');
+}
+
+.setup-option.map-preview-canyon::before {
+  background-image: url('../../assets/images/maps/canyon.png');
+}
+
+/* Hover: subtle zoom + slight brightening, card dimensions/text unchanged */
+
+.setup-option.map-preview:hover::before {
+  transform: scale(1.04);
+  filter: brightness(1.08);
+}
+
+.setup-option.map-preview:hover::after {
+  background: rgba(8, 10, 8, 0.46);
+}
+
+/* Selected: keep the accent border and add a glow + brighter image */
+
+.setup-option.map-preview.active {
+  box-shadow:
+    0 0 0 1px var(--color-primary),
+    var(--glow-primary);
+}
+
+.setup-option.map-preview.active::after,
+.setup-option.map-preview:hover::after {
+  background: rgba(8, 10, 8, 0.46);
+}
+
+/* =========================
+   RANDOM CARD — "?" VISUAL
+   Keeps the dark card and renders a large centered question mark as the main
+   visual (text glyph only — no image). The name/description stay on top.
+========================= */
+
+.setup-option.map-random {
+  position: relative;
+  overflow: hidden;
+}
+
+.setup-option.map-random > span {
+  position: relative;
+  z-index: 1;
+}
+
+.setup-option.map-random::before {
+  content: '?';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-secondary);
+  opacity: 0.9;
+  pointer-events: none;
+  user-select: none;
+  transition:
+    color var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.setup-option.map-random:hover::before {
+  color: var(--color-primary-light);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 45%, transparent));
+}
+
+.setup-option.map-random.active {
+  box-shadow:
+    0 0 0 1px var(--color-primary),
+    var(--glow-primary);
+}
+
+.setup-option.map-random.active::before {
+  color: var(--color-primary);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-primary) 55%, transparent));
+}
+
+/* =========================
    MATCH OPTIONS
 ========================= */
 
