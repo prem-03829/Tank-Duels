@@ -362,7 +362,7 @@ body.motion-reduced .tank-overlay-indicator-glow {
 
 .controls-main {
   justify-content: center;
-  gap: var(--space-lg);
+  gap: calc(var(--space-4xl) * 2);
 }
 
 .controls-info {
