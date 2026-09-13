@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateFullscreenBtn() {
     if (!fullscreenBtn) return;
-    fullscreenBtn.textContent = document.fullscreenElement ? 'EXIT' : 'FULL';
+    fullscreenBtn.classList.toggle('is-fullscreen', !!document.fullscreenElement);
   }
 
   if (fullscreenBtn) {
