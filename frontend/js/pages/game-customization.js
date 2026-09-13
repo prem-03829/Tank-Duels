@@ -210,6 +210,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       saveCustomization(state);
 
+      localStorage.removeItem('tankDuelActiveMatch');
+
       window.location.href = './game.html';
     });
   }

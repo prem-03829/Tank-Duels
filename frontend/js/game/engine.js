@@ -68,6 +68,7 @@ TD.GameEngine.prototype.init = function (config) {
   this._preloadBackground(this.mapType);
 
   var seed = Date.now();
+  this._terrainSeed = seed;
   this.terrain.generate(this.mapType, seed);
 
   this._placeTanks();
@@ -86,6 +87,7 @@ TD.GameEngine.prototype.init = function (config) {
 
   this.running = true;
   this.lastTime = performance.now();
+  this._saveState();
   this._loop();
 };
 
@@ -203,6 +205,7 @@ TD.GameEngine.prototype._update = function () {
         this.state = TD.STATES.AIMING;
         this._enableControls(true);
         this._updateHUD();
+        this._saveState();
       }
       break;
 
@@ -509,6 +512,7 @@ TD.GameEngine.prototype.setAngle = function (value) {
   if (!tank) return;
   tank.angle = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, Math.round(value)));
   this._updateHUD();
+  this._saveState();
 };
 
 TD.GameEngine.prototype.setPower = function (value) {
@@ -517,6 +521,7 @@ TD.GameEngine.prototype.setPower = function (value) {
   if (!tank) return;
   tank.power = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, Math.round(value)));
   this._updateHUD();
+  this._saveState();
 };
 
 TD.GameEngine.prototype.getAngle = function () {
@@ -542,6 +547,7 @@ TD.GameEngine.prototype.fire = function () {
 
   this.state = TD.STATES.FLYING;
   this._updateHUD();
+  this._saveState();
 };
 
 /* =========================
@@ -561,6 +567,7 @@ TD.GameEngine.prototype._handleKeyDown = function (e) {
       this.stateTimer = 0;
       this._enableControls(true);
       this._updateHUD();
+      this._saveState();
       this.audio.resume();
     } else if (this.state === TD.STATES.AIMING) {
       this.fire();
@@ -601,7 +608,10 @@ TD.GameEngine.prototype._handleKeyDown = function (e) {
     tank.power = Math.max(TD.POWER_MIN, tank.power - TD.POWER_STEP);
     changed = true;
   }
-  if (changed) this._updateHUD();
+  if (changed) {
+    this._updateHUD();
+    this._saveState();
+  }
 };
 
 TD.GameEngine.prototype._handleKeyUp = function (e) {
@@ -614,6 +624,7 @@ TD.GameEngine.prototype.adjustAngle = function (delta) {
   if (!tank) return;
   tank.angle = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, tank.angle + delta));
   this._updateHUD();
+  this._saveState();
 };
 
 TD.GameEngine.prototype.adjustPower = function (delta) {
@@ -622,6 +633,7 @@ TD.GameEngine.prototype.adjustPower = function (delta) {
   if (!tank) return;
   tank.power = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, tank.power + delta));
   this._updateHUD();
+  this._saveState();
 };
 
 /* =========================
@@ -651,6 +663,7 @@ TD.GameEngine.prototype._onTerrainHit = function (x, y) {
   this._startShake(5, 3);
   this.state = TD.STATES.EXPLODING;
   this.stateTimer = 35;
+  this._saveState();
 };
 
 TD.GameEngine.prototype._onTankHit = function (tank) {
@@ -674,12 +687,14 @@ TD.GameEngine.prototype._onTankHit = function (tank) {
   this.terrain.destroy(x, y, TD.EXPLOSION_RADIUS * 0.6);
   this.state = TD.STATES.EXPLODING;
   this.stateTimer = 35;
+  this._saveState();
 };
 
 TD.GameEngine.prototype._onProjectileEnd = function () {
   this.projectile.deactivate();
   this.state = TD.STATES.EXPLODING;
   this.stateTimer = 15;
+  this._saveState();
 };
 
 TD.GameEngine.prototype._afterExplosion = function () {
@@ -707,6 +722,7 @@ TD.GameEngine.prototype._nextTurn = function () {
   this._updateHUD();
   this.state = TD.STATES.TURN_START;
   this.stateTimer = TD.TURN_ANNOUNCE_DURATION;
+  this._saveState();
 };
 
 TD.GameEngine.prototype._endRound = function (winnerIndex) {
@@ -715,6 +731,7 @@ TD.GameEngine.prototype._endRound = function (winnerIndex) {
   if (this.scores[0] > this.maxRounds / 2 || this.scores[1] > this.maxRounds / 2) {
     this.state = TD.STATES.GAME_OVER;
     this.stateTimer = TD.GAME_OVER_DELAY;
+    this._saveState();
     return;
   }
 
@@ -725,6 +742,7 @@ TD.GameEngine.prototype._endRound = function (winnerIndex) {
 
 TD.GameEngine.prototype._startNewRound = function () {
   var seed = Date.now();
+  this._terrainSeed = seed;
   this.terrain.generate(this.mapType, seed);
   this._placeTanks();
   this.projectile.deactivate();
@@ -733,6 +751,7 @@ TD.GameEngine.prototype._startNewRound = function () {
   this._updateHUD();
   this.state = TD.STATES.TURN_START;
   this.stateTimer = TD.TURN_ANNOUNCE_DURATION;
+  this._saveState();
 };
 
 TD.GameEngine.prototype._startShake = function (intensity, duration) {
@@ -758,8 +777,294 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   localStorage.setItem('tankDuelGames', String(games + 1));
   if (result === 'win') localStorage.setItem('tankDuelWins', String(wins + 1));
 
+  TD.clearActiveMatch();
+
   this.cleanup();
   window.location.href = './results.html';
+};
+
+/* =========================
+   ACTIVE MATCH PERSISTENCE
+========================== */
+
+TD.GameEngine.prototype._saveState = function () {
+  if (!this.tanks || this.tanks.length !== 2) return;
+  if (!this.terrain || !this.terrain.heights || this.terrain.heights.length !== TD.W) return;
+
+  var saved = {
+    version: 1,
+    active: true,
+    status: 'active',
+    map: this.terrain.type,
+    seed: this._terrainSeed || this.terrain._s,
+    terrain: this.terrain.heights,
+    stars: this.terrain.stars,
+    clouds: this.terrain.clouds,
+    bgMountains: this.terrain.bgMountains,
+    bgHills: this.terrain.bgHills,
+    decorations: this.terrain.decorations,
+    details: this.terrain.details,
+    round: this.round,
+    maxRounds: this.maxRounds,
+    currentTurn: this.currentTurn,
+    scores: [this.scores[0], this.scores[1]],
+    wind: this.wind,
+    trajectoryTrail: this.trajectoryTrail,
+    state: this.state,
+    players: {
+      player1: {
+        name: this.playerName,
+        color: this.playerOneColorId,
+        x: this.tanks[0].x,
+        y: this.tanks[0].y,
+        health: this.tanks[0].health,
+        angle: this.tanks[0].angle,
+        power: this.tanks[0].power
+      },
+      player2: {
+        name: this.opponentName,
+        color: this.playerTwoColorId,
+        x: this.tanks[1].x,
+        y: this.tanks[1].y,
+        health: this.tanks[1].health,
+        angle: this.tanks[1].angle,
+        power: this.tanks[1].power
+      }
+    }
+  };
+
+  try {
+    localStorage.setItem('tankDuelActiveMatch', JSON.stringify(saved));
+  } catch (e) { /* storage may be unavailable or full */ }
+};
+
+TD.GameEngine.prototype.restore = function (saved, config) {
+  config = config || {};
+  this.accentColor = config.accentColor || '#ff8933';
+  this.reducedMotion = config.reducedMotion || false;
+
+  this.playerName = saved.players.player1.name;
+  this.opponentName = saved.players.player2.name;
+  this.maxRounds = saved.maxRounds;
+  this.mapType = saved.map;
+  this.playerOneColorId = saved.players.player1.color;
+  this.playerTwoColorId = saved.players.player2.color;
+  this.trajectoryTrail = saved.trajectoryTrail !== false;
+
+  this.canvas.width = TD.W;
+  this.canvas.height = TD.H;
+  this.ctx.imageSmoothingEnabled = false;
+
+  this.audio.init();
+  this._preloadBackground(this.mapType);
+
+  this.terrain.restore(saved.map, saved.seed, saved.terrain, saved);
+
+  var p1colors = TD.makeTankColors(findPlayerColorHex(this.playerOneColorId));
+  var p2colors = TD.makeTankColors(findPlayerColorHex(this.playerTwoColorId));
+
+  this.tanks = [
+    new TD.Tank(0, this.playerName, saved.players.player1.x, this.terrain, p1colors, 1),
+    new TD.Tank(1, this.opponentName, saved.players.player2.x, this.terrain, p2colors, -1)
+  ];
+
+  this.tanks[0].x = saved.players.player1.x;
+  this.tanks[0].y = saved.players.player1.y;
+  this.tanks[0].health = saved.players.player1.health;
+  this.tanks[0].maxHealth = TD.MAX_HEALTH;
+  this.tanks[0].alive = saved.players.player1.health > 0;
+  this.tanks[0].angle = saved.players.player1.angle;
+  this.tanks[0].power = saved.players.player1.power;
+
+  this.tanks[1].x = saved.players.player2.x;
+  this.tanks[1].y = saved.players.player2.y;
+  this.tanks[1].health = saved.players.player2.health;
+  this.tanks[1].maxHealth = TD.MAX_HEALTH;
+  this.tanks[1].alive = saved.players.player2.health > 0;
+  this.tanks[1].angle = saved.players.player2.angle;
+  this.tanks[1].power = saved.players.player2.power;
+
+  this.round = saved.round;
+  this.scores = [saved.scores[0], saved.scores[1]];
+  this.currentTurn = saved.currentTurn;
+  this.wind = saved.wind;
+  this._terrainSeed = saved.seed;
+
+  this.projectile.deactivate();
+  this.particles.clear();
+
+  this._updateHUD();
+
+  if (saved.state === TD.STATES.GAME_OVER) {
+    this._saveAndNavigate();
+    return;
+  }
+
+  document.addEventListener('keydown', this._onKeyDown);
+  document.addEventListener('keyup', this._onKeyUp);
+
+  this.running = true;
+  this.lastTime = performance.now();
+
+  if (saved.state === TD.STATES.AIMING) {
+    this.state = TD.STATES.AIMING;
+    this.stateTimer = 0;
+  } else if (saved.state === TD.STATES.EXPLODING) {
+    this._resolveExplosionOutcome();
+  } else {
+    this.state = TD.STATES.TURN_START;
+    this.stateTimer = TD.TURN_ANNOUNCE_DURATION;
+  }
+
+  this._enableControls(this.state === TD.STATES.AIMING);
+  this._loop();
+};
+
+TD.GameEngine.prototype._resolveExplosionOutcome = function () {
+  for (var i = 0; i < this.tanks.length; i++) {
+    this.tanks[i].syncToTerrain(this.terrain);
+  }
+
+  var dead = -1;
+  for (var i = 0; i < this.tanks.length; i++) {
+    if (!this.tanks[i].alive) { dead = i; break; }
+  }
+
+  if (dead >= 0) {
+    var bothDead = !this.tanks[0].alive && !this.tanks[1].alive;
+    this._endRound(bothDead ? this.currentTurn : (dead === 0 ? 1 : 0));
+    return;
+  }
+
+  this._nextTurn();
+};
+
+TD.loadActiveMatch = function () {
+  var raw;
+  try {
+    raw = localStorage.getItem('tankDuelActiveMatch');
+  } catch (e) {
+    return null;
+  }
+  if (!raw) return null;
+
+  var s;
+  try {
+    s = JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+
+  if (!s || typeof s !== 'object') return null;
+  if (s.version !== 1 || s.active !== true || s.status === 'completed') return null;
+
+  var resolvedMap = TD.resolveMap(s.map);
+  if (TD.MAP_KEYS.indexOf(resolvedMap) === -1) return null;
+  s.map = resolvedMap;
+
+  var seedNum = Number(s.seed);
+  if (!isFinite(seedNum)) return null;
+  s.seed = seedNum | 0;
+
+  if (!Array.isArray(s.terrain) || s.terrain.length !== TD.W) return null;
+  var heights = s.terrain;
+  for (var i = 0; i < TD.W; i++) {
+    var h = Number(heights[i]);
+    if (!isFinite(h)) return null;
+    h = Math.round(h / TD.TERRAIN_STEP) * TD.TERRAIN_STEP;
+    heights[i] = Math.max(80, Math.min(TD.H, h));
+  }
+
+  var round = Math.round(Number(s.round));
+  var maxRounds = Math.round(Number(s.maxRounds));
+  if (!isFinite(round) || !isFinite(maxRounds)) return null;
+  round = Math.max(1, round);
+  maxRounds = Math.max(1, maxRounds);
+  if (round > maxRounds) round = maxRounds;
+  if (round < 1) round = 1;
+  s.round = round;
+  s.maxRounds = maxRounds;
+
+  if (!Array.isArray(s.scores) || s.scores.length < 2) return null;
+  var score1 = Math.round(Number(s.scores[0]));
+  var score2 = Math.round(Number(s.scores[1]));
+  if (!isFinite(score1) || !isFinite(score2)) return null;
+  s.scores = [Math.max(0, score1), Math.max(0, score2)];
+
+  s.currentTurn = s.currentTurn === 1 ? 1 : 0;
+
+  var wind = Number(s.wind);
+  if (!isFinite(wind)) wind = 0;
+  s.wind = Math.max(-TD.WIND_ABS_MAX, Math.min(TD.WIND_ABS_MAX, Math.round(wind)));
+
+  var colorIds = {};
+  for (var c = 0; c < TD.PLAYER_COLORS.length; c++) {
+    colorIds[TD.PLAYER_COLORS[c].id] = true;
+  }
+
+  var pls = s.players && typeof s.players === 'object' ? s.players : {};
+  var defaults = [
+    ['PLAYER', 'orange'],
+    ['OPPONENT', 'blue']
+  ];
+  for (var pi = 0; pi < 2; pi++) {
+    var key = 'player' + (pi + 1);
+    var stored = pls[key] && typeof pls[key] === 'object' ? pls[key] : {};
+    var name = typeof stored.name === 'string' && stored.name.trim()
+      ? stored.name.trim().substring(0, 16)
+      : defaults[pi][0];
+    var color = typeof stored.color === 'string' && colorIds[stored.color] ? stored.color : defaults[pi][1];
+
+    var hp = Math.round(Number(stored.health));
+    if (!isFinite(hp)) return null;
+    hp = Math.max(0, Math.min(TD.MAX_HEALTH, hp));
+
+    var px = Math.round(Number(stored.x));
+    if (!isFinite(px)) return null;
+    px = Math.max(20, Math.min(TD.W - 20, px));
+
+    var py = Math.round(Number(stored.y));
+    if (!isFinite(py)) return null;
+    py = Math.max(0, Math.min(TD.H, py));
+
+    var ang = Math.round(Number(stored.angle));
+    if (!isFinite(ang)) return null;
+    ang = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, ang));
+
+    var pow = Math.round(Number(stored.power));
+    if (!isFinite(pow)) return null;
+    pow = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, pow));
+
+    s.players[key] = {
+      name: name,
+      color: color,
+      x: px,
+      y: py,
+      health: hp,
+      angle: ang,
+      power: pow
+    };
+  }
+
+  s.trajectoryTrail = s.trajectoryTrail !== false;
+
+  var st = s.state;
+  s.state = (st === 'aiming' || st === 'turn_start' || st === 'exploding' || st === 'flying' || st === 'game_over')
+    ? st
+    : 'turn_start';
+
+  var arr = ['stars', 'clouds', 'bgMountains', 'bgHills', 'decorations', 'details'];
+  for (var a = 0; a < arr.length; a++) {
+    if (!Array.isArray(s[arr[a]])) s[arr[a]] = [];
+  }
+
+  return s;
+};
+
+TD.clearActiveMatch = function () {
+  try {
+    localStorage.removeItem('tankDuelActiveMatch');
+  } catch (e) { /* ignore */ }
 };
 
 function findPlayerColorHex(colorId) {

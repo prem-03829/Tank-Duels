@@ -139,19 +139,28 @@ document.addEventListener('DOMContentLoaded', function () {
       tankOverlay1: tankOverlay1
     });
 
-    engine.init({
-      playerName: playerName,
-      opponentName: opponentName,
-      maxRounds: selectedRounds,
-      accentColor: accentColor,
-      reducedMotion: reducedMotion,
-      mapType: selectedMap,
-      playerOneColor: p1ColorId,
-      playerTwoColor: p2ColorId,
-      trajectoryTrail: trajectoryTrail
-    });
+    var activeMatch = TD.loadActiveMatch();
 
-    engine._enableControls(false);
+    if (activeMatch) {
+      engine.restore(activeMatch, {
+        accentColor: accentColor,
+        reducedMotion: reducedMotion
+      });
+    } else {
+      engine.init({
+        playerName: playerName,
+        opponentName: opponentName,
+        maxRounds: selectedRounds,
+        accentColor: accentColor,
+        reducedMotion: reducedMotion,
+        mapType: selectedMap,
+        playerOneColor: p1ColorId,
+        playerTwoColor: p2ColorId,
+        trajectoryTrail: trajectoryTrail
+      });
+
+      engine._enableControls(false);
+    }
   }
 
   /* =========================
@@ -267,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (confirmQuitButton) {
     confirmQuitButton.addEventListener('click', function () {
+      TD.clearActiveMatch();
       if (engine) {
         engine.cleanup();
       }

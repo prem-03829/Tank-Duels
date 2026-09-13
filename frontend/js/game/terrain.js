@@ -45,6 +45,22 @@ TD.Terrain.prototype.generate = function (type, mapSeed) {
   this._generateDetails(resolved);
 };
 
+TD.Terrain.prototype.restore = function (type, seedVal, heights, extras) {
+  this.type = type;
+  this.palette = TD.PALETTES[type];
+  this._s = seedVal | 0;
+  this._surfaceSeed = this._s + 200;
+  this.heights = heights.slice();
+
+  extras = extras || {};
+  this.stars = Array.isArray(extras.stars) ? extras.stars.slice() : [];
+  this.clouds = Array.isArray(extras.clouds) ? extras.clouds.slice() : [];
+  this.bgMountains = Array.isArray(extras.bgMountains) ? extras.bgMountains.slice() : [];
+  this.bgHills = Array.isArray(extras.bgHills) ? extras.bgHills.slice() : [];
+  this.decorations = Array.isArray(extras.decorations) ? extras.decorations.slice() : [];
+  this.details = Array.isArray(extras.details) ? extras.details.slice() : [];
+};
+
 /* =========================
    BIOME TERRAIN GENERATION
 ========================== */
