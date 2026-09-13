@@ -31,10 +31,130 @@
   letter-spacing: -0.04em;
 }
 
-.dashboard-user-actions {
+/* =========================
+   ACCOUNT MENU
+========================= */
+
+.account-menu {
+  position: relative;
+}
+
+.account-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+
+  color: var(--text-secondary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-primary);
+
+  cursor: pointer;
+
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.account-menu-trigger:hover {
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  background: var(--accent-surface);
+}
+
+.account-menu-trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* =========================
+   DROPDOWN
+========================= */
+
+.account-menu-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  right: 0;
+  z-index: var(--z-header);
+
+  min-width: 180px;
+  padding: 0.4rem;
+
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
+  flex-direction: column;
+
+  background: var(--bg-panel-transparent);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    visibility var(--transition-fast);
+}
+
+.account-menu-dropdown.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.account-menu-item {
+  display: block;
+  padding: 0.55rem 0.6rem;
+
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+
+  color: var(--text-secondary);
+  text-decoration: none;
+  text-align: left;
+
+  background: transparent;
+  border: none;
+
+  cursor: pointer;
+
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.account-menu-item:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.account-menu-item:focus-visible {
+  outline: 1px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.account-menu-divider {
+  height: 1px;
+  margin: 0.35rem 0.4rem;
+  background: var(--border-subtle);
+}
+
+/* Logout is an account action — separated and tinted as such. */
+
+.account-menu-logout {
+  color: var(--color-danger-light);
+}
+
+.account-menu-logout:hover {
+  color: var(--color-danger-light);
+  background: var(--danger-hover);
 }
 
 /* =========================
@@ -94,17 +214,6 @@
 .play-action .btn {
   min-height: 80px;
   font-size: 1rem;
-}
-
-/* =========================
-   SECONDARY NAVIGATION
-========================= */
-
-.dashboard-navigation {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-md);
-  flex-wrap: wrap;
 }
 
 /* =========================

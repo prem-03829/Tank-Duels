@@ -30,14 +30,42 @@
         TANK DUEL
       </a>
 
-      <div class="dashboard-user-actions">
-        <span class="ui-label" id="player-name">
-          PLAYER
-        </span>
+      <div class="account-menu" id="account-menu">
 
-        <button class="btn btn-outline btn-sm" id="logout-btn" type="button">
-          Logout
+        <button class="account-menu-trigger" id="account-menu-toggle" type="button"
+                aria-label="Account menu" aria-haspopup="true" aria-expanded="false"
+                aria-controls="account-menu-dropdown">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="square"
+               aria-hidden="true" focusable="false">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
+          </svg>
         </button>
+
+        <nav class="account-menu-dropdown" id="account-menu-dropdown"
+             aria-labelledby="account-menu-toggle" aria-hidden="true">
+
+          <a href="./profile.html" class="account-menu-item" role="menuitem">
+            Profile
+          </a>
+
+          <a href="./history.html" class="account-menu-item" role="menuitem">
+            History
+          </a>
+
+          <a href="./settings.html" class="account-menu-item" role="menuitem">
+            Settings
+          </a>
+
+          <div class="account-menu-divider" role="separator"></div>
+
+          <button class="account-menu-item account-menu-logout" id="logout-btn" type="button" role="menuitem">
+            Logout
+          </button>
+
+        </nav>
+
       </div>
 
     </header>
@@ -73,23 +101,6 @@
 
       </div>
 
-
-      <!-- Secondary Navigation -->
-      <nav class="dashboard-navigation">
-
-        <a href="./profile.html" class="btn btn-outline">
-          Profile
-        </a>
-
-        <a href="./history.html" class="btn btn-outline">
-          History
-        </a>
-
-        <a href="./settings.html" class="btn btn-outline">
-          Settings
-        </a>
-
-      </nav>
 
       <!-- Stats -->
       <div class="dashboard-stats">
