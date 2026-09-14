@@ -17,6 +17,7 @@ battle_bp = Blueprint("battle", __name__)
 
 _VALID_GAME_MODES = {"LOCAL", "LAN", "ONLINE"}
 _INTERNAL_ERROR = {"error": "Internal server error"}
+_INITIAL_HEALTH = 100
 _BATTLE_FIELDS = [
     "battle_id",
     "player1_id",
@@ -75,7 +76,9 @@ def create_battle():
                     "game_mode": game_mode,
                     "status": "IN_PROGRESS",
                     "current_turn": str(user_id),
-                    "battle_state": {},
+                    "battle_state": build_initial_battle_state(
+                        str(user_id), str(player2_uuid)
+                    ),
                 }
             )
             .execute()
@@ -127,6 +130,21 @@ def get_battle(battle_id):
         return jsonify({"error": "Battle not found"}), 404
 
     return jsonify({"battle": _battle_payload(rows[0])}), 200
+
+
+def build_initial_battle_state(player1_id, player2_id):
+    """Construct the server-controlled initial battle state.
+
+    Both parameters must be validated UUID strings before calling.
+    The returned dict is intended for direct storage in battle_state.
+    """
+    return {
+        "version": 1,
+        "players": {
+            player1_id: {"health": _INITIAL_HEALTH},
+            player2_id: {"health": _INITIAL_HEALTH},
+        },
+    }
 
 
 def _battle_payload(row):
