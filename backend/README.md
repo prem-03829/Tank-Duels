@@ -220,6 +220,77 @@ Errors: `401` if authentication is missing/invalid, `404`
 Statistics rows are created later by battle-completion logic; this endpoint never
 modifies statistics.
 
+## Battles
+
+Protected endpoints for creating and retrieving battles. Require
+`Authorization: Bearer <access_token>`.
+
+### Create a battle
+
+```
+POST /api/battles
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "player2_id": "uuid-of-the-opponent-player",
+  "game_mode": "LAN"
+}
+```
+
+Only `player2_id` and `game_mode` are honored. `player1_id` is never accepted
+from the client (a `400` is returned if it is supplied); the authenticated
+user's ID from the validated JWT is used as `player1_id`. `game_mode` must be
+exactly one of `LOCAL`, `LAN`, or `ONLINE` (no normalization). The battle is
+created with `status: "IN_PROGRESS"` and the authenticated player as the first
+`current_turn`.
+
+```json
+{
+  "battle": {
+    "battle_id": "...",
+    "player1_id": "...",
+    "player2_id": "...",
+    "winner_player_id": null,
+    "defeated_player_id": null,
+    "current_turn": "...",
+    "game_mode": "LAN",
+    "status": "IN_PROGRESS",
+    "battle_state": {},
+    "created_at": "2026-09-14T11:52:38.671343+00:00",
+    "started_at": null,
+    "ended_at": null
+  }
+}
+```
+
+Errors: `400` for missing/invalid `player2_id` or `game_mode`, a malformed
+`player2_id`, a client-supplied `player1_id`, an unsupported `game_mode`, or
+`player2_id` equal to the authenticated player; `404` if the opponent has no
+`public.player` row; `401` if authentication is missing/invalid.
+
+### Retrieve a battle
+
+```
+GET /api/battles/<battle_id>
+Authorization: Bearer <access_token>
+```
+
+Returns the battle only if the authenticated player participates in it (as
+`player1_id` or `player2_id`); the participant filter runs in the Supabase
+query, with the database RLS as an additional layer.
+
+```json
+{ "battle": { "battle_id": "...", "player1_id": "...", "player2_id": "...", "winner_player_id": null, "defeated_player_id": null, "current_turn": "...", "game_mode": "LAN", "status": "IN_PROGRESS", "battle_state": {}, "created_at": "...", "started_at": null, "ended_at": null } }
+```
+
+Errors: `400` for a malformed `battle_id`; `404` (`{"error": "Battle not found"}`)
+if the battle does not exist or the authenticated player is not a participant
+(participants and non-participants are indistinguishable); `401` if
+authentication is missing/invalid.
+
 ## CORS
 
 Local frontend development origins are allowed by default. To configure origins for a

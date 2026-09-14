@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.auth import auth_bp
+from app.battle import battle_bp
 from app.config import Config
 from app.cors import init_cors
 from app.health import health_bp
@@ -18,6 +19,7 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(player_bp)
+    app.register_blueprint(battle_bp)
     init_cors(app)
 
     _register_error_handlers(app)
