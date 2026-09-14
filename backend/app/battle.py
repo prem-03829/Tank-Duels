@@ -33,6 +33,17 @@ _BATTLE_FIELDS = [
     "ended_at",
 ]
 _BATTLE_COLUMNS = ",".join(_BATTLE_FIELDS)
+_TURN_CHECK_COLUMNS = "battle_id,player1_id,player2_id,current_turn,status"
+_TURN_FORBIDDEN_FIELDS = frozenset(
+    {
+        "player_id",
+        "current_turn",
+        "battle_state",
+        "status",
+        "winner_player_id",
+        "defeated_player_id",
+    }
+)
 
 
 @battle_bp.post("/api/battles")
@@ -130,6 +141,84 @@ def get_battle(battle_id):
         return jsonify({"error": "Battle not found"}), 404
 
     return jsonify({"battle": _battle_payload(rows[0])}), 200
+
+
+@battle_bp.post("/api/battles/<battle_id>/turn/check")
+@require_auth
+def check_turn(battle_id):
+    data = _read_json_body()
+    if isinstance(data, dict):
+        supplied = _TURN_FORBIDDEN_FIELDS.intersection(data)
+        if supplied:
+            return jsonify(
+                {"error": "Identity and battle control fields must not be supplied by the client"}
+            ), 400
+
+    user_id = _get_obj_field(g.user, "id")
+    battle, error = get_authenticated_battle_for_turn(battle_id, user_id)
+    if error is not None:
+        error_payload, error_status = error
+        return jsonify(error_payload), error_status
+
+    return (
+        jsonify(
+            {
+                "turn": {
+                    "battle_id": _get_obj_field(battle, "battle_id"),
+                    "player_id": str(user_id),
+                    "is_current_turn": True,
+                }
+            }
+        ),
+        200,
+    )
+
+
+def get_authenticated_battle_for_turn(battle_id, user_id):
+    """Resolve a battle and authorize `user_id` to perform a turn action.
+
+    Performs no database mutation. Filters on the database side (participant
+    predicate + RLS) so battles the user does not participate in are
+    indistinguishable from nonexistent ones.
+
+    Returns ``(battle, None)`` where ``battle`` is the matching row whenever the
+    user is a participant, the battle is ``IN_PROGRESS``, and it is their turn.
+    Otherwise returns ``(None, (payload, status_code))``.
+    """
+    battle_uuid = _parse_uuid(battle_id)
+    if battle_uuid is None:
+        return None, ({"error": "battle_id must be a valid UUID"}, 400)
+
+    token = _extract_bearer_token()
+    try:
+        response = (
+            get_authenticated_client(token)
+            .table("battle")
+            .select(_TURN_CHECK_COLUMNS)
+            .eq("battle_id", str(battle_uuid))
+            .or_(f"player1_id.eq.{user_id},player2_id.eq.{user_id}")
+            .execute()
+        )
+    except PostgrestAPIError:
+        _log_redacted("Battle fetch for turn check failed")
+        return None, (_INTERNAL_ERROR, 500)
+    except Exception:
+        _log_redacted("Battle fetch for turn check failed unexpectedly")
+        return None, (_INTERNAL_ERROR, 500)
+
+    rows = getattr(response, "data", None) or []
+    if not rows:
+        return None, ({"error": "Battle not found"}, 404)
+
+    battle = rows[0]
+    if _get_obj_field(battle, "status") != "IN_PROGRESS":
+        return None, ({"error": "Battle is not in progress"}, 409)
+
+    current_turn = _get_obj_field(battle, "current_turn")
+    if str(current_turn) != str(user_id):
+        return None, ({"error": "Not your turn"}, 409)
+
+    return battle, None
 
 
 def build_initial_battle_state(player1_id, player2_id):

@@ -244,8 +244,9 @@ Only `player2_id` and `game_mode` are honored. `player1_id` is never accepted
 from the client (a `400` is returned if it is supplied); the authenticated
 user's ID from the validated JWT is used as `player1_id`. `game_mode` must be
 exactly one of `LOCAL`, `LAN`, or `ONLINE` (no normalization). The battle is
-created with `status: "IN_PROGRESS"` and the authenticated player as the first
-`current_turn`.
+created with `status: "IN_PROGRESS"`, the authenticated player as the first
+`current_turn`, and a server-generated initial `battle_state` (never accepted
+from the client).
 
 ```json
 {
@@ -258,13 +259,24 @@ created with `status: "IN_PROGRESS"` and the authenticated player as the first
     "current_turn": "...",
     "game_mode": "LAN",
     "status": "IN_PROGRESS",
-    "battle_state": {},
+    "battle_state": {
+      "version": 1,
+      "players": {
+        "<player1_id>": { "health": 100 },
+        "<player2_id>": { "health": 100 }
+      }
+    },
     "created_at": "2026-09-14T11:52:38.671343+00:00",
     "started_at": null,
     "ended_at": null
   }
 }
 ```
+
+`battle_state` is always generated and controlled by the server. A
+client-supplied `battle_state` is never stored, and there is no generic
+state-update endpoint. The initial state contains only `version` and per-player
+`health`; gameplay fields are added by later steps.
 
 Errors: `400` for missing/invalid `player2_id` or `game_mode`, a malformed
 `player2_id`, a client-supplied `player1_id`, an unsupported `game_mode`, or
@@ -283,13 +295,53 @@ Returns the battle only if the authenticated player participates in it (as
 query, with the database RLS as an additional layer.
 
 ```json
-{ "battle": { "battle_id": "...", "player1_id": "...", "player2_id": "...", "winner_player_id": null, "defeated_player_id": null, "current_turn": "...", "game_mode": "LAN", "status": "IN_PROGRESS", "battle_state": {}, "created_at": "...", "started_at": null, "ended_at": null } }
+{ "battle": { "battle_id": "...", "player1_id": "...", "player2_id": "...", "winner_player_id": null, "defeated_player_id": null, "current_turn": "...", "game_mode": "LAN", "status": "IN_PROGRESS", "battle_state": { "version": 1, "players": { "<player1_id>": { "health": 100 }, "<player2_id>": { "health": 100 } } }, "created_at": "...", "started_at": null, "ended_at": null } }
 ```
 
 Errors: `400` for a malformed `battle_id`; `404` (`{"error": "Battle not found"}`)
 if the battle does not exist or the authenticated player is not a participant
 (participants and non-participants are indistinguishable); `401` if
 authentication is missing/invalid.
+
+### Check current turn
+
+Validation-only endpoint for establishing whose turn it is. Never modifies
+`current_turn`, `battle_state`, `status`, or any other battle field.
+
+```
+POST /api/battles/<battle_id>/turn/check
+Authorization: Bearer <access_token>
+```
+
+The request body is not used to determine identity. Supplying `player_id`,
+`current_turn`, `battle_state`, `status`, `winner_player_id`, or
+`defeated_player_id` in the body returns `400`.
+
+The authenticated player (from the validated JWT) must be a participant, the
+battle must be `IN_PROGRESS`, and the authenticated player's ID must equal the
+battle's `current_turn`. Response when it is the caller's turn:
+
+```json
+{
+  "turn": {
+    "battle_id": "...",
+    "player_id": "...",
+    "is_current_turn": true
+  }
+}
+```
+
+Errors (the participant/nonexistent check is done inside the database query,
+so non-participants are indistinguishable from nonexistent battles):
+
+- `400` — malformed `battle_id`, or identity/battle control fields supplied in the body
+- `401` — authentication missing/invalid
+- `404` — `{"error": "Battle not found"}` — battle does not exist or the
+  authenticated player is not a participant
+- `409` — `{"error": "Battle is not in progress"}` — participant, but the
+  battle is `WAITING`, `COMPLETED`, or `CANCELLED`
+- `409` — `{"error": "Not your turn"}` — participant, `IN_PROGRESS`, but the
+  authenticated player is not `current_turn`
 
 ## CORS
 
