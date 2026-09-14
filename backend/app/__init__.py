@@ -1,9 +1,13 @@
-from flask import Flask, jsonify
+import traceback
+
+from flask import Flask, jsonify, request
 from werkzeug.exceptions import HTTPException, NotFound
 
+from app.auth import auth_bp
 from app.config import Config
 from app.cors import init_cors
 from app.health import health_bp
+from app.logging_utils import redact_log_message
 
 
 def create_app():
@@ -11,6 +15,7 @@ def create_app():
     app.config.from_object(Config)
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(auth_bp)
     init_cors(app)
 
     _register_error_handlers(app)
@@ -38,4 +43,10 @@ def _register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def handle_unhandled_exception(error):
+        app.logger.error(
+            "Unhandled exception %s %s:\n%s",
+            request.method,
+            request.path,
+            redact_log_message(traceback.format_exc()),
+        )
         return jsonify({"error": "Internal server error"}), 500
