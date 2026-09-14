@@ -343,6 +343,86 @@ so non-participants are indistinguishable from nonexistent battles):
 - `409` — `{"error": "Not your turn"}` — participant, `IN_PROGRESS`, but the
   authenticated player is not `current_turn`
 
+### Fire a shot
+
+The first server-side gameplay action. Records an authorized shot from the
+current turn owner into `battle_state` and nothing else.
+
+```
+POST /api/battles/<battle_id>/actions/fire
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "angle": 45,
+  "power": 60
+}
+```
+
+The acting player is always the authenticated user from the validated JWT —
+never a value from the body. `angle` must be between 0 and 360 and `power`
+between 0 and 100 (the exact bounds used by the existing frontend engine).
+Supplying `player_id`, `current_turn`, `battle_state`, `status`,
+`winner_player_id`, or `defeated_player_id` in the body returns `400`.
+
+When it is the caller's turn and no shot is already in flight, the shot is
+persisted as `battle_state.pending_fire`:
+
+```json
+{
+  "battle": {
+    "battle_id": "...",
+    "player1_id": "...",
+    "player2_id": "...",
+    "current_turn": "...",
+    "game_mode": "LAN",
+    "status": "IN_PROGRESS",
+    "battle_state": {
+      "version": 1,
+      "players": {
+        "<player1_id>": { "health": 100 },
+        "<player2_id>": { "health": 100 }
+      },
+      "pending_fire": {
+        "player_id": "<firing player id>",
+        "angle": 45,
+        "power": 60
+      }
+    }
+  }
+}
+```
+
+Scope of this endpoint (Stage-8 boundary):
+
+- It authenticates and authorizes the shot, validates the input, and stores the
+  shot server-side. It never accepts `battle_state`, `current_turn`, damage,
+  health, or winner data from the client.
+- `current_turn` is **not** switched here. In the existing frontend, the turn
+  only changes after the shot resolves (explosion/damage outcome), and that
+  resolution is not implemented server-side yet.
+- Damage and win/lose are **not** computed here. The current frontend derives
+  them from browser-side randomized terrain, tank placement, and per-frame
+  projectile physics that cannot yet be reproduced authoritatively; this is
+  documented in the step report rather than faked.
+- Firing twice before the shot resolves is rejected because
+  `battle_state.pending_fire` is set.
+
+Errors:
+
+- `400` — malformed request body, missing/non-numeric/out-of-range `angle` or
+  `power`, or identity/battle control fields supplied in the body
+- `401` — authentication missing/invalid
+- `404` — `{"error": "Battle not found"}` — battle does not exist or the
+  authenticated player is not a participant
+- `409` — `{"error": "Battle is not in progress"}` — participant, but the
+  battle is `WAITING`, `COMPLETED`, or `CANCELLED`
+- `409` — `{"error": "Not your turn"}` — participant, `IN_PROGRESS`, but the
+  authenticated player is not `current_turn`
+- `409` — `{"error": "A shot is already in flight"}` — a shot is pending
+
 ## CORS
 
 Local frontend development origins are allowed by default. To configure origins for a

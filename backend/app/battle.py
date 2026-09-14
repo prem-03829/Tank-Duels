@@ -18,6 +18,10 @@ battle_bp = Blueprint("battle", __name__)
 _VALID_GAME_MODES = {"LOCAL", "LAN", "ONLINE"}
 _INTERNAL_ERROR = {"error": "Internal server error"}
 _INITIAL_HEALTH = 100
+_ANGLE_MIN = 0
+_ANGLE_MAX = 360
+_POWER_MIN = 0
+_POWER_MAX = 100
 _BATTLE_FIELDS = [
     "battle_id",
     "player1_id",
@@ -34,7 +38,8 @@ _BATTLE_FIELDS = [
 ]
 _BATTLE_COLUMNS = ",".join(_BATTLE_FIELDS)
 _TURN_CHECK_COLUMNS = "battle_id,player1_id,player2_id,current_turn,status"
-_TURN_FORBIDDEN_FIELDS = frozenset(
+_BATTLES_STATE_COLUMNS = "battle_id,player1_id,player2_id,current_turn,status,battle_state"
+_BATTLE_CONTROL_FIELDS = frozenset(
     {
         "player_id",
         "current_turn",
@@ -148,7 +153,7 @@ def get_battle(battle_id):
 def check_turn(battle_id):
     data = _read_json_body()
     if isinstance(data, dict):
-        supplied = _TURN_FORBIDDEN_FIELDS.intersection(data)
+        supplied = _BATTLE_CONTROL_FIELDS.intersection(data)
         if supplied:
             return jsonify(
                 {"error": "Identity and battle control fields must not be supplied by the client"}
@@ -174,7 +179,72 @@ def check_turn(battle_id):
     )
 
 
-def get_authenticated_battle_for_turn(battle_id, user_id):
+@battle_bp.post("/api/battles/<battle_id>/actions/fire")
+@require_auth
+def fire_battle_action(battle_id):
+    data = _read_json_body()
+    if data is None:
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    if isinstance(data, dict):
+        supplied = _BATTLE_CONTROL_FIELDS.intersection(data)
+        if supplied:
+            return jsonify(
+                {"error": "Identity and battle control fields must not be supplied by the client"}
+            ), 400
+
+    shot, error = _validate_shot_input(data)
+    if error is not None:
+        error_payload, error_status = error
+        return jsonify(error_payload), error_status
+
+    user_id = _get_obj_field(g.user, "id")
+    battle, error = get_authenticated_battle_for_turn(
+        battle_id, user_id, columns=_BATTLES_STATE_COLUMNS
+    )
+    if error is not None:
+        error_payload, error_status = error
+        return jsonify(error_payload), error_status
+
+    state = _get_obj_field(battle, "battle_state")
+    if not isinstance(state, dict):
+        state = {}
+    if state.get("pending_fire") is not None:
+        return jsonify({"error": "A shot is already in flight"}), 409
+
+    state["pending_fire"] = {
+        "player_id": str(user_id),
+        "angle": shot[0],
+        "power": shot[1],
+    }
+
+    battle_uuid = _parse_uuid(battle_id)
+    token = _extract_bearer_token()
+
+    try:
+        update_result = (
+            get_authenticated_client(token)
+            .table("battle")
+            .update({"battle_state": state})
+            .eq("battle_id", str(battle_uuid))
+            .or_(f"player1_id.eq.{user_id},player2_id.eq.{user_id}")
+            .execute()
+        )
+    except PostgrestAPIError:
+        _log_redacted("Battle fire action failed")
+        return jsonify(_INTERNAL_ERROR), 500
+    except Exception:
+        _log_redacted("Battle fire action failed unexpectedly")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    rows = getattr(update_result, "data", None) or []
+    if not rows:
+        return jsonify({"error": "Battle not found"}), 404
+
+    return jsonify({"battle": _battle_payload(rows[0])}), 200
+
+
+def get_authenticated_battle_for_turn(battle_id, user_id, columns=None):
     """Resolve a battle and authorize `user_id` to perform a turn action.
 
     Performs no database mutation. Filters on the database side (participant
@@ -189,12 +259,15 @@ def get_authenticated_battle_for_turn(battle_id, user_id):
     if battle_uuid is None:
         return None, ({"error": "battle_id must be a valid UUID"}, 400)
 
+    if not columns:
+        columns = _TURN_CHECK_COLUMNS
+
     token = _extract_bearer_token()
     try:
         response = (
             get_authenticated_client(token)
             .table("battle")
-            .select(_TURN_CHECK_COLUMNS)
+            .select(columns)
             .eq("battle_id", str(battle_uuid))
             .or_(f"player1_id.eq.{user_id},player2_id.eq.{user_id}")
             .execute()
@@ -234,6 +307,44 @@ def build_initial_battle_state(player1_id, player2_id):
             player2_id: {"health": _INITIAL_HEALTH},
         },
     }
+
+
+def _validate_shot_input(data):
+    """Validate a fire action's client input (angle and power only).
+
+    Bounds mirror the existing frontend (TD.ANGLE_MIN/MAX, TD.POWER_MIN/MAX).
+    Returns ``((angle, power), None)`` on success, where the values are
+    rounded integers, or ``(None, (payload, status_code))`` on failure.
+    """
+    if not isinstance(data, dict):
+        return None, ({"error": "Request body must be a JSON object"}, 400)
+
+    angle = data.get("angle")
+    power = data.get("power")
+
+    if angle is None or power is None:
+        return None, ({"error": "angle and power are required"}, 400)
+
+    angle_value = _as_number(angle)
+    power_value = _as_number(power)
+    if angle_value is None or power_value is None:
+        return None, ({"error": "angle and power must be numbers"}, 400)
+
+    if angle_value < _ANGLE_MIN or angle_value > _ANGLE_MAX:
+        return None, ({"error": "angle must be between 0 and 360"}, 400)
+
+    if power_value < _POWER_MIN or power_value > _POWER_MAX:
+        return None, ({"error": "power must be between 0 and 100"}, 400)
+
+    return (round(angle_value), round(power_value)), None
+
+
+def _as_number(value):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
 
 
 def _battle_payload(row):
