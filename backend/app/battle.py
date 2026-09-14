@@ -10,6 +10,7 @@ from app.auth import (
     _read_json_body,
     require_auth,
 )
+from app.battle_setup import DEFAULT_MAP, generate_setup, resolve_map
 from app.logging_utils import redact_log_message
 from app.supabase import get_authenticated_client
 
@@ -22,6 +23,9 @@ _ANGLE_MIN = 0
 _ANGLE_MAX = 360
 _POWER_MIN = 0
 _POWER_MAX = 100
+_DEFAULT_ROUNDS = 1
+_ROUNDS_MIN = 1
+_ROUNDS_MAX = 3
 _BATTLE_FIELDS = [
     "battle_id",
     "player1_id",
@@ -74,6 +78,19 @@ def create_battle():
     if game_mode not in _VALID_GAME_MODES:
         return jsonify({"error": "unsupported game_mode"}), 400
 
+    map_key = data.get("map")
+    if map_key is not None and not isinstance(map_key, str):
+        return jsonify({"error": "map must be a string"}), 400
+    map_key = resolve_map(map_key) if map_key else DEFAULT_MAP
+
+    rounds = data.get("rounds")
+    if rounds is None:
+        rounds = _DEFAULT_ROUNDS
+    elif isinstance(rounds, bool) or not isinstance(rounds, int):
+        return jsonify({"error": "rounds must be an integer"}), 400
+    elif rounds < _ROUNDS_MIN or rounds > _ROUNDS_MAX:
+        return jsonify({"error": "rounds must be between 1 and 3"}), 400
+
     user_id = _get_obj_field(g.user, "id")
     user_uuid = _parse_uuid(user_id)
     if user_uuid is not None and user_uuid == player2_uuid:
@@ -93,7 +110,7 @@ def create_battle():
                     "status": "IN_PROGRESS",
                     "current_turn": str(user_id),
                     "battle_state": build_initial_battle_state(
-                        str(user_id), str(player2_uuid)
+                        str(user_id), str(player2_uuid), map_key=map_key, rounds=rounds
                     ),
                 }
             )
@@ -294,17 +311,45 @@ def get_authenticated_battle_for_turn(battle_id, user_id, columns=None):
     return battle, None
 
 
-def build_initial_battle_state(player1_id, player2_id):
-    """Construct the server-controlled initial battle state.
+def build_initial_battle_state(player1_id, player2_id, map_key=None, rounds=_DEFAULT_ROUNDS):
+    """Construct the server-authoritative initial battle state (version 2).
 
-    Both parameters must be validated UUID strings before calling.
-    The returned dict is intended for direct storage in battle_state.
+    Both player ids must be validated UUID strings. ``map_key`` is a client
+    choice (aliases are resolved and unknown values fall back to dustlands,
+    mirroring the frontend Terrain.generate) and ``rounds`` is the chosen number
+    of rounds (1-3). Every randomized element - seed, terrain heights, tank
+    positions, initial wind and the scoreboard - is generated on the server and
+    stored here; the client supplies none of it. The current turn remains the
+    authoritative ``current_turn`` column, not this JSON.
     """
+    if not isinstance(rounds, int) or isinstance(rounds, bool):
+        rounds = _DEFAULT_ROUNDS
+    rounds = max(_ROUNDS_MIN, min(_ROUNDS_MAX, rounds))
+
+    setup = generate_setup(map_key=map_key)
+    tanks = setup["tanks"]
     return {
-        "version": 1,
-        "players": {
-            player1_id: {"health": _INITIAL_HEALTH},
-            player2_id: {"health": _INITIAL_HEALTH},
+        "version": 2,
+        "setup": {
+            "map": setup["map"],
+            "seed": setup["seed"],
+            "terrain": {"heights": setup["heights"]},
+            "players": {
+                player1_id: {
+                    "x": tanks["player1"]["x"],
+                    "y": tanks["player1"]["y"],
+                    "health": _INITIAL_HEALTH,
+                },
+                player2_id: {
+                    "x": tanks["player2"]["x"],
+                    "y": tanks["player2"]["y"],
+                    "health": _INITIAL_HEALTH,
+                },
+            },
+            "wind": setup["wind"],
+            "round": 1,
+            "max_rounds": rounds,
+            "scores": {player1_id: 0, player2_id: 0},
         },
     }
 
