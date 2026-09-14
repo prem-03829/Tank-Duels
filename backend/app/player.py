@@ -16,6 +16,7 @@ player_bp = Blueprint("player", __name__)
 
 _MAX_USERNAME_LENGTH = 50
 _PLAYER_COLUMNS = "player_id,username,created_at,updated_at"
+_STATISTICS_COLUMNS = "player_id,battles_played,battles_won,battles_lost,total_damage,updated_at"
 _INTERNAL_ERROR = {"error": "Internal server error"}
 
 
@@ -89,11 +90,50 @@ def update_profile():
     return jsonify({"player": _player_payload(rows[0])}), 200
 
 
+@player_bp.get("/api/player/stats")
+@require_auth
+def get_statistics():
+    user_id = _get_obj_field(g.user, "id")
+    token = _extract_bearer_token()
+
+    try:
+        response = (
+            get_authenticated_client(token)
+            .table("player_statistics")
+            .select(_STATISTICS_COLUMNS)
+            .eq("player_id", user_id)
+            .execute()
+        )
+    except PostgrestAPIError:
+        _log_redacted("Player statistics fetch failed")
+        return jsonify(_INTERNAL_ERROR), 500
+    except Exception:
+        _log_redacted("Player statistics fetch failed unexpectedly")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    rows = getattr(response, "data", None) or []
+    if not rows:
+        return jsonify({"error": "Player statistics not found"}), 404
+
+    return jsonify({"statistics": _statistics_payload(rows[0])}), 200
+
+
 def _player_payload(row):
     return {
         "player_id": _get_obj_field(row, "player_id"),
         "username": _get_obj_field(row, "username"),
         "created_at": _get_obj_field(row, "created_at"),
+        "updated_at": _get_obj_field(row, "updated_at"),
+    }
+
+
+def _statistics_payload(row):
+    return {
+        "player_id": _get_obj_field(row, "player_id"),
+        "battles_played": _get_obj_field(row, "battles_played"),
+        "battles_won": _get_obj_field(row, "battles_won"),
+        "battles_lost": _get_obj_field(row, "battles_lost"),
+        "total_damage": _get_obj_field(row, "total_damage"),
         "updated_at": _get_obj_field(row, "updated_at"),
     }
 

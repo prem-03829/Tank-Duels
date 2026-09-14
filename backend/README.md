@@ -190,6 +190,36 @@ Returns the updated profile:
 Errors: `400` for a missing/invalid body or invalid `username`,
 `404` if the player row does not exist, `409` if the username is already taken.
 
+### Get current player statistics
+
+Read-only. Returns the currently authenticated player's statistics.
+
+```
+GET /api/player/stats
+Authorization: Bearer <access_token>
+```
+
+```json
+{
+  "statistics": {
+    "player_id": "...",
+    "battles_played": 0,
+    "battles_won": 0,
+    "battles_lost": 0,
+    "total_damage": 0,
+    "updated_at": "2026-09-14T11:52:38.671343+00:00"
+  }
+}
+```
+
+The authenticated player is determined by the validated JWT only; client-supplied
+`player_id` values (body, query, or URL) are ignored.
+
+Errors: `401` if authentication is missing/invalid, `404`
+(`{"error": "Player statistics not found"}`) if the player has no statistics row.
+Statistics rows are created later by battle-completion logic; this endpoint never
+modifies statistics.
+
 ## CORS
 
 Local frontend development origins are allowed by default. To configure origins for a
