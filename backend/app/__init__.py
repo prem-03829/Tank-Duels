@@ -8,6 +8,7 @@ from app.config import Config
 from app.cors import init_cors
 from app.health import health_bp
 from app.logging_utils import redact_log_message
+from app.player import player_bp
 
 
 def create_app():
@@ -16,6 +17,7 @@ def create_app():
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(player_bp)
     init_cors(app)
 
     _register_error_handlers(app)

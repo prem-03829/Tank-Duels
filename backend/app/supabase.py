@@ -16,9 +16,9 @@ def get_auth_client():
     return _new_client()
 
 
-def get_authenticated_client(access_token, refresh_token):
+def get_authenticated_client(access_token, refresh_token=None):
     client = _new_client()
-    client.auth.set_session(access_token, refresh_token)
+    client.auth.set_session(access_token, refresh_token or "")
     return client
 
 

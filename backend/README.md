@@ -129,6 +129,67 @@ curl http://127.0.0.1:5000/api/auth/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
+## Player profile
+
+Protected endpoints for the currently authenticated user's own player profile.
+Require `Authorization: Bearer <access_token>`.
+
+### Get current player profile
+
+```
+GET /api/player/me
+Authorization: Bearer <access_token>
+```
+
+Returns the profile of the authenticated user:
+
+```json
+{
+  "player": {
+    "player_id": "...",
+    "username": "TankPlayer",
+    "created_at": "2026-09-14T11:52:38.671343+00:00",
+    "updated_at": "2026-09-14T11:52:38.671343+00:00"
+  }
+}
+```
+
+`404` is returned if the authenticated user has no `public.player` row
+(player rows are created at signup).
+
+### Update current player profile
+
+```
+PATCH /api/player/me
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{ "username": "NewUsername" }
+```
+
+Only `username` can be changed (max 50 characters, must be non-empty).
+`player_id`, `created_at`, and `updated_at` are never accepted from the
+client; the authenticated user's ID always comes from the validated JWT, and
+`updated_at` is updated automatically by the database trigger.
+
+Returns the updated profile:
+
+```json
+{
+  "player": {
+    "player_id": "...",
+    "username": "NewUsername",
+    "created_at": "2026-09-14T11:52:38.671343+00:00",
+    "updated_at": "2026-09-14T11:53:34.807462+00:00"
+  }
+}
+```
+
+Errors: `400` for a missing/invalid body or invalid `username`,
+`404` if the player row does not exist, `409` if the username is already taken.
+
 ## CORS
 
 Local frontend development origins are allowed by default. To configure origins for a
