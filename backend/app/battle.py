@@ -1,5 +1,6 @@
 import traceback
 import uuid
+from datetime import datetime, timezone
 
 from flask import Blueprint, current_app, g, jsonify, request
 from postgrest.exceptions import APIError as PostgrestAPIError
@@ -12,6 +13,7 @@ from app.auth import (
 )
 from app.battle_setup import DEFAULT_MAP, generate_setup, resolve_map
 from app.logging_utils import redact_log_message
+from app.shot_resolution import resolve_shot
 from app.supabase import get_authenticated_client
 
 battle_bp = Blueprint("battle", __name__)
@@ -261,6 +263,121 @@ def fire_battle_action(battle_id):
     return jsonify({"battle": _battle_payload(rows[0])}), 200
 
 
+@battle_bp.post("/api/battles/<battle_id>/actions/fire/resolve")
+@require_auth
+def resolve_fire_action(battle_id):
+    data = _read_json_body()
+    if isinstance(data, dict) and data:
+        supplied = _BATTLE_CONTROL_FIELDS.intersection(data)
+        if supplied:
+            return jsonify(
+                {"error": "Identity and battle control fields must not be supplied by the client"}
+            ), 400
+        return jsonify({"error": "Resolving a shot requires no request body"}), 400
+
+    user_id = _get_obj_field(g.user, "id")
+    battle, error = get_authenticated_battle_for_turn(
+        battle_id, user_id, columns=_BATTLES_STATE_COLUMNS
+    )
+    if error is not None:
+        error_payload, error_status = error
+        return jsonify(error_payload), error_status
+
+    state = _get_obj_field(battle, "battle_state")
+    if not isinstance(state, dict):
+        state = {}
+    pending_fire = state.get("pending_fire")
+    if not isinstance(pending_fire, dict):
+        return jsonify({"error": "A shot is not in flight"}), 409
+
+    pending_player = pending_fire.get("player_id")
+    if not isinstance(pending_player, str) or str(pending_player) != str(user_id):
+        return jsonify({"error": "Not your turn"}), 409
+
+    if not _validate_pending_fire(pending_fire):
+        return jsonify({"error": "Stored pending_fire is malformed"}), 400
+
+    player1_id = str(_get_obj_field(battle, "player1_id"))
+    player2_id = str(_get_obj_field(battle, "player2_id"))
+    outcome = resolve_shot(state, player1_id, player2_id)
+
+    updates = {"battle_state": outcome["battle_state"]}
+    if outcome["current_turn"] is not None:
+        updates["current_turn"] = outcome["current_turn"]
+    if outcome["status"] == "COMPLETED":
+        updates["status"] = "COMPLETED"
+        updates["winner_player_id"] = outcome["round_winner_player_id"]
+        updates["defeated_player_id"] = outcome["defeated_player_id"]
+        updates["ended_at"] = datetime.now(timezone.utc).isoformat()
+
+    battle_uuid = _parse_uuid(battle_id)
+    token = _extract_bearer_token()
+
+    try:
+        update_result = (
+            get_authenticated_client(token)
+            .table("battle")
+            .update(updates)
+            .eq("battle_id", str(battle_uuid))
+            .eq("status", "IN_PROGRESS")
+            .eq("current_turn", str(user_id))
+            .or_(f"player1_id.eq.{user_id},player2_id.eq.{user_id}")
+            .contains("battle_state", {"pending_fire": pending_fire})
+            .execute()
+        )
+    except PostgrestAPIError:
+        _log_redacted("Battle resolve action failed")
+        return jsonify(_INTERNAL_ERROR), 500
+    except Exception:
+        _log_redacted("Battle resolve action failed unexpectedly")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    rows = getattr(update_result, "data", None) or []
+    if not rows:
+        return _resolve_contention_response(battle_id, user_id)
+
+    return jsonify({"battle": _battle_payload(rows[0]), "shot": outcome["shot"]}), 200
+
+
+def _resolve_contention_response(battle_id, user_id):
+    """Classify a resolve UPDATE that affected zero rows.
+
+    A zero-row result means another request consumed the same ``pending_fire``
+    first (or the battle otherwise changed) between our read and the atomic
+    UPDATE. Re-read to distinguish an already-resolved shot from a battle that
+    ended or disappeared. Returns a ``(response, status)`` Flask tuple.
+    """
+    battle_uuid = _parse_uuid(battle_id)
+    token = _extract_bearer_token()
+
+    try:
+        response = (
+            get_authenticated_client(token)
+            .table("battle")
+            .select(_BATTLES_STATE_COLUMNS)
+            .eq("battle_id", str(battle_uuid))
+            .or_(f"player1_id.eq.{user_id},player2_id.eq.{user_id}")
+            .execute()
+        )
+    except (PostgrestAPIError, Exception):
+        _log_redacted("Battle resolve contention re-read failed")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    rows = getattr(response, "data", None) or []
+    if not rows:
+        return jsonify({"error": "Battle not found"}), 404
+
+    stale = rows[0]
+    if _get_obj_field(stale, "status") != "IN_PROGRESS":
+        return jsonify({"error": "Battle is not in progress"}), 409
+
+    stale_state = _get_obj_field(stale, "battle_state")
+    if not isinstance(stale_state, dict) or stale_state.get("pending_fire") is None:
+        return jsonify({"error": "Shot already resolved"}), 409
+
+    return jsonify({"error": "A shot is already in flight"}), 409
+
+
 def get_authenticated_battle_for_turn(battle_id, user_id, columns=None):
     """Resolve a battle and authorize `user_id` to perform a turn action.
 
@@ -352,6 +469,28 @@ def build_initial_battle_state(player1_id, player2_id, map_key=None, rounds=_DEF
             "scores": {player1_id: 0, player2_id: 0},
         },
     }
+
+
+def _validate_pending_fire(pending_fire):
+    """Structural validation for a stored (server-written) ``pending_fire``.
+
+    The values were written by the fire endpoint, so bounds already pass the
+    same checks as ``_validate_shot_input``. Returns ``True`` when the payload
+    is well-formed (dict with integer-ish angle/power), ``False`` otherwise.
+    """
+    if not isinstance(pending_fire, dict):
+        return False
+    if not isinstance(pending_fire.get("player_id"), str):
+        return False
+    angle = _as_number(pending_fire.get("angle"))
+    power = _as_number(pending_fire.get("power"))
+    if angle is None or power is None:
+        return False
+    if angle < _ANGLE_MIN or angle > _ANGLE_MAX:
+        return False
+    if power < _POWER_MIN or power > _POWER_MAX:
+        return False
+    return True
 
 
 def _validate_shot_input(data):

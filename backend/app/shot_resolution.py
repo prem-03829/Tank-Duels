@@ -15,6 +15,7 @@ server-controlled and reproducible.
 """
 
 import math
+import secrets
 
 from app.battle_setup import (
     TERRAIN_H,
@@ -112,13 +113,14 @@ def _run_flight(tanks, heights, wind, angle, power, firing_index):
     damage = {0: 0, 1: 0}
 
     for _ in range(_MAX_SIMULATION_STEPS):
+        prev_x, prev_y = x, y
         vx += wind * 0.008
         vy += GRAVITY
         x += vx
         y += vy
 
         if x < _MISS_LEFT or x > _MISS_RIGHT or y > _MISS_BOTTOM:
-            return "miss", None, damage
+            return "miss", {"x": prev_x, "y": prev_y}, damage
 
         ix = _js_round(x)
         if 0 <= ix < TERRAIN_W and y >= heights[ix]:
@@ -145,7 +147,7 @@ def _run_flight(tanks, heights, wind, angle, power, firing_index):
                 damage[i] += MAX_DAMAGE
                 return "tank", {"x": x, "y": y}, damage
 
-    return "miss", None, damage
+    return "miss", {"x": prev_x, "y": prev_y}, damage
 
 
 def resolve_shot(battle_state, player1_id, player2_id):
@@ -207,8 +209,12 @@ def resolve_shot(battle_state, player1_id, player2_id):
         "hit_type": hit_type,
         "impact": impact,
         "damage": {
-            player1_id: damage_by_index[0],
-            player2_id: damage_by_index[1],
+            pid: dmg
+            for pid, dmg in (
+                (player1_id, damage_by_index[0]),
+                (player2_id, damage_by_index[1]),
+            )
+            if dmg > 0
         },
     }
     new_state["last_shot"] = shot
@@ -228,7 +234,7 @@ def resolve_shot(battle_state, player1_id, player2_id):
         defeated = player2_id if winner_index == 0 else player1_id
 
         setup["scores"][round_winner] += 1
-        if setup["scores"][player1_id] > setup["max_rounds"] / 2 or setup[
+        if setup["scores"][player1_id] > setup["max_rounds"] / 2 or setup["scores"][
             player2_id
         ] > setup["max_rounds"] / 2:
             status = "COMPLETED"
@@ -268,6 +274,4 @@ def resolve_shot(battle_state, player1_id, player2_id):
 
 
 def _random_seed():
-    import secrets
-
     return secrets.randbits(32)

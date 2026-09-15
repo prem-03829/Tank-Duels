@@ -317,8 +317,9 @@ faithful port of the browser's terrain and tank-placement logic
   client must consume this server value instead of generating its own.
 - `round`/`max_rounds`/`scores` — round tracking; the current turn is the
   authoritative `current_turn` column, not this JSON.
-- `round` is fixed at 1 here (initial setup). New-round setup regeneration is a
-  later step, as is shot resolution.
+- `round` is fixed at 1 here (initial setup). Round 2+ setup regeneration and
+  shot resolution are handled by `app/shot_resolution.py` when a shot resolves
+  (see "Resolve a shot").
 
 Because tanks must sit on the exact heights the server stores, the entire
 RNG consumption order (heights, stars, clouds, background mountains, hills,
@@ -487,6 +488,137 @@ Errors:
 - `409` — `{"error": "Not your turn"}` — participant, `IN_PROGRESS`, but the
   authenticated player is not `current_turn`
 - `409` — `{"error": "A shot is already in flight"}` — a shot is pending
+
+### Resolve a shot
+
+The second server-side gameplay action. Consumes the stored `pending_fire` and
+resolves it **authoritatively** on the server into an outcome: projectile
+flight, collision, terrain destruction, damage, turn switching, and round /
+game-over transitions.
+
+```
+POST /api/battles/<battle_id>/actions/fire/resolve
+Authorization: Bearer <access_token>
+```
+
+No request body is used or required. Submitting any body returns `400`
+(bodies that contain identity/battle control fields get the standard control
+field message). The acting player is the authenticated user from the validated
+JWT, and the shot comes entirely from the server-stored
+`battle_state.pending_fire` written by the fire endpoint — the client does not
+(and cannot) supply position, velocity, collision, damage, health, scores,
+terrain, wind, winner, or any other battle state.
+
+Rules enforced in order:
+
+- `400` — malformed `battle_id`, a non-empty request body, or a structurally
+  malformed stored `pending_fire`.
+- `401` — authentication missing/invalid.
+- `404` — battle does not exist or the authenticated player is not a
+  participant (indistinguishable, done inside the database query).
+- `409` — battle not `IN_PROGRESS`, "Not your turn",
+  `{"error": "A shot is not in flight"}` when there is no `pending_fire`, or the
+  stored `pending_fire.player_id` is not the authenticated user.
+
+On success the shot is resolved and the battle is updated atomically:
+
+- `battle_state.pending_fire` is consumed (removed).
+- Health, terrain (cratered `heights`), and tank positions are updated.
+- No death: `current_turn` switches to the other player and `setup.wind` is
+  regenerated server-side.
+- A death with more rounds to play: the round advances (`round + 1`), both
+  tanks are restored to 100 health on a freshly generated setup for the same
+  map, and `current_turn` returns to player 1.
+- A death that reaches the score threshold (`score > max_rounds/2`): the battle
+  is marked `COMPLETED` with `winner_player_id`, `defeated_player_id` and
+  `ended_at` (ISO 8601 UTC) set; `current_turn` is **not** changed.
+
+The last resolution is also stored as `battle_state.last_shot`:
+
+```json
+{
+  "battle": {
+    "battle_id": "...",
+    "status": "IN_PROGRESS",
+    "current_turn": "...",
+    "battle_state": {
+      "version": 2,
+      "setup": { "map": "dustlands", "seed": -123456, "terrain": { "heights": [ 277, ... ] }, "players": { "<player1_id>": { "x": 125, "y": 263, "health": 100 }, "<player2_id>": { "x": 522, "y": 265, "health": 100 } }, "wind": 3, "round": 1, "max_rounds": 1, "scores": { "<player1_id>": 0, "<player2_id>": 0 } },
+      "last_shot": {
+        "player_id": "<firing player id>",
+        "angle": 45,
+        "power": 60,
+        "hit_type": "terrain",
+        "impact": { "x": 192, "y": 270 },
+        "damage": {}
+      }
+    }
+  },
+  "shot": {
+    "player_id": "<firing player id>",
+    "angle": 45,
+    "power": 60,
+    "hit_type": "terrain",
+    "impact": { "x": 192, "y": 270 },
+    "damage": {}
+  }
+}
+```
+
+`shot` (and `last_shot`) fields:
+
+- `hit_type` — one of `terrain` (the projectile hit the terrain at
+  `(round(x), height(round(x)))` and the explosion cratered it), `tank` (the
+  projectile entered a tank hitbox and dealt full `MAX_DAMAGE`), or `miss`
+  (the projectile left the arena).
+- `impact` — `{"x", "y"}` pixel position of the collision. For a `miss` it is
+  the last valid (still in-bounds) projectile position; both coordinates are
+  always meaningful for a fired projectile, so `impact` is never `null` in
+  practice.
+- `damage` — an object mapping each **damaged** player's id to the damage they
+  took. Direct tank hit: `{"<hit player>": 40}`. Terrain splash
+  (`dist < 26`): `max(5, round(40 * (1 - dist/26)))` per tank. A shot that
+  damages no one (including most misses) returns `{}`. Zero-damage players are
+  never included.
+
+Authoritative resolution:
+
+The resolution is a faithful port of the browser's own mechanics
+(`frontend/js/game/projectile.js`, `tank.js`, `terrain.js`, `engine.js`):
+gravity 0.09, `speed = (power/100) * 10`, per-frame `wind * 0.008`, tank hitbox
+`x-14, y-7, w 28, h 21`, explosion radius 26 (15.6 on a tank hit), the crater
+formula `min(H, round((cy + sqrt(r^2 - dx^2) * 0.6) / 2) * 2)`, health clamped
+at 0, the first-dead / both-dead winner mapping, and the
+`scores > max_rounds/2` game-over threshold. The server resolves from values it
+already owns; the client supplies nothing.
+
+Concurrency:
+
+Resolving is a single atomic database operation. The UPDATE is filtered with
+a PostgREST JSONB containment predicate on the exact stored shot —
+`battle_state=cs.{ "pending_fire": { ... } }` (`@>` under the hood) in addition
+to `battle_id`, `status = IN_PROGRESS`, `current_turn` and the participant
+filter. The predicate is evaluated against the row as it exists at UPDATE time,
+so when two requests race to consume the same `pending_fire`, exactly one
+succeeds and the other matches zero rows and receives `409` —
+`{"error": "Shot already resolved"}` (or "Battle is not in progress"/"A shot is
+already in flight" if the re-read shows a different state). No read-modify-write
+window remains.
+
+Errors:
+
+- `400` — malformed `battle_id`, a non-empty request body, identity/battle
+  control fields supplied in the body, or a malformed stored `pending_fire`
+- `401` — authentication missing/invalid
+- `404` — `{"error": "Battle not found"}` — battle does not exist or the
+  authenticated player is not a participant
+- `409` — `{"error": "Battle is not in progress"}` — the battle is not
+  `IN_PROGRESS`
+- `409` — `{"error": "Not your turn"}` — `current_turn` is not the
+  authenticated player, or the stored `pending_fire.player_id` is
+- `409` — `{"error": "A shot is not in flight"}` — no `pending_fire` to resolve
+- `409` — `{"error": "Shot already resolved"}` — another request consumed the
+  same `pending_fire` first
 
 ## CORS
 
