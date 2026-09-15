@@ -113,6 +113,21 @@ TD.me = function () {
   return TD_apiRequest("GET", "/api/auth/me", undefined, true);
 };
 
+/* =========================
+   PLAYER PROFILE
+   GET /api/player/me → {"player": {player_id, username, created_at, updated_at}}
+   GET /api/player/stats → {"statistics": {player_id, battles_played,
+   battles_won, battles_lost, total_damage, updated_at}}
+========================= */
+
+TD.profile = function () {
+  return TD_apiRequest("GET", "/api/player/me", undefined, true);
+};
+
+TD.stats = function () {
+  return TD_apiRequest("GET", "/api/player/stats", undefined, true);
+};
+
 TD.logout = function () {
   var token = TD_getAccessToken();
   var request = PD_apiRequest ? TD_apiRequest("POST", "/api/auth/logout", undefined, true) : Promise.resolve();
