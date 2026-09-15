@@ -130,7 +130,7 @@ TD.stats = function () {
 
 TD.logout = function () {
   var token = TD_getAccessToken();
-  var request = PD_apiRequest ? TD_apiRequest("POST", "/api/auth/logout", undefined, true) : Promise.resolve();
+  var request = TD_apiRequest ? TD_apiRequest("POST", "/api/auth/logout", undefined, true) : Promise.resolve();
   return request
     .catch(function (e) { /* ignore — local clear below is what matters */ })
     .then(function () {
