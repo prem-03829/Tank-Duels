@@ -164,6 +164,9 @@ def resolve_shot(battle_state, player1_id, player2_id):
     - ``current_turn`` — the new turn owner (unchanged when the match ends)
     - ``battle_state`` — the new authoritative state (``pending_fire`` consumed,
       health/terrain/wind/scores updated, round setup regenerated if needed)
+    - ``battle_state.damage_dealt`` — per-player running total of damage each
+      player dealt to the *opponent* (survives round regeneration so player
+      statistics can be derived when the match completes)
     """
     setup = battle_state["setup"]
     pending_fire = battle_state["pending_fire"]
@@ -200,6 +203,16 @@ def resolve_shot(battle_state, player1_id, player2_id):
         player2_id: {"x": tanks[1]["x"], "y": tanks[1]["y"], "health": tanks[1]["health"]},
     }
     new_state["setup"] = setup
+
+    damage_dealt = new_state.get("damage_dealt") or {player1_id: 0, player2_id: 0}
+    damage_dealt = dict(damage_dealt)
+    firing_id = player1_id if firing_index == 0 else player2_id
+    opponent_index = 1 if firing_index == 0 else 0
+    damage_dealt[firing_id] = int(
+        damage_dealt.get(firing_id, 0) or 0
+    ) + int(damage_by_index[opponent_index] or 0)
+    new_state["damage_dealt"] = damage_dealt
+
     new_state.pop("pending_fire", None)
 
     shot = {

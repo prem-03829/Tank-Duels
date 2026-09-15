@@ -14,6 +14,7 @@ from app.auth import (
 from app.battle_setup import DEFAULT_MAP, generate_setup, resolve_map
 from app.logging_utils import redact_log_message
 from app.shot_resolution import resolve_shot
+from app.statistics import apply_completed_battle_statistics
 from app.supabase import get_authenticated_client
 
 battle_bp = Blueprint("battle", __name__)
@@ -314,9 +315,9 @@ def resolve_fire_action(battle_id):
     token = _extract_bearer_token()
 
     try:
+        client = get_authenticated_client(token)
         update_result = (
-            get_authenticated_client(token)
-            .table("battle")
+            client.table("battle")
             .update(updates)
             .eq("battle_id", str(battle_uuid))
             .eq("status", "IN_PROGRESS")
@@ -335,6 +336,12 @@ def resolve_fire_action(battle_id):
     rows = getattr(update_result, "data", None) or []
     if not rows:
         return _resolve_contention_response(battle_id, user_id)
+
+    if outcome["status"] == "COMPLETED":
+        try:
+            apply_completed_battle_statistics(client, rows[0])
+        except (PostgrestAPIError, Exception):
+            _log_redacted("Battle statistics persistence failed")
 
     return jsonify({"battle": _battle_payload(rows[0]), "shot": outcome["shot"]}), 200
 
@@ -468,6 +475,7 @@ def build_initial_battle_state(player1_id, player2_id, map_key=None, rounds=_DEF
             "max_rounds": rounds,
             "scores": {player1_id: 0, player2_id: 0},
         },
+        "damage_dealt": {player1_id: 0, player2_id: 0},
     }
 
 
