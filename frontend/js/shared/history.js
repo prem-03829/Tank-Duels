@@ -111,3 +111,62 @@ TD.addLocalMatchToHistory = function (data) {
 
   TD.addMatchToHistory(record);
 };
+
+/* =========================
+   AUTHENTICATED HISTORY SOURCE
+   History is source-agnostic: guests read the existing localStorage file;
+   authenticated players read their backend history (public.local_battle).
+   Returns a Promise resolving to display records, newest first. Guests never
+   reach the backend — the branch below short-circuits to localStorage.
+========================= */
+
+TD.loadMatchHistory = function () {
+  var isAuthed = typeof TD_isAuthenticated === "function" && TD_isAuthenticated();
+
+  if (!isAuthed) {
+    return Promise.resolve(TD.getMatchHistory());
+  }
+
+  if (typeof TD.getLocalBattles !== "function") {
+    return Promise.resolve([]);
+  }
+
+  return TD.getLocalBattles()
+    .then(function (payload) {
+      var rows = (payload && payload.local_battles) || [];
+      var records = [];
+      for (var i = 0; i < rows.length; i++) {
+        records.push(TD.mapLocalBattleRecord(rows[i]));
+      }
+      return records;
+    })
+    .catch(function () {
+      return [];
+    });
+};
+
+/* Convert one backend local_battle row into the shared history record shape
+   the history page already renders. Names, scores, and winner mirror the
+   localStorage guest record so both sources display identically. */
+TD.mapLocalBattleRecord = function (row) {
+  var p1 = (row && row.player1_name) || 'PLAYER';
+  var p2 = (row && row.player2_name) || 'OPPONENT';
+  var p1Wins = !row || row.winner === 'PLAYER1';
+
+  return {
+    id: (row && row.local_battle_id) || '',
+    mode: 'local',
+    winner: p1Wins ? p1 : p2,
+    loser: p1Wins ? p2 : p1,
+    playerOne: p1,
+    playerTwo: p2,
+    playerOneScore: Number(row && row.player1_score) || 0,
+    playerTwoScore: Number(row && row.player2_score) || 0,
+    playerOneColor: '#e07030',
+    playerTwoColor: '#4090b0',
+    map: TD.getHistoryMapName(row && row.map),
+    mapKey: (row && row.map) || '',
+    rounds: Number(row && row.rounds) || 1,
+    completedAt: (row && row.created_at) || new Date().toISOString()
+  };
+};

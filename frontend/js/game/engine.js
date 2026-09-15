@@ -877,19 +877,40 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   localStorage.setItem('tankDuelGames', String(games + 1));
   if (result === 'win') localStorage.setItem('tankDuelWins', String(wins + 1));
 
-  // Record the completed match in the centralized history (only reached when
-  // the match actually finishes — never on quit/refresh/interruption).
-  TD.addLocalMatchToHistory({
-    playerOne: this.playerName,
-    playerTwo: this.opponentName,
-    playerOneScore: this.scores[0],
-    playerTwoScore: this.scores[1],
-    playerOneColor: findPlayerColorHex(this.playerOneColorId),
-    playerTwoColor: findPlayerColorHex(this.playerTwoColorId),
-    mapKey: TD.resolveMap(this.mapType),
-    rounds: this.maxRounds,
-    completedAt: new Date().toISOString()
-  });
+  // Record the completed match in history (only reached when the match
+  // actually finishes — never on quit/refresh/interruption). Guest Mode stays
+  // 100% local (existing localStorage behavior, untouched). Authenticated
+  // same-device matches persist to the backend (public.local_battle), which
+  // never updates player_statistics. The keepalive POST finishes even though
+  // this method navigates to the results page immediately after.
+  var isAuthenticated =
+    typeof TD_isAuthenticated === 'function' && TD_isAuthenticated();
+
+  if (isAuthenticated) {
+    if (typeof TD.saveLocalBattle === 'function') {
+      TD.saveLocalBattle({
+        player1_name: this.playerName,
+        player2_name: this.opponentName,
+        winner: this.scores[0] >= this.scores[1] ? 'PLAYER1' : 'PLAYER2',
+        player1_score: this.scores[0],
+        player2_score: this.scores[1],
+        map: TD.resolveMap(this.mapType),
+        rounds: this.maxRounds
+      }).catch(function () { /* best-effort history persistence */ });
+    }
+  } else {
+    TD.addLocalMatchToHistory({
+      playerOne: this.playerName,
+      playerTwo: this.opponentName,
+      playerOneScore: this.scores[0],
+      playerTwoScore: this.scores[1],
+      playerOneColor: findPlayerColorHex(this.playerOneColorId),
+      playerTwoColor: findPlayerColorHex(this.playerTwoColorId),
+      mapKey: TD.resolveMap(this.mapType),
+      rounds: this.maxRounds,
+      completedAt: new Date().toISOString()
+    });
+  }
 
   TD.clearActiveMatch();
 

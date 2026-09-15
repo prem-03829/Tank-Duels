@@ -65,7 +65,7 @@ function TD_isAuthenticated() {
    FETCH WRAPPER
 ========================= */
 
-function TD_apiRequest(method, path, body, authenticated) {
+function TD_apiRequest(method, path, body, authenticated, keepalive) {
   var headers = { "Content-Type": "application/json" };
 
   if (authenticated) {
@@ -78,6 +78,7 @@ function TD_apiRequest(method, path, body, authenticated) {
 
   return fetch(TD_apiBaseUrl() + path, {
     method: method,
+    keepalive: !!keepalive,
     headers: headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
@@ -126,6 +127,27 @@ TD.profile = function () {
 
 TD.stats = function () {
   return TD_apiRequest("GET", "/api/player/stats", undefined, true);
+};
+
+/* =========================
+   LOCAL BATTLE HISTORY (SAME DEVICE)
+   Authenticated same-device matches are persisted to and loaded from the
+   Flask backend (public.local_battle). These are history records only — they
+   never touch player_statistics. Guest Mode must NEVER call either function;
+   guests keep the existing localStorage path in shared/history.js.
+========================= */
+
+/* Persist one completed same-device match. `keepalive` lets the request
+   finish even though the game engine navigates to the results page right after
+   the match ends. player_id is never part of the payload — the backend derives
+   it from the JWT. */
+TD.saveLocalBattle = function (data) {
+  return TD_apiRequest("POST", "/api/local-battles", data, true, true);
+};
+
+/* Fetch the authenticated player's same-device match history, newest first. */
+TD.getLocalBattles = function () {
+  return TD_apiRequest("GET", "/api/local-battles", undefined, true);
 };
 
 TD.logout = function () {

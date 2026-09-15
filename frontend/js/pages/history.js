@@ -25,21 +25,23 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      RENDER HISTORY
      Each completed match becomes one compact horizontal row.
+     Authenticated users read backend history (public.local_battle); guests
+     keep the existing localStorage file. Both render identically below.
   ========================= */
 
   const list = document.querySelector("#history-list");
   if (!list) return;
 
-  const matches = TD.getMatchHistory();
+  TD.loadMatchHistory().then((matches) => {
+    if (!matches || matches.length === 0) return; // keep the empty state
 
-  if (!matches || matches.length === 0) return; // keep the empty state
+    const emptyEl = document.querySelector("#history-empty");
+    if (emptyEl) emptyEl.remove();
 
-  const emptyEl = document.querySelector("#history-empty");
-  if (emptyEl) emptyEl.remove();
-
-  for (let i = 0; i < matches.length; i++) {
-    list.appendChild(renderMatch(matches[i]));
-  }
+    for (let i = 0; i < matches.length; i++) {
+      list.appendChild(renderMatch(matches[i]));
+    }
+  });
 });
 
 function renderMatch(match) {

@@ -8,6 +8,7 @@ from app.battle import battle_bp
 from app.config import Config
 from app.cors import init_cors
 from app.health import health_bp
+from app.local_battle import local_battle_bp
 from app.logging_utils import redact_log_message
 from app.player import player_bp
 
@@ -20,6 +21,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(player_bp)
     app.register_blueprint(battle_bp)
+    app.register_blueprint(local_battle_bp)
     init_cors(app)
 
     _register_error_handlers(app)
