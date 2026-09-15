@@ -69,26 +69,34 @@
 
       <nav class="main-menu-actions">
 
-        <a href="./pages/dashboard.html" class="menu-button menu-button-primary" data-play-guest>
+        <a href="./pages/dashboard.html" class="menu-button menu-button-primary" data-play-guest id="menu-play-guest">
           <span>PLAY AS GUEST</span>
           <span class="menu-arrow">›</span>
         </a>
 
+        <!-- Authenticated state: shown only when main-menu.js detects an
+             existing user session. Starts hidden; guests never see it.
+             Built only from classes already used on this page. -->
+        <a href="./pages/dashboard.html" class="menu-button menu-button-primary" id="menu-authed" style="display:none">
+          <span>CONTINUE AS <span id="menu-authed-name">PLAYER</span></span>
+          <span class="menu-arrow">›</span>
+        </a>
 
-        <div class="menu-divider">
+
+        <div class="menu-divider" id="menu-divider">
           <span></span>
           <small>OR</small>
           <span></span>
         </div>
 
 
-        <a href="./pages/login.html" class="menu-button">
+        <a href="./pages/login.html" class="menu-button" id="menu-login">
           <span>LOGIN</span>
           <span class="menu-arrow">›</span>
         </a>
 
 
-        <a href="./pages/signup.html" class="menu-button">
+        <a href="./pages/signup.html" class="menu-button" id="menu-signup">
           <span>SIGN UP</span>
           <span class="menu-arrow">›</span>
         </a>
