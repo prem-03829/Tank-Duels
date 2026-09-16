@@ -72,6 +72,9 @@ class Store:
         self.fail_update = False
         self.noop_update = False
         self.fail_select = False
+        self.players = {}
+        self.fail_names_rpc = False
+        self.last_names_rpc = None
 
     def next_id(self):
         return str(uuid.uuid4())
@@ -180,6 +183,42 @@ class Store:
             match["started_at"] = "2026-09-01T00:00:00.000Z"
             return [dict(match)]
 
+    def rpc_resolve_names(self, params, caller):
+        """Emulate public.resolve_battle_player_names (13D): only a battle
+        participant may resolve the two usernames; auth.uid() must be set;
+        the returned row carries exactly the four intended fields."""
+        self.last_names_rpc = {
+            "fn": "resolve_battle_player_names",
+            "params": dict(params),
+        }
+        battle_id = str(params.get("p_battle_id"))
+        with self.lock:
+            if self.fail_names_rpc:
+                self.fail_names_rpc = False
+                raise _rpc_error("could not resolve player names", code="P0001")
+            battle = self.battles.get(battle_id)
+            if battle is None:
+                raise _rpc_error("Battle not found")
+            if caller is None:
+                raise _rpc_error("Authentication required")
+            if str(caller) not in (
+                str(battle.get("player1_id")),
+                str(battle.get("player2_id")),
+            ):
+                raise _rpc_error("Not a participant of this battle")
+            return [
+                {
+                    "player1_id": battle.get("player1_id"),
+                    "player1_name": self.players.get(str(battle.get("player1_id"))),
+                    "player2_id": battle.get("player2_id"),
+                    "player2_name": (
+                        self.players.get(str(battle.get("player2_id")))
+                        if battle.get("player2_id") is not None
+                        else None
+                    ),
+                }
+            ]
+
     @staticmethod
     def _or_matches(or_expr, battle):
         for predicate in or_expr.split(","):
@@ -253,6 +292,8 @@ class FakeRPC:
         self.params = params
 
     def execute(self):
+        if self.fn == "resolve_battle_player_names":
+            return Result(self.store.rpc_resolve_names(self.params, self.user_id))
         return Result(self.store.rpc_join(self.fn, self.params, self.user_id))
 
 
@@ -284,6 +325,12 @@ class FakeSupabase:
 class OnlineBattleTests(unittest.TestCase):
     def setUp(self):
         self.store = Store()
+        self.store.players = {
+            P1: "MAKER",
+            P2: "PEACE",
+            P3: "THIRD",
+            P4: "FOURTH",
+        }
         self.token = "test-access-token"
         self._use_user(P1)
         self.app = create_app()
@@ -501,6 +548,8 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(battle["status"], "IN_PROGRESS")
         self.assertEqual(battle["current_turn"], P1)
         self.assertEqual(battle["battle_code"], "A234")
+        self.assertEqual(battle["player1_name"], "MAKER")
+        self.assertEqual(battle["player2_name"], "PEACE")
         self.assertIsNotNone(battle["started_at"])
         self.assertIsNone(battle["winner_player_id"])
         self.assertIsNone(battle["defeated_player_id"])
@@ -600,6 +649,8 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(battle["game_mode"], "ONLINE")
         self.assertEqual(battle["player1_id"], P1)
         self.assertEqual(battle["battle_code"], "A234")
+        self.assertEqual(battle["player1_name"], "MAKER")
+        self.assertIsNone(battle["player2_name"])
 
     def test_get_joined_battle_as_joiner(self):
         seeded = self._seed_waiting(code="A234")
@@ -616,10 +667,37 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(battle["battle_id"], seeded["battle_id"])
         self.assertEqual(battle["player2_id"], P2)
         self.assertEqual(battle["status"], "IN_PROGRESS")
+        self.assertEqual(battle["player1_name"], "MAKER")
+        self.assertEqual(battle["player2_name"], "PEACE")
 
     def test_get_nonexistent_battle_404(self):
         response = self._get(str(uuid.uuid4()))
         self.assertEqual(response.status_code, 404)
+
+    def test_get_local_battle_omits_usernames(self):
+        local = self._seed_battle(
+            battle_id=str(uuid.uuid4()),
+            game_mode="LOCAL",
+            player1=P1,
+            player2=P2,
+            winner=P1,
+        )
+        response = self._get(local["battle_id"])
+        self.assertEqual(response.status_code, 200)
+        battle = response.get_json()["battle"]
+        self.assertEqual(battle["game_mode"], "LOCAL")
+        self.assertNotIn("player1_name", battle)
+        self.assertNotIn("player2_name", battle)
+
+    def test_join_falls_back_when_names_rpc_fails(self):
+        self._seed_waiting(code="A234")
+        self._use_user(P2)
+        self.store.fail_names_rpc = True
+        response = self._join(body={"battle_code": "A234"})
+        self.assertEqual(response.status_code, 200)
+        battle = response.get_json()["battle"]
+        self.assertNotIn("player1_name", battle)
+        self.assertNotIn("player2_name", battle)
 
     # ---- list -----------------------------------------------------------
 
@@ -680,12 +758,52 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(battles[0]["game_mode"], "ONLINE")
         self.assertEqual(battles[0]["winner_player_id"], P1)
         self.assertEqual(battles[0]["defeated_player_id"], P2)
+        self.assertEqual(battles[0]["player1_name"], "MAKER")
+        self.assertEqual(battles[0]["player2_name"], "PEACE")
         self.assertEqual(battles[0]["started_at"], "2026-09-01T00:00:05.000Z")
         self.assertEqual(battles[0]["ended_at"], "2026-09-01T00:01:30.000Z")
         setup = battles[0]["battle_state"]["setup"]
         self.assertEqual(setup["map"], "frostbite")
         self.assertEqual(setup["max_rounds"], 3)
         self.assertEqual(setup["scores"], {P1: 2, P2: 1})
+
+    def test_list_resolves_username_via_rpc_with_battle_id(self):
+        battle = self._seed_battle()
+        response = self._list()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.store.last_names_rpc["fn"], "resolve_battle_player_names"
+        )
+        self.assertEqual(
+            self.store.last_names_rpc["params"],
+            {"p_battle_id": battle["battle_id"]},
+        )
+
+    def test_list_resolves_both_usernames_for_player1(self):
+        self._seed_battle()
+        response = self._list()
+        self.assertEqual(response.status_code, 200)
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        self.assertEqual(battles[0]["player1_name"], "MAKER")
+        self.assertEqual(battles[0]["player2_name"], "PEACE")
+
+    def test_list_resolves_both_usernames_for_player2(self):
+        self._seed_battle()
+        self._use_user(P2)
+        response = self._list()
+        self.assertEqual(response.status_code, 200)
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        self.assertEqual(battles[0]["player1_name"], "MAKER")
+        self.assertEqual(battles[0]["player2_name"], "PEACE")
+
+    def test_list_names_rpc_failure_500(self):
+        self._seed_battle()
+        self.store.fail_names_rpc = True
+        response = self._list()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.get_json()["error"], "Internal server error")
 
     def test_list_exposes_no_unrelated_player_fields(self):
         self._seed_battle()
@@ -697,8 +815,6 @@ class OnlineBattleTests(unittest.TestCase):
         forbidden = {
             "username",
             "email",
-            "player1_name",
-            "player2_name",
             "player1_email",
             "player2_email",
             "battles_played",
@@ -707,6 +823,10 @@ class OnlineBattleTests(unittest.TestCase):
             "total_damage",
         }
         self.assertFalse(keys & forbidden)
+        self.assertEqual(
+            {k for k in ("player1_name", "player2_name") if k in keys},
+            {"player1_name", "player2_name"},
+        )
 
     def test_list_excludes_non_online_battles(self):
         online = self._seed_battle()
@@ -765,6 +885,104 @@ class OnlineBattleTests(unittest.TestCase):
         response = self._list()
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.get_json()["error"], "Internal server error")
+
+
+class ResolveNamesRPCTests(unittest.TestCase):
+    """Offline emulation of public.resolve_battle_player_names (13D) guard
+    semantics, independent of Flask/endpoints.
+
+    Mirrors the migration doc: authenticated caller only, battle must exist,
+    caller must be player1_id or player2_id, and the returned row carries
+    exactly player1_id / player1_name / player2_id / player2_name.
+    """
+
+    def setUp(self):
+        self.store = Store()
+        self.store.players = {
+            P1: "MAKER",
+            P2: "PEACE",
+            P3: "THIRD",
+            P4: "FOURTH",
+        }
+
+    def _seed(self, player1=P1, player2=P2, **overrides):
+        battle = {
+            "battle_id": str(uuid.uuid4()),
+            "player1_id": player1,
+            "player2_id": player2,
+            "winner_player_id": player1,
+            "defeated_player_id": player2,
+            "current_turn": player1,
+            "game_mode": "ONLINE",
+            "status": "COMPLETED",
+            "battle_state": {"setup": {"map": "valley", "max_rounds": 3}},
+            "battle_code": None,
+            "created_at": "2026-09-01T00:00:00.000Z",
+            "started_at": "2026-09-01T00:00:05.000Z",
+            "ended_at": "2026-09-01T00:01:30.000Z",
+        }
+        battle.update(overrides)
+        self.store.add(battle)
+        return battle
+
+    def _resolve(self, caller, battle_id):
+        return self.store.rpc_resolve_names(
+            {"p_battle_id": battle_id}, caller
+        )
+
+    def test_participant1_resolves_both_usernames(self):
+        battle = self._seed(player1=P1, player2=P2)
+        rows = self._resolve(P1, battle["battle_id"])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["player1_id"], P1)
+        self.assertEqual(rows[0]["player1_name"], "MAKER")
+        self.assertEqual(rows[0]["player2_id"], P2)
+        self.assertEqual(rows[0]["player2_name"], "PEACE")
+
+    def test_participant2_resolves_both_usernames(self):
+        battle = self._seed(player1=P1, player2=P2)
+        rows = self._resolve(P2, battle["battle_id"])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["player1_name"], "MAKER")
+        self.assertEqual(rows[0]["player2_name"], "PEACE")
+
+    def test_non_participant_rejected(self):
+        battle = self._seed(player1=P1, player2=P2)
+        with self.assertRaises(PostgrestAPIError) as ctx:
+            self._resolve(P3, battle["battle_id"])
+        self.assertIn("Not a participant", str(ctx.exception))
+
+    def test_unknown_battle_rejected(self):
+        with self.assertRaises(PostgrestAPIError) as ctx:
+            self._resolve(P1, str(uuid.uuid4()))
+        self.assertIn("Battle not found", str(ctx.exception))
+
+    def test_anonymous_caller_rejected(self):
+        battle = self._seed(player1=P1, player2=P2)
+        with self.assertRaises(PostgrestAPIError) as ctx:
+            self._resolve(None, battle["battle_id"])
+        self.assertIn("Authentication required", str(ctx.exception))
+
+    def test_returns_only_the_battle_pair(self):
+        self.store.players[P3] = "THIRD"
+        battle = self._seed(player1=P1, player2=P2)
+        rows = self._resolve(P1, battle["battle_id"])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(
+            set(rows[0].keys()),
+            {"player1_id", "player1_name", "player2_id", "player2_name"},
+        )
+        self.assertEqual(rows[0]["player1_id"], P1)
+        self.assertEqual(rows[0]["player2_id"], P2)
+        self.assertNotIn("email", rows[0])
+        self.assertNotIn("username", rows[0])
+
+    def test_unnamed_player_resolves_without_error(self):
+        self.store.players.pop(P2, None)
+        battle = self._seed(player1=P1, player2=P2, player2_id=P2)
+        rows = self._resolve(P1, battle["battle_id"])
+        self.assertEqual(rows[0]["player1_name"], "MAKER")
+        self.assertIsNone(rows[0]["player2_name"])
 
 
 if __name__ == "__main__":

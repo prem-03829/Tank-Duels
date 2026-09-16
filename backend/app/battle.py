@@ -279,7 +279,12 @@ def join_battle():
     if not updated_rows:
         return jsonify({"error": "Battle not found"}), 404
 
-    return jsonify({"battle": _battle_payload(updated_rows[0])}), 200
+    try:
+        payload = _battle_with_usernames(updated_rows[0], token)
+    except Exception:
+        _log_redacted("Battle username resolution failed after join")
+        payload = _battle_payload(updated_rows[0])
+    return jsonify({"battle": payload}), 200
 
 
 def _generate_battle_code():
@@ -358,7 +363,13 @@ def get_battle(battle_id):
     if not rows:
         return jsonify({"error": "Battle not found"}), 404
 
-    return jsonify({"battle": _battle_payload(rows[0])}), 200
+    payload = _battle_payload(rows[0])
+    if payload.get("game_mode") == "ONLINE":
+        try:
+            payload = _battle_with_usernames(rows[0], token)
+        except Exception:
+            _log_redacted("Battle username resolution failed")
+    return jsonify({"battle": payload}), 200
 
 
 @battle_bp.get("/api/battles")
@@ -372,6 +383,11 @@ def list_battles():
     battles can never leak. An optional ``status`` query filter narrows the
     result (e.g. ``?status=COMPLETED`` for match history); each payload keeps
     the full ``battle_state`` so readers can derive map, scores and rounds.
+
+    Participant usernames are resolved through the 13D SECURITY DEFINER RPC
+    ``resolve_battle_player_names`` (one call per returned battle); the RPC
+    re-validates the caller is a participant and returns only the two battle
+    player names, never email, statistics, or any other player data.
     """
     status_filter = request.args.get("status")
     if status_filter is not None:
@@ -405,7 +421,17 @@ def list_battles():
         return jsonify(_INTERNAL_ERROR), 500
 
     rows = getattr(response, "data", None) or []
-    return jsonify({"battles": [_battle_payload(row) for row in rows]}), 200
+
+    try:
+        payloads = [_battle_with_usernames(row, token) for row in rows]
+    except PostgrestAPIError:
+        _log_redacted("Battle history username resolution failed")
+        return jsonify(_INTERNAL_ERROR), 500
+    except Exception:
+        _log_redacted("Battle history username resolution failed unexpectedly")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    return jsonify({"battles": payloads}), 200
 
 
 @battle_bp.post("/api/battles/<battle_id>/turn/check")
@@ -784,6 +810,29 @@ def _as_number(value):
 
 def _battle_payload(row):
     return {field: _get_obj_field(row, field) for field in _BATTLE_FIELDS}
+
+
+def _battle_with_usernames(row, token):
+    """Return a battle-list payload enriched with the two participant usernames.
+
+    Usernames are resolved through the 13D SECURITY DEFINER RPC
+    ``resolve_battle_player_names``, never supplied by the client. The RPC
+    itself re-validates the caller is a participant and returns only the two
+    player names of that battle; the caller's RLS still restricts which battles
+    the listing can ever see. The two name fields are added to the list payload
+    only — other battle endpoints keep the plain ``_battle_payload`` shape.
+    """
+    payload = _battle_payload(row)
+    response = (
+        get_authenticated_client(token)
+        .rpc("resolve_battle_player_names", {"p_battle_id": payload["battle_id"]})
+        .execute()
+    )
+    names_row = (getattr(response, "data", None) or [None])[0]
+    names_row = names_row if isinstance(names_row, dict) else {}
+    payload["player1_name"] = names_row.get("player1_name")
+    payload["player2_name"] = names_row.get("player2_name")
+    return payload
 
 
 def _parse_uuid(value):

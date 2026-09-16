@@ -254,11 +254,9 @@ Engine shape (version 1):
     var p1Pos = players[p1Id] || {};
     var p2Pos = players[p2Id] || {};
 
-    var myName = getMyName(profile);
-    var oppName = 'OPPONENT';
     var cust = getCustomization();
-    var p1Name = meIsP1 ? myName : oppName;
-    var p2Name = meIsP2 ? myName : oppName;
+    var p1Name = battle.player1_name || 'PLAYER';
+    var p2Name = battle.player2_name || 'OPPONENT';
 
     /* Deterministic ONLINE identity by server slot — the local customization
        colors are NEVER used for online visuals. */

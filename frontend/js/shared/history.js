@@ -171,43 +171,39 @@ TD.loadMatchHistory = function () {
 };
 
 /* Fetch the authenticated player's completed ONLINE battles and convert them
-   to history records. The caller's own player_id/username come from their
-   profile; the opponent appears as "OPPONENT" (the online flow never exposes
-   the opponent's username). Degrades to [] when the endpoint is unavailable. */
+   to history records. Both participant usernames come from the backend
+   response (player1_name / player2_name). Degrades to [] when the endpoint
+   is unavailable. */
 TD.loadOnlineMatchHistory = function () {
-  if (typeof TD.getBattles !== "function" || typeof TD.profile !== "function") {
+  if (typeof TD.getBattles !== "function") {
     return Promise.resolve([]);
   }
-  return TD.profile()
-    .catch(function () {
-      return { player: {} };
+  return TD.getBattles("COMPLETED")
+    .then(function (battlePayload) {
+      var rows = (battlePayload && battlePayload.battles) || [];
+      var records = [];
+      for (var i = 0; i < rows.length; i++) {
+        records.push(TD.mapBattleRecord(rows[i]));
+      }
+      return records;
     })
-    .then(function (payload) {
-      var me = (payload && payload.player) || {};
-      return TD.getBattles("COMPLETED").then(function (battlePayload) {
-        var rows = (battlePayload && battlePayload.battles) || [];
-        var records = [];
-        for (var i = 0; i < rows.length; i++) {
-          records.push(TD.mapBattleRecord(rows[i], me));
-        }
-        return records;
-      });
+    .catch(function () {
+      return [];
     });
 };
 
 /* Convert one backend battle row (ONLINE, COMPLETED) into the shared history
-   record shape. The caller's side is matched by player_id; the opponent is
-   labeled "OPPONENT". Final scores come from battle_state.setup.scores; map
-   and round count from battle_state.setup. */
-TD.mapBattleRecord = function (row, me) {
+   record shape. Both real usernames come from the backend (player1_name /
+   player2_name); the slot mapping (player1 orange / player2 blue) and the
+   winner/loser derivation are unchanged. Final scores come from
+   battle_state.setup.scores; map and round count from battle_state.setup. */
+TD.mapBattleRecord = function (row) {
   var setup = (row && row.battle_state && row.battle_state.setup) || {};
   var scores = setup.scores || {};
   var p1 = row && row.player1_id;
   var p2 = row && row.player2_id;
-  var ownId = me && me.player_id;
-  var myName = (me && me.username) || 'PLAYER';
-  var p1Name = String(p1) === String(ownId) ? myName : 'OPPONENT';
-  var p2Name = String(p2) === String(ownId) ? myName : 'OPPONENT';
+  var p1Name = (row && row.player1_name) || 'PLAYER';
+  var p2Name = (row && row.player2_name) || 'OPPONENT';
   var s1 = Number(scores[p1]) || 0;
   var s2 = Number(scores[p2]) || 0;
   var winnerP1 = String(row && row.winner_player_id) === String(p1);
