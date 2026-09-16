@@ -219,6 +219,7 @@ def resolve_shot(battle_state, player1_id, player2_id):
         "player_id": pending_fire["player_id"],
         "angle": pending_fire["angle"],
         "power": pending_fire["power"],
+        "wind": setup["wind"],
         "hit_type": hit_type,
         "impact": impact,
         "damage": {

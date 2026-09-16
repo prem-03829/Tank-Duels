@@ -50,6 +50,9 @@ TD.GameEngine = function (canvas, elements) {
   this._onlinePollingTimer = null;
   this._onlinePollInFlight = false;
   this._lastOnlineShotSignature = null;
+  this._onlinePendingShot = null;
+  this._onlineShotVisualActive = false;
+  this._onlineLocalImpact = null;
   this._onOnlinePageUnload = null;
 
   this._bgImages = {};
@@ -287,6 +290,10 @@ TD.GameEngine.prototype._update = function () {
       }
       break;
 
+    case TD.STATES.ONLINE_SHOT:
+      this._updateOnlineShot();
+      break;
+
     case TD.STATES.EXPLODING:
       this.particles.update();
       this.stateTimer--;
@@ -318,6 +325,171 @@ TD.GameEngine.prototype._update = function () {
         this._saveAndNavigate();
       }
       break;
+  }
+};
+
+/* Does the authoritative battle snapshot's newest shot belong to the local
+   player? Used to attach the snapshot to the shooter's already-flying visual
+   instead of launching a second projectile. */
+TD.GameEngine.prototype._shotIsLocal = function (battleData) {
+  var ctx = this._onlineBattle;
+  if (!ctx || !ctx.my_user_id) return false;
+  var state = battleData && battleData.battle_state;
+  var ls = state && state.last_shot;
+  return !!ls && String(ls.player_id) === String(ctx.my_user_id);
+};
+
+/* Cancel a cosmetic ONLINE visual the shooter launched at FIRE time (e.g. the
+   fire request failed before the backend recorded anything). Clears any held
+   snapshot / already-shown local impact and returns the engine to AIMING so
+   controls can be restored. */
+TD.GameEngine.prototype._cancelOnlineShotVisual = function () {
+  this._onlineShotVisualActive = false;
+  this._onlineLocalImpact = null;
+  this._onlinePendingShot = null;
+  this.projectile.deactivate();
+  if (this.state === TD.STATES.ONLINE_SHOT) {
+    this.state = TD.STATES.AIMING;
+  }
+};
+
+/* The shooter's local projectile reached its predicted collision (tank,
+   terrain, or the world edge) BEFORE the authoritative resolve response
+   arrived. Show the impact/explosion and the EXPECTED local visual state
+   IMMEDIATELY so there is no visible network pause:
+
+     - tank hit  -> hitTank.takeDamage(MAX_DAMAGE) (existing Tank mechanism,
+                    which keeps tank.health <> alive <> HUD consistent) plus a
+                    0.6-radius crater; a killed tank gets its wreck burst once.
+     - terrain   -> terrain.destroy(x, y, EXPLOSION_RADIUS) (the same terrain
+                    representation the server overrides).
+     - OOB/miss  -> no HP/terrain change (matches the authoritative "miss").
+
+   This is OPTIMISTIC TIMING ONLY. The server stays authoritative: when the
+   resolve response lands, _reconcileLocalOnlineShot -> _applyOnlineBattleState
+   restores terrain.heights from the server array and overwrites each tank's
+   health/alive, so any prediction divergence is corrected cleanly. Nothing here
+   sets wind, turn, scores, or the winner. */
+TD.GameEngine.prototype._beginLocalOnlineImpact = function (x, y, hitTank, oob) {
+  this._onlineShotVisualActive = false;
+  this._onlineLocalImpact = { x: x, y: y, wreckShown: false, wreckTankIndex: -1 };
+  this.projectile.deactivate();
+
+  if (hitTank) {
+    hitTank.takeDamage(TD.MAX_DAMAGE);
+    this.terrain.destroy(x, y, TD.EXPLOSION_RADIUS * 0.6);
+  } else if (!oob) {
+    this.terrain.destroy(x, y, TD.EXPLOSION_RADIUS);
+  }
+
+  this.audio.playExplosion();
+  this.particles.addExplosion(
+    x, y,
+    hitTank ? TD.EXPLOSION_RADIUS * 0.8 : TD.EXPLOSION_RADIUS,
+    this.terrain.palette
+  );
+
+  if (hitTank && !hitTank.alive) {
+    /* The predicted hit destroyed the tank: show its wreck immediately and mark
+       that it has been shown, so _reconcileLocalOnlineShot never plays a second
+       wreck burst for the same dead tank. */
+    this._onlineLocalImpact.wreckShown = true;
+    this._onlineLocalImpact.wreckTankIndex = this.tanks.indexOf(hitTank);
+    this._startShake(7, 5);
+    this._playOnlineTankWreckVisual();
+  } else {
+    this._startShake(hitTank ? 7 : 4, hitTank ? 5 : 3);
+    if (hitTank) this.audio.playHit();
+  }
+
+  this.state = TD.STATES.EXPLODING;
+  this.stateTimer = 30;
+  this._onlineResolutionPending = true;
+  this._onlineCompleted = false;
+  this._updateHUD();
+  this._saveState();
+};
+
+/* ONLINE visual shot playback at 1:1 ballistic speed. On the SHOOTER the
+   projectile is launched the instant FIRE is pressed (local angle/power/wind,
+   before any network round trip). When it reaches its predicted collision it
+   IMMEDIATELY shows the impact/explosion and the optimistic HP/terrain state;
+   the authoritative snapshot is reconciled on top of that when the resolve
+   response lands. If the
+   response arrives before the collision, the visual instead flies to the
+   authoritative impact. On the REMOTE the visual starts from the authoritative
+   shot data once polling delivers it. Either way this NEVER simulates outcomes:
+   the server owns hit/miss, damage, terrain, wind, turn and the winner. */
+TD.GameEngine.prototype._updateOnlineShot = function () {
+  var pending = this._onlinePendingShot;
+
+  /* The authoritative snapshot arrived after the visual already stopped (or no
+     shot could be reconstructed): apply the server result now. */
+  if (pending && !this.projectile.active) {
+    this._finishOnlineShotVisual();
+    return;
+  }
+
+  /* Advance exactly one ballistic step (the same discrete physics/order the
+     server used). OOB ends the flight; the world-edge impact sits at the last
+     in-bounds position (the same "miss" impact the server records). */
+  var prevX = this.projectile.x;
+  var prevY = this.projectile.y;
+  if (this.projectile.update()) {
+    if (pending) {
+      this._finishOnlineShotVisual();
+    } else {
+      this._beginLocalOnlineImpact(prevX, prevY, null, true);
+    }
+    return;
+  }
+
+  this.particles.update();
+
+  if (!this.reducedMotion && this.frame % 6 === 0) {
+    this.particles.addBiomeAmbient(this.terrain.type, TD.W, TD.H, this.terrain.heights);
+  }
+
+  if (pending) {
+    /* The snapshot is attached: stop at the authoritative impact (or the
+       equivalent discrete collision step — sampled on the SAME steps the server
+       used) and hand off to the server state. */
+    var dx = pending.impactX - this.projectile.x;
+    var dy = pending.impactY - this.projectile.y;
+    var eps = TD.ONLINE_SHOT_ARRIVE_EPS;
+
+    if (dx * dx + dy * dy <= eps * eps ||
+        this.projectile.checkTerrainHit(this.terrain)) {
+      this._finishOnlineShotVisual();
+      return;
+    }
+
+    for (var i = 0; i < this.tanks.length; i++) {
+      if (this.projectile.checkTankHit(this.tanks[i])) {
+        this._finishOnlineShotVisual();
+        return;
+      }
+    }
+    return;
+  }
+
+  /* No snapshot yet (the shooter's own visual awaiting the resolve response):
+     when the LOCAL projectile reaches its predicted collision, show the impact
+     and the expected (optimistic) HP/terrain state IMMEDIATELY. The
+     authoritative result silently overwrites it via _reconcileLocalOnlineShot —
+     there is never a second projectile or a second impact burst. */
+  if (this.projectile.checkTerrainHit(this.terrain)) {
+    var ix = Math.round(this.projectile.x);
+    var iy = this.terrain.getHeight(ix);
+    this._beginLocalOnlineImpact(ix, iy, null, false);
+    return;
+  }
+
+  for (var i = 0; i < this.tanks.length; i++) {
+    if (this.projectile.checkTankHit(this.tanks[i])) {
+      this._beginLocalOnlineImpact(this.projectile.x, this.projectile.y, this.tanks[i], false);
+      return;
+    }
   }
 };
 
@@ -712,9 +884,11 @@ TD.GameEngine.prototype.fire = function () {
    Online shots are submitted and resolved by the backend:
      fire()   -> POST /api/battles/<id>/actions/fire   (stores pending_fire)
      resolve -> POST /api/battles/<id>/actions/fire/resolve
-   The local engine NEVER simulates the projectile for an online match; the
-   returned battle_state is the single source of truth. Visuals are cosmetic
-   only (impact particles) and never affect any authoritative value.
+   The backend's result owns damage, hit/miss, terrain, health, wind, round,
+   scores, turn and winner. The frontend only RE-PLAYS the authoritative shot as
+   a cosmetic projectile (via _startOnlineShotVisual) and applies the returned
+   battle_state once the projectile reaches the authoritative impact — it never
+   decides any outcome itself.
 ========================== */
 
 TD.GameEngine.prototype._fireOnline = function () {
@@ -740,6 +914,22 @@ TD.GameEngine.prototype._fireOnline = function () {
   this._enableControls(false);
   this.audio.playShoot();
 
+  /* The shooter sees the shell fly IMMEDIATELY on FIRE — no network round-trip
+     delay. The visual uses the current local angle/power/wind (identical to the
+     values the server will simulate from). The authoritative snapshot is
+     attached (or reconciled onto the already-shown local impact) when the
+     resolve response lands; the projectile itself never determines any outcome.
+     No duplicate projectile: the shooter-local branch in _beginOnlineResolution
+     is guarded by _onlineShotVisualActive/_onlineLocalImpact and by
+     _lastOnlineShotSignature for polls. */
+  this._onlineShotVisualActive = true;
+  this._onlineLocalImpact = null;
+  var tip = tank.getCannonTip();
+  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind, tank.colors);
+  this.state = TD.STATES.ONLINE_SHOT;
+  this._updateHUD();
+  this._saveState();
+
   var battleId = ctx.battle_id;
   var angle = tank.angle;
   var power = tank.power;
@@ -759,6 +949,7 @@ TD.GameEngine.prototype._fireOnline = function () {
       if (self._onlineRequestPhase === 'resolve') {
         self._reconcileOnlineAfterFailure(battleId);
       } else {
+        self._cancelOnlineShotVisual();
         self._restoreOnlineControls();
         self._showOnlineErrorMessage('FIRE FAILED - TRY AGAIN');
       }
@@ -776,6 +967,7 @@ TD.GameEngine.prototype._completeOnlineFire = function (battleId) {
       var battleData = json && json.battle ? json.battle : null;
       var shotData = json && json.shot ? json.shot : null;
       if (!battleData) {
+        self._cancelOnlineShotVisual();
         self._restoreOnlineControls();
         self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
         return;
@@ -784,16 +976,207 @@ TD.GameEngine.prototype._completeOnlineFire = function (battleId) {
     });
 };
 
-/* Commit an authoritative back-end battle snapshot: rehydrate the engine from
-   battle.battle_state, then show the (cosmetic) impact and run a brief
-   explosion before advancing to the server-determined next turn. */
+/* Commit an authoritative back-end battle snapshot. In the normal case the
+   engine first REPLAYS the authoritative projectile as a cosmetic visual while
+   holding the server snapshot in _onlinePendingShot; when the projectile
+   reaches the authoritative impact, _finishOnlineShotVisual applies the server
+   state (which owns terrain, health, wind, round, scores, turn, winner) and
+   shows the impact explosion.
+
+   On the SHOOTER the visual is already flying (launched at FIRE time from local
+   values), so this function simply ATTACHES the authoritative snapshot to that
+   in-flight visual instead of launching a duplicate.
+
+   If the shot cannot be replayed (no usable shot data), the snapshot is applied
+   immediately exactly as before. */
 TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData) {
   /* Mark this shot as processed so later polls observe (not replay) it. */
   this._lastOnlineShotSignature = this._onlineShotSignature(battleData);
 
+  /* SHOOTER's own shot: its cosmetic visual was launched at FIRE time, so this
+     branch only ATTACHES or RECONCILES the authoritative result — it never
+     launches a second projectile and never plays a second explosion. */
+  if (this._shotIsLocal(battleData)) {
+    if (this._onlineShotVisualActive) {
+      /* Still flying: attach the snapshot so the visual arrives at the
+         authoritative impact and its single explosion plays there. */
+      var shot = shotData ||
+        (battleData && battleData.battle_state ? battleData.battle_state.last_shot : null);
+      var impact = shot && shot.impact;
+      if (shot && isFinite(Number(impact.x)) && isFinite(Number(impact.y))) {
+        this._onlineShotVisualActive = false;
+        this._onlinePendingShot = {
+          battleData: battleData,
+          shotData: shot,
+          impactX: Number(impact.x),
+          impactY: Number(impact.y)
+        };
+        this._updateHUD();
+        this._saveState();
+        return;
+      }
+      /* No reconstructable snapshot: cancel the cosmetic visual and let the
+         existing fallback apply the authoritative state immediately. */
+      this._onlineShotVisualActive = false;
+    } else if (this._onlineLocalImpact) {
+      /* The visual already hit its predicted collision and is showing the
+         explosion. Reconcile the authoritative state on top of it — no second
+         explosion, no second projectile — then let the current EXPLODING flow
+         finish (or navigate when the battle is over). */
+      this._reconcileLocalOnlineShot(battleData, shotData);
+      return;
+    } else {
+      /* This shooter's shot was already shown AND reconciled (duplicate of the
+         same response): absorb the snapshot idempotently, never replaying it. */
+      this._reconcileLocalOnlineShot(battleData, shotData);
+      return;
+    }
+  }
+
+  if (this._startOnlineShotVisual(battleData, shotData)) {
+    this._updateHUD();
+    this._saveState();
+    return;
+  }
+
   var completed = this._applyOnlineBattleState(battleData, shotData);
 
   this._playOnlineShotVisual(shotData);
+
+  this.projectile.deactivate();
+  this._onlineShotVisualActive = false;
+  this._onlineLocalImpact = null;
+  this.state = TD.STATES.EXPLODING;
+  this.stateTimer = 30;
+  this._onlineResolutionPending = true;
+  this._onlineCompleted = completed === true;
+
+  this._updateHUD();
+  this._saveState();
+};
+
+/* Reconcile the authoritative result onto the shooter's ALREADY-SHOWN local
+   impact (triggered by _beginLocalOnlineImpact). _applyOnlineBattleState fully
+   overwrites the optimistic state: server terrain.heights replace the predicted
+   crater, and server health/alive replace the predicted damage. Server wind,
+   turn, round, scores and the winner are authoritative. No second impact
+   explosion, no second projectile, no replay of screen shake. The tank-wreck
+   burst plays only when the optimistic impact did NOT already show it for the
+   still-dead tank. A completed battle navigates when the current EXPLODING flow
+   ends — or immediately if the flow has already moved past it. */
+TD.GameEngine.prototype._reconcileLocalOnlineShot = function (battleData, shotData) {
+  /* Which wreck (if any) the optimistic local impact already showed for which
+     tank, before the impact record is cleared. */
+  var wreckShown = !!(this._onlineLocalImpact && this._onlineLocalImpact.wreckShown);
+  var wreckTankIndex = (this._onlineLocalImpact && this._onlineLocalImpact.wreckTankIndex) || -1;
+  this._onlineLocalImpact = null;
+
+  var completed = this._applyOnlineBattleState(battleData, shotData);
+
+  if (completed) {
+    this._onlineCompleted = true;
+    if (this.state !== TD.STATES.EXPLODING && this.state !== TD.STATES.GAME_OVER) {
+      this._onlineCompleted = false;
+      this._saveAndNavigate();
+      return;
+    }
+  }
+
+  var optimisticAlreadyShown =
+    wreckShown && wreckTankIndex >= 0 &&
+    this.tanks[wreckTankIndex] && !this.tanks[wreckTankIndex].alive;
+  if (!optimisticAlreadyShown) {
+    /* The authoritative tank-wreck runs only when the optimistic pass did not
+       cover the dead tank — exactly one wreck burst on the shooter either way. */
+    this._playOnlineTankWreckVisual();
+  }
+
+  this._updateHUD();
+  this._saveState();
+};
+
+/* Launch a cosmetic-only replay of the authoritative shot. Reuses the EXACT
+   local projectile physics (projectile.launch → FLYING-style update) with the
+   server-recorded angle/power/wind and the shooter's authoritative position, so
+   the projectile terminates at the authoritative impact that the server
+   already computed. The server remains the sole arbiter of damage/hit/terrain.
+
+   Returns true when a replay was started; false (caller applies immediately)
+   when the shot cannot be reconstructed from authoritative data. */
+TD.GameEngine.prototype._startOnlineShotVisual = function (battleData, shotData) {
+  /* Defense: never launch a second projectile if the shooter's visual is still
+     active or its local impact is already being shown (the shooter-local branch
+     in _beginOnlineResolution should have handled all of these, but catch any
+     path that falls through). */
+  if (this._onlineShotVisualActive || this._onlineLocalImpact) return false;
+
+  var shot = shotData ||
+    (battleData && battleData.battle_state ? battleData.battle_state.last_shot : null);
+  if (!shot) return false;
+
+  var impact = shot.impact || {};
+  var ix = impact.x;
+  var iy = impact.y;
+  var angle = Number(shot.angle);
+  var power = Number(shot.power);
+  if (!isFinite(ix) || !isFinite(iy) || !isFinite(angle) || !isFinite(power)) {
+    return false;
+  }
+
+  var shooterId = String(shot.player_id || '');
+  var p1Id = String(battleData.player1_id || '');
+  var p2Id = String(battleData.player2_id || '');
+  var shooterSlot = -1;
+  if (shooterId === p1Id) shooterSlot = 0;
+  else if (shooterId === p2Id) shooterSlot = 1;
+  if (shooterSlot < 0) return false;
+
+  var tank = this.tanks[shooterSlot];
+  if (!tank || !tank.alive) return false;
+
+  /* Reconstruct the muzzle from the AUTHORITATIVE position and angle (the
+     remote client's copy of the opponent tank has stale angle/power). */
+  var rad = angle * Math.PI / 180;
+  var tip = {
+    x: tank.x + Math.cos(rad) * tank.cannonLength,
+    y: (tank.y - 1) - Math.sin(rad) * tank.cannonLength
+  };
+
+  var flightWind = isFinite(Number(shot.wind)) ? Number(shot.wind) : this.wind;
+  this.projectile.launch(tip.x, tip.y, angle, power, flightWind, tank.colors);
+
+  this._onlinePendingShot = {
+    battleData: battleData,
+    shotData: shot,
+    impactX: ix,
+    impactY: iy
+  };
+
+  this._enableControls(false);
+
+  /* The shooter already heard playShoot() when they pressed FIRE; only the
+     remote viewer needs the shot's audio here. */
+  if (this._onlineBattle && this._onlineBattle.localServerSlot !== shooterSlot) {
+    this.audio.playShoot();
+  }
+
+  this.state = TD.STATES.ONLINE_SHOT;
+  return true;
+};
+
+/* The visual projectile reached the authoritative impact: apply the held
+   server snapshot once, then show the cosmetic explosion and advance through
+   the server-determined next turn (or navigate when the match is over). */
+TD.GameEngine.prototype._finishOnlineShotVisual = function () {
+  var pending = this._onlinePendingShot;
+  this._onlinePendingShot = null;
+  this._onlineShotVisualActive = false;
+  this._onlineLocalImpact = null;
+  if (!pending) return;
+
+  var completed = this._applyOnlineBattleState(pending.battleData, pending.shotData);
+
+  this._playOnlineShotVisual(pending.shotData);
 
   this.projectile.deactivate();
   this.state = TD.STATES.EXPLODING;
@@ -901,7 +1284,12 @@ TD.GameEngine.prototype._playOnlineShotVisual = function (shotData) {
     );
     this._startShake(tankHit ? 7 : 4, tankHit ? 5 : 3);
   }
+  this._playOnlineTankWreckVisual();
+};
 
+/* Wreck burst for a tank that died from an authoritative shot (the impact
+   explosion itself is handled by the caller). */
+TD.GameEngine.prototype._playOnlineTankWreckVisual = function () {
   for (var i = 0; i < this.tanks.length; i++) {
     if (!this.tanks[i].alive) {
       var t = this.tanks[i];
@@ -956,6 +1344,7 @@ TD.GameEngine.prototype._restoreOnlineControls = function () {
 TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
   var self = this;
   if (typeof TD.getBattle !== 'function') {
+    self._cancelOnlineShotVisual();
     self._restoreOnlineControls();
     self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
     return;
@@ -964,6 +1353,7 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
     .then(function (json) {
       var battleData = json && json.battle ? json.battle : null;
       if (!battleData) {
+        self._cancelOnlineShotVisual();
         self._restoreOnlineControls();
         self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
         return;
@@ -984,6 +1374,7 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
             self._handleOnlineAuthError();
             return;
           }
+          self._cancelOnlineShotVisual();
           self._restoreOnlineControls();
           self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
         });
@@ -996,6 +1387,7 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
         self._handleOnlineAuthError();
         return;
       }
+      self._cancelOnlineShotVisual();
       self._restoreOnlineControls();
       self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
     });
@@ -1023,9 +1415,10 @@ TD.GameEngine.prototype._handleOnlineAuthError = function () {
    Only authenticated ONLINE matches poll. Guest and Same Device matches never
    set _onlineBattle, so every guard below is a no-op for them. Polling observes
    the authoritative backend battle_state — it never issues fire/resolve and
-   never runs local projectile physics. The shooter's own fire/resolve response
-   stays the immediate source of truth; a shot signature prevents replaying the
-   same authoritative outcome on every interval.
+   never decides outcomes itself; a NEW shot is replayed as a cosmetic projectile
+   and its server snapshot applied on arrival. The shooter's own fire/resolve
+   response stays the immediate source of truth; a shot signature prevents
+   replaying the same authoritative outcome on every interval.
 ========================== */
 
 TD.GameEngine.prototype._startOnlinePolling = function () {
@@ -1121,6 +1514,10 @@ TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
   if (!this._isOnlineBattle() || this._onlineNavigatedAway) return;
   if (this._onlineFiringInFlight) return;
   if (!battleData) return;
+  /* While the visual shot replay is in flight, the held server snapshot owns
+     the transition; polling must not apply a newer state underneath the
+     projectile (it would teleport terrain/tanks mid-flight). */
+  if (this._onlinePendingShot) return;
 
   var status = battleData.status || '';
 

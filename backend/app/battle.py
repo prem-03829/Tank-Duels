@@ -107,6 +107,10 @@ def create_battle():
     elif rounds < _ROUNDS_MIN or rounds > _ROUNDS_MAX:
         return jsonify({"error": "rounds must be between 1 and 3"}), 400
 
+    trajectory = data.get("trajectory", True)
+    if not isinstance(trajectory, bool):
+        return jsonify({"error": "trajectory must be a boolean"}), 400
+
     user_id = _get_obj_field(g.user, "id")
     user_uuid = _parse_uuid(user_id)
     if player2_uuid is not None and user_uuid is not None and user_uuid == player2_uuid:
@@ -117,7 +121,8 @@ def create_battle():
     try:
         if game_mode == "ONLINE":
             rows = _insert_online_waiting(
-                token, str(user_id), map_key=map_key, rounds=rounds
+                token, str(user_id), map_key=map_key, rounds=rounds,
+                trajectory=trajectory,
             )
         else:
             rows = _insert_local_lan(
@@ -143,15 +148,17 @@ def create_battle():
     return jsonify({"battle": _battle_payload(rows[0])}), 201
 
 
-def _insert_online_waiting(token, player1_id, map_key=None, rounds=_DEFAULT_ROUNDS):
+def _insert_online_waiting(token, player1_id, map_key=None, rounds=_DEFAULT_ROUNDS,
+                          trajectory=True):
     """Insert a WAITING ONLINE battle with a server-generated join code.
 
-    The body may only carry game_mode (ONLINE) plus the optional map/rounds; the
-    join code and every control field are generated server-side. The db unique
-    index on battle_code is the final collision guard: a 23505 during insert is
-    retried with a fresh code for a handful of attempts. Since a full setup
-    needs both players, the placeholder state keeps the chosen map/rounds so the
-    joining player can rebuild the authoritative state via build_initial_battle_state.
+    The body may only carry game_mode (ONLINE) plus the optional
+    map/rounds/trajectory; the join code and every control field are generated
+    server-side. The db unique index on battle_code is the final collision
+    guard: a 23505 during insert is retried with a fresh code for a handful of
+    attempts. Since a full setup needs both players, the placeholder state
+    keeps the chosen map/rounds/trajectory so the joining player can rebuild
+    the authoritative state via build_initial_battle_state.
     """
     client = get_authenticated_client(token)
     for _ in range(_BATTLE_CODE_ATTEMPTS):
@@ -167,7 +174,7 @@ def _insert_online_waiting(token, player1_id, map_key=None, rounds=_DEFAULT_ROUN
                         "status": "WAITING",
                         "current_turn": player1_id,
                         "battle_state": _waiting_battle_state(
-                            player1_id, map_key, rounds
+                            player1_id, map_key, rounds, trajectory
                         ),
                         "battle_code": code,
                     }
@@ -248,9 +255,15 @@ def join_battle():
     # now, as the authoritative player2_id -- replace the placeholder waiting
     # state with the real setup from battle_setup.py. The map/rounds were stored
     # in the placeholder at creation time so the join body stays just battle_code.
-    map_key, rounds = _waiting_parameters(_get_obj_field(claimed, "battle_state"))
+    map_key, rounds, trajectory = _waiting_parameters(
+        _get_obj_field(claimed, "battle_state")
+    )
     battle_state = build_initial_battle_state(
-        player1_id, str(user_id), map_key=map_key, rounds=rounds
+        player1_id,
+        str(user_id),
+        map_key=map_key,
+        rounds=rounds,
+        trajectory=trajectory,
     )
 
     battle_id = str(_get_obj_field(claimed, "battle_id"))
@@ -297,22 +310,22 @@ def _valid_battle_code(value):
     return bool(re.fullmatch(_BATTLE_CODE_FORMAT, value))
 
 
-def _waiting_battle_state(player1_id, map_key, rounds):
+def _waiting_battle_state(player1_id, map_key, rounds, trajectory=True):
     return {
         "version": 2,
         "waiting": True,
-        "setup": {"map": map_key, "rounds": rounds},
+        "setup": {"map": map_key, "rounds": rounds, "trajectory": trajectory},
         "damage_dealt": {},
     }
 
 
 def _waiting_parameters(state):
     if not isinstance(state, dict):
-        return None, None
+        return None, None, True
     setup = state.get("setup")
     if not isinstance(setup, dict):
-        return None, None
-    return setup.get("map"), setup.get("rounds")
+        return None, None, True
+    return setup.get("map"), setup.get("rounds"), setup.get("trajectory", True)
 
 
 def _join_rpc_error(exc):
@@ -704,16 +717,19 @@ def get_authenticated_battle_for_turn(battle_id, user_id, columns=None):
     return battle, None
 
 
-def build_initial_battle_state(player1_id, player2_id, map_key=None, rounds=_DEFAULT_ROUNDS):
+def build_initial_battle_state(player1_id, player2_id, map_key=None,
+                               rounds=_DEFAULT_ROUNDS, trajectory=True):
     """Construct the server-authoritative initial battle state (version 2).
 
     Both player ids must be validated UUID strings. ``map_key`` is a client
     choice (aliases are resolved and unknown values fall back to dustlands,
-    mirroring the frontend Terrain.generate) and ``rounds`` is the chosen number
-    of rounds (1-3). Every randomized element - seed, terrain heights, tank
-    positions, initial wind and the scoreboard - is generated on the server and
-    stored here; the client supplies none of it. The current turn remains the
-    authoritative ``current_turn`` column, not this JSON.
+    mirroring the frontend Terrain.generate), ``rounds`` is the chosen number
+    of rounds (1-3) and ``trajectory`` is the match-wide trajectory toggle
+    chosen by the creator (defaults ON). Every randomized element - seed,
+    terrain heights, tank positions, initial wind and the scoreboard - is
+    generated on the server and stored here; the client supplies none of it.
+    The current turn remains the authoritative ``current_turn`` column, not
+    this JSON.
     """
     if not isinstance(rounds, int) or isinstance(rounds, bool):
         rounds = _DEFAULT_ROUNDS
@@ -726,6 +742,7 @@ def build_initial_battle_state(player1_id, player2_id, map_key=None, rounds=_DEF
         "setup": {
             "map": setup["map"],
             "seed": setup["seed"],
+            "trajectory": trajectory,
             "terrain": {"heights": setup["heights"]},
             "players": {
                 player1_id: {

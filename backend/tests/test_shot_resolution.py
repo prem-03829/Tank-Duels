@@ -239,6 +239,18 @@ class ResolveShotTests(unittest.TestCase):
         self.assertIsInstance(out["impact"]["x"], (int, float))
         self.assertIsInstance(out["impact"]["y"], (int, float))
 
+    def test_shot_records_flight_wind(self):
+        state = make_state(wind=3)
+        out = resolve_shot(state, P1, P2)
+        self.assertEqual(out["shot"]["wind"], 3)
+
+    def test_intruder_shot_keeps_flight_wind_before_regeneration(self):
+        state = make_state(wind=2)
+        out = resolve_shot(state, P1, P2)
+        self.assertEqual(out["shot"]["wind"], 2)
+        regenerated = out["battle_state"]["setup"]["wind"]
+        self.assertIn(regenerated, {-4, -3, -2, -1, 1, 2, 3, 4})
+
     def test_deterministic_same_input_same_output(self):
         a = resolve_shot(make_state(), P1, P2)
         b = resolve_shot(make_state(), P1, P2)

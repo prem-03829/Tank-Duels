@@ -47,11 +47,11 @@ def _rpc_error(message, code="P0001"):
     )
 
 
-def waiting_state(map_key="valley", rounds=3):
+def waiting_state(map_key="valley", rounds=3, trajectory=True):
     return {
         "version": 2,
         "waiting": True,
-        "setup": {"map": map_key, "rounds": rounds},
+        "setup": {"map": map_key, "rounds": rounds, "trajectory": trajectory},
         "damage_dealt": {},
     }
 
@@ -381,7 +381,8 @@ class OnlineBattleTests(unittest.TestCase):
             url, headers=self._headers() if headers is None else headers
         )
 
-    def _seed_waiting(self, code="A234", map_key="valley", rounds=3, player1=P1):
+    def _seed_waiting(self, code="A234", map_key="valley", rounds=3, player1=P1,
+                      battle_state=None):
         battle = {
             "battle_id": str(uuid.uuid4()),
             "player1_id": player1,
@@ -391,7 +392,9 @@ class OnlineBattleTests(unittest.TestCase):
             "current_turn": player1,
             "game_mode": "ONLINE",
             "status": "WAITING",
-            "battle_state": waiting_state(map_key=map_key, rounds=rounds),
+            "battle_state": battle_state
+            if battle_state is not None
+            else waiting_state(map_key=map_key, rounds=rounds),
             "battle_code": code,
             "created_at": "2026-09-01T00:00:00.000Z",
             "started_at": None,
@@ -446,6 +449,7 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertIs(battle["battle_state"]["waiting"], True)
         self.assertEqual(battle["battle_state"]["setup"]["map"], "dustlands")
         self.assertEqual(battle["battle_state"]["setup"]["rounds"], 1)
+        self.assertIs(battle["battle_state"]["setup"]["trajectory"], True)
         self.assertEqual(battle["battle_state"]["damage_dealt"], {})
 
     def test_online_create_stores_chosen_map_rounds_in_placeholder(self):
@@ -454,6 +458,23 @@ class OnlineBattleTests(unittest.TestCase):
         battle = response.get_json()["battle"]
         self.assertEqual(battle["battle_state"]["setup"]["map"], "valley")
         self.assertEqual(battle["battle_state"]["setup"]["rounds"], 3)
+        self.assertIs(battle["battle_state"]["setup"]["trajectory"], True)
+
+    def test_online_create_stores_trajectory_off(self):
+        response = self._create(
+            body={"game_mode": "ONLINE", "trajectory": False}
+        )
+        self.assertEqual(response.status_code, 201)
+        battle = response.get_json()["battle"]
+        self.assertIs(battle["battle_state"]["setup"]["trajectory"], False)
+
+    def test_online_create_rejects_non_boolean_trajectory(self):
+        for bad in ("off", 0, 1, "true", None, []):
+            response = self._create(body={"game_mode": "ONLINE", "trajectory": bad})
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(
+                response.get_json()["error"], "trajectory must be a boolean"
+            )
 
     def test_online_create_never_accepts_client_player_ids(self):
         response = self._create(
@@ -559,6 +580,7 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(state["version"], 2)
         self.assertEqual(state["setup"]["map"], "valley")
         self.assertEqual(state["setup"]["max_rounds"], 3)
+        self.assertIs(state["setup"]["trajectory"], True)
         self.assertIn(P1, state["setup"]["players"])
         self.assertIn(P2, state["setup"]["players"])
         self.assertEqual(state["setup"]["players"][P1]["health"], 100)
@@ -575,6 +597,21 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(battle["battle_id"], seeded["battle_id"])
         self.assertEqual(battle["battle_state"]["setup"]["map"], "dustlands")
         self.assertEqual(battle["battle_state"]["setup"]["max_rounds"], 1)
+        self.assertIs(battle["battle_state"]["setup"]["trajectory"], True)
+
+    def test_join_applies_creator_trajectory_choice(self):
+        seeded = self._seed_waiting(
+            code="A234", map_key="frostbite", rounds=3,
+            battle_state=waiting_state(map_key="frostbite", rounds=3, trajectory=False),
+        )
+        self._use_user(P2)
+
+        response = self._join(body={"battle_code": "A234"})
+        self.assertEqual(response.status_code, 200)
+        battle = response.get_json()["battle"]
+        self.assertEqual(battle["battle_id"], seeded["battle_id"])
+        self.assertEqual(battle["battle_state"]["setup"]["map"], "frostbite")
+        self.assertIs(battle["battle_state"]["setup"]["trajectory"], False)
 
     # ---- join: failure cases -------------------------------------------
 

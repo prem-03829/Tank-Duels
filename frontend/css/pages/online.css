@@ -230,6 +230,55 @@
    ERRORS
 ========================= */
 
+/* =========================
+   TRAJECTORY TOGGLE
+========================== */
+
+.trajectory-toggle {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-primary);
+}
+
+.trajectory-btn {
+  padding: var(--space-sm) var(--space-lg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: none;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.trajectory-btn + .trajectory-btn {
+  border-left: 1px solid var(--border-primary);
+}
+
+.trajectory-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.trajectory-btn.active {
+  color: var(--color-primary);
+  background: var(--bg-elevated);
+}
+
+.trajectory-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* =========================
+   ERRORS
+========================== */
+
 .online-error {
   margin-top: var(--space-md);
 }

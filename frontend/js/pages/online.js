@@ -61,20 +61,6 @@
     window.location.href = './login.html';
   }
 
-  function getCustomization() {
-    var raw = localStorage.getItem('tankDuelGameCustomization');
-    var cust = null;
-    if (raw) {
-      try { cust = JSON.parse(raw); } catch (e) { cust = null; }
-    }
-    if (!cust || typeof cust !== 'object') cust = {};
-    return {
-      playerOneColor: cust.playerOneColor || 'orange',
-      playerTwoColor: cust.playerTwoColor || 'blue',
-      trajectoryTrail: cust.trajectoryTrail !== false
-    };
-  }
-
   function getMyUserId(profile) {
     return profile && profile.player ? String(profile.player.player_id) : '';
   }
@@ -163,12 +149,15 @@
 
   var selectedMap = null;
   var selectedRounds = null;
+  var selectedTrajectory = true;
 
   function readStoredSelection() {
     var m = localStorage.getItem('tankDuelSelectedMap');
     selectedMap = m || 'desert';
     var r = localStorage.getItem('tankDuelSelectedRounds');
     selectedRounds = r || '1';
+    var t = localStorage.getItem('tankDuelSelectedTrajectory');
+    selectedTrajectory = t === null ? true : t === 'on';
   }
 
   function applySelection() {
@@ -180,6 +169,14 @@
     var roundButtons = el.matchOptions.querySelectorAll('.match-option');
     for (var j = 0; j < roundButtons.length; j++) {
       roundButtons[j].classList.toggle('active', roundButtons[j].getAttribute('data-rounds') === selectedRounds);
+    }
+    var trailBtns = document.querySelectorAll('.trajectory-btn');
+    for (var k = 0; k < trailBtns.length; k++) {
+      var isOn = trailBtns[k].getAttribute('data-trail') === 'on';
+      var active = isOn === selectedTrajectory;
+      trailBtns[k].classList.toggle('active', active);
+      trailBtns[k].setAttribute('aria-checked', active ? 'true' : 'false');
+      trailBtns[k].setAttribute('tabindex', active ? '0' : '-1');
     }
   }
 
@@ -200,12 +197,20 @@
         applySelection();
       });
     }
+    var trailBtns = document.querySelectorAll('.trajectory-btn');
+    for (var k = 0; k < trailBtns.length; k++) {
+      trailBtns[k].addEventListener('click', function () {
+        selectedTrajectory = this.getAttribute('data-trail') === 'on';
+        applySelection();
+      });
+    }
   }
 
   function persistSelection() {
     try {
       localStorage.setItem('tankDuelSelectedMap', selectedMap);
       localStorage.setItem('tankDuelSelectedRounds', selectedRounds);
+      localStorage.setItem('tankDuelSelectedTrajectory', selectedTrajectory ? 'on' : 'off');
     } catch (e) { /* ignore */ }
   }
 
@@ -254,7 +259,6 @@ Engine shape (version 1):
     var p1Pos = players[p1Id] || {};
     var p2Pos = players[p2Id] || {};
 
-    var cust = getCustomization();
     var p1Name = battle.player1_name || 'PLAYER';
     var p2Name = battle.player2_name || 'OPPONENT';
 
@@ -296,7 +300,7 @@ Engine shape (version 1):
         typeof scores[p2Id] === 'number' ? scores[p2Id] : 0
       ],
       wind: typeof setup.wind === 'number' ? setup.wind : 0,
-      trajectoryTrail: cust.trajectoryTrail,
+      trajectoryTrail: setup.trajectory !== false,
       battle: {
         battle_id: battle.battle_id || '',
         my_user_id: myId,
@@ -424,7 +428,8 @@ Engine shape (version 1):
     var payload = {
       game_mode: 'ONLINE',
       map: resolveOnlineMap(),
-      rounds: parseInt(selectedRounds, 10) || 1
+      rounds: parseInt(selectedRounds, 10) || 1,
+      trajectory: selectedTrajectory !== false
     };
     persistSelection();
 

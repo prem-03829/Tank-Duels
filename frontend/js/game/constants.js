@@ -34,6 +34,12 @@ TD.POWER_MOUSE_SENSITIVITY = 0.1;
 TD.PROJECTILE_RADIUS = 1;
 TD.PROJECTILE_SPEED_CAP = 10;
 
+/* Distance (px) from the authoritative impact at which the ONLINE visual
+   projectile stops replaying and hands off to the server snapshot. The flight
+   physics are pixel-identical to the server's, so the projectile reaches the
+   impact within this small buffer. */
+TD.ONLINE_SHOT_ARRIVE_EPS = 2.5;
+
 TD.TURN_ANNOUNCE_DURATION = 90;
 TD.GAME_OVER_DELAY = 120;
 
@@ -203,6 +209,7 @@ TD.STATES = {
   TURN_START: 'turn_start',
   AIMING: 'aiming',
   FLYING: 'flying',
+  ONLINE_SHOT: 'online_shot',
   EXPLODING: 'exploding',
   GAME_OVER: 'game_over'
 };
