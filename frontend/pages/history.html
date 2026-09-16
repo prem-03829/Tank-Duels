@@ -40,6 +40,14 @@
 
     </header>
 
+    <!-- Filter pills: client-side narrowing of the already-loaded history.
+         ALL is selected by default; switching never refetches from the server. -->
+    <div class="history-filters" role="group" aria-label="Filter match history">
+      <button type="button" class="history-filter" data-history-filter="all" aria-pressed="true">ALL</button>
+      <button type="button" class="history-filter" data-history-filter="online" aria-pressed="false">ONLINE</button>
+      <button type="button" class="history-filter" data-history-filter="same_device" aria-pressed="false">SAME DEVICE</button>
+    </div>
+
     <!-- Entries -->
     <section class="history-list" id="history-list">
 

@@ -80,6 +80,14 @@ TD.getHistoryModeLabel = function (mode) {
   return '1v1 • SAME DEVICE';
 };
 
+/* Canonical filter category for a record's mode. Record values are kept as-is
+   ("local" for the same-device store) — the pills filter on this normalized
+   category so existing records are never renamed. */
+TD.getHistoryCategory = function (mode) {
+  if (mode === 'online') return 'online';
+  return 'same_device';
+};
+
 /* Build and store a completed local (1v1 — SAME DEVICE) match record from the
    engine's end-of-match data. Winner/loser are derived from the round scores;
    a tie resolves to Player 1, matching the existing results behavior. */

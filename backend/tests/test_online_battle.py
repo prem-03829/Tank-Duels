@@ -687,6 +687,27 @@ class OnlineBattleTests(unittest.TestCase):
         self.assertEqual(setup["max_rounds"], 3)
         self.assertEqual(setup["scores"], {P1: 2, P2: 1})
 
+    def test_list_exposes_no_unrelated_player_fields(self):
+        self._seed_battle()
+        response = self._list()
+        self.assertEqual(response.status_code, 200)
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        keys = set(battles[0].keys())
+        forbidden = {
+            "username",
+            "email",
+            "player1_name",
+            "player2_name",
+            "player1_email",
+            "player2_email",
+            "battles_played",
+            "battles_won",
+            "battles_lost",
+            "total_damage",
+        }
+        self.assertFalse(keys & forbidden)
+
     def test_list_excludes_non_online_battles(self):
         online = self._seed_battle()
         self._seed_battle(battle_id=str(uuid.uuid4()), game_mode="LOCAL")

@@ -28,20 +28,93 @@ document.addEventListener("DOMContentLoaded", () => {
      Authenticated users read backend history (local_battle + completed online
      battle rows); guests keep the existing localStorage file. Both render
      identically below.
+
+     FILTERS
+     The three pills narrow the already-loaded, already-sorted list entirely
+     client-side: switching filters never touches the backend. ALL is the
+     default; "same_device" maps to the mode "local" via TD.getHistoryCategory.
   ========================= */
 
   const list = document.querySelector("#history-list");
   if (!list) return;
 
-  TD.loadMatchHistory().then((matches) => {
-    if (!matches || matches.length === 0) return; // keep the empty state
+  const filterButtons = Array.prototype.slice.call(
+    document.querySelectorAll(".history-filter[data-history-filter]")
+  );
 
-    const emptyEl = document.querySelector("#history-empty");
-    if (emptyEl) emptyEl.remove();
+  let allMatches = [];
+  let currentFilter = "all";
+
+  function visibleMatches(filter) {
+    if (filter === "all") return allMatches;
+    return allMatches.filter(
+      (match) => TD.getHistoryCategory(match.mode) === filter
+    );
+  }
+
+  /* The existing empty-state block, rebuilt to fit the active filter. */
+  function emptyStateFor(filter) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "history-empty";
+
+    const sectionTitle = document.createElement("h2");
+    sectionTitle.className = "history-empty-title";
+
+    const sectionMessage = document.createElement("p");
+    sectionMessage.className = "history-empty-message";
+
+    if (filter === "online") {
+      sectionTitle.textContent = "No Online Matches";
+      sectionMessage.textContent = "Complete an online battle to see it here.";
+    } else if (filter === "same_device") {
+      sectionTitle.textContent = "No Same Device Matches";
+      sectionMessage.textContent = "Complete a Same Device battle to see it here.";
+    } else {
+      sectionTitle.textContent = "No Match History";
+      sectionMessage.textContent = "Completed battles will appear here.";
+    }
+
+    wrapper.appendChild(sectionTitle);
+    wrapper.appendChild(sectionMessage);
+    return wrapper;
+  }
+
+  function renderHistory() {
+    while (list.firstChild) {
+      list.removeChild(list.firstChild);
+    }
+
+    const matches = visibleMatches(currentFilter);
+    if (matches.length === 0) {
+      list.appendChild(emptyStateFor(currentFilter));
+      return;
+    }
 
     for (let i = 0; i < matches.length; i++) {
       list.appendChild(renderMatch(matches[i]));
     }
+  }
+
+  function selectFilter(filter) {
+    currentFilter = filter;
+    for (let i = 0; i < filterButtons.length; i++) {
+      const button = filterButtons[i];
+      const active =
+        button.getAttribute("data-history-filter") === currentFilter;
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    }
+    renderHistory();
+  }
+
+  for (let i = 0; i < filterButtons.length; i++) {
+    filterButtons[i].addEventListener("click", function () {
+      selectFilter(this.getAttribute("data-history-filter"));
+    });
+  }
+
+  TD.loadMatchHistory().then((matches) => {
+    allMatches = matches || [];
+    renderHistory();
   });
 });
 

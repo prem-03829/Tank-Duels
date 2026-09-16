@@ -53,6 +53,66 @@
 }
 
 /* =========================
+   FILTER PILLS
+   Toggle group that narrows the already-loaded list; the selected pill uses
+   the primary accent fill (mirrors .btn-primary) and reports its state to
+   assistive tech via aria-pressed.
+========================= */
+
+.history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-lg);
+}
+
+.history-filter {
+  min-height: 34px;
+  padding: 0.4rem 0.8rem;
+
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.history-filter:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+  border-color: var(--border-primary);
+}
+
+.history-filter:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.history-filter[aria-pressed="true"] {
+  color: var(--text-on-primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: var(--glow-primary);
+}
+
+.history-filter[aria-pressed="true"]:hover {
+  background: var(--color-primary-light);
+}
+
+/* =========================
    ENTRY LIST
 ========================= */
 
