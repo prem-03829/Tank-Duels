@@ -1258,6 +1258,7 @@ TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData
   this.maxRounds = maxRounds;
   if (typeof scores[p1Id] === 'number') this.scores[0] = scores[p1Id];
   if (typeof scores[p2Id] === 'number') this.scores[1] = scores[p2Id];
+  ctx.finalScores = [this.scores[0], this.scores[1]];
   if (typeof setup.wind === 'number') this.wind = setup.wind;
 
   if (!completed && battleData.current_turn != null && battleData.current_turn !== '') {
@@ -1541,9 +1542,13 @@ TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
   }
 
   if (status === 'COMPLETED') {
-    /* The battle is over. If the shooter's own resolve already began the final
-       EXPLODING, let it finish and navigate exactly once; otherwise start it. */
+    /* The battle is over. ALWAYS apply the authoritative result (it is
+       idempotent) before navigating so the displayed scores/result can never be
+       stale — even when the shooter's own optimistic local impact is still in
+       its EXPLODING window and no resolve response has landed yet. */
     this._onlineCompleted = true;
+    this._applyOnlineBattleState(battleData, null);
+    this._updateHUD();
     if (this.state !== TD.STATES.EXPLODING && this.state !== TD.STATES.GAME_OVER) {
       this._beginOnlineResolution(
         battleData,
@@ -1722,6 +1727,7 @@ TD.GameEngine.prototype._onProjectileEnd = function () {
 };
 
 TD.GameEngine.prototype._afterExplosion = function () {
+  if (this._isOnlineBattle()) return;
   for (var i = 0; i < this.tanks.length; i++) {
     this.tanks[i].syncToTerrain(this.terrain);
   }
@@ -1792,16 +1798,28 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   if (this._onlineBattle && typeof this._onlineBattle.localServerSlot === 'number') {
     localSlot = this._onlineBattle.localServerSlot;
   }
-  var playerWins = this.scores[localSlot] || 0;
-  var opponentWins = this.scores[1 - localSlot] || 0;
+
+  var playerWins, opponentWins, localName, oppTank;
+
+  /* ONLINE: prefer the authoritative per-slot scores stored by
+     _applyOnlineBattleState. They come from the server's battle_state.scores
+     keyed by player id — immune to any local increment or slot-reversal bug. */
+  var ctx = this._onlineBattle;
+  if (this._online && ctx && ctx.finalScores) {
+    playerWins = ctx.finalScores[localSlot] || 0;
+    opponentWins = ctx.finalScores[1 - localSlot] || 0;
+  } else {
+    playerWins = this.scores[localSlot] || 0;
+    opponentWins = this.scores[1 - localSlot] || 0;
+  }
 
   var result = 'loss';
   if (playerWins > opponentWins) result = 'win';
   else if (playerWins === opponentWins) result = 'win';
 
-  var localName =
+  localName =
     this.tanks && this.tanks[localSlot] ? this.tanks[localSlot].name : this.playerName;
-  var oppTank =
+  oppTank =
     this.tanks && this.tanks[1 - localSlot] ? this.tanks[1 - localSlot].name : this.opponentName;
 
   localStorage.setItem('tankDuelLastResult', result);
@@ -1810,11 +1828,15 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   localStorage.setItem('tankDuelLastPlayerName', localName);
   localStorage.setItem('tankDuelLastOpponentName', oppTank);
 
-  // ONLINE matches are finalised on the server (a later step). A finished
-  // online battle is never written into same-device / guest local history and
-  // never touches the local win counters — only the result above is shown.
+  /* ONLINE: stamp the battle identity so the results page can re-fetch the
+     authoritative server state by battle_id (requirements 5-7) and never
+     shows stale data from a previous match. */
   if (this._online) {
+    localStorage.setItem('tankDuelLastResultOnline', 'true');
+    localStorage.setItem('tankDuelLastBattleId', (ctx && ctx.battle_id) || '');
+    localStorage.setItem('tankDuelLastLocalSlot', String(localSlot));
     TD.clearActiveMatch();
+    this._onlineNavigatedAway = true;
     this.cleanup();
     window.location.href = './results.html';
     return;
@@ -1997,8 +2019,15 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   this._updateHUD();
 
   if (saved.state === TD.STATES.GAME_OVER) {
-    this._saveAndNavigate();
-    return;
+    if (this._isOnlineBattle()) {
+      /* An ONLINE battle's final scores are owned by the server. Never navigate
+         with potentially stale saved scores — drop into the observe state so the
+         poll can re-fetch the authoritative completed battle and navigate after
+         applying it. */
+    } else {
+      this._saveAndNavigate();
+      return;
+    }
   }
 
   document.addEventListener('keydown', this._onKeyDown);
@@ -2011,7 +2040,15 @@ TD.GameEngine.prototype.restore = function (saved, config) {
     this.state = TD.STATES.AIMING;
     this.stateTimer = 0;
   } else if (saved.state === TD.STATES.EXPLODING) {
-    this._resolveExplosionOutcome();
+    if (this._isOnlineBattle()) {
+      /* ONLINE: the server owns the outcome — never locally resolve the
+         explosion (that would re-increment scores via _endRound). Fall into
+         the observe state until the poll applies the authoritative result. */
+      this.state = TD.STATES.TURN_START;
+      this.stateTimer = TD.TURN_ANNOUNCE_DURATION;
+    } else {
+      this._resolveExplosionOutcome();
+    }
   } else {
     this.state = TD.STATES.TURN_START;
     this.stateTimer = TD.TURN_ANNOUNCE_DURATION;
@@ -2026,6 +2063,7 @@ TD.GameEngine.prototype.restore = function (saved, config) {
 };
 
 TD.GameEngine.prototype._resolveExplosionOutcome = function () {
+  if (this._isOnlineBattle()) return;
   for (var i = 0; i < this.tanks.length; i++) {
     this.tanks[i].syncToTerrain(this.terrain);
   }
