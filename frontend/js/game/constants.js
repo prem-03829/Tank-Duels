@@ -37,6 +37,10 @@ TD.PROJECTILE_SPEED_CAP = 10;
 TD.TURN_ANNOUNCE_DURATION = 90;
 TD.GAME_OVER_DELAY = 120;
 
+/* ONLINE battle polling cadence (ms). Remote players observe the authoritative
+   battle_state on this interval; local firing/reconcile never depends on it. */
+TD.ONLINE_POLL_INTERVAL_MS = 1700;
+
 TD.TERRAIN_STEP = 2;
 
 TD.MAP_KEYS = ['dustlands', 'valley', 'frostbite', 'ashhill', 'moonbase', 'canyon'];

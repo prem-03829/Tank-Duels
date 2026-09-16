@@ -25,8 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      RENDER HISTORY
      Each completed match becomes one compact horizontal row.
-     Authenticated users read backend history (public.local_battle); guests
-     keep the existing localStorage file. Both render identically below.
+     Authenticated users read backend history (local_battle + completed online
+     battle rows); guests keep the existing localStorage file. Both render
+     identically below.
   ========================= */
 
   const list = document.querySelector("#history-list");

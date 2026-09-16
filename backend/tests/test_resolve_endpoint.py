@@ -84,6 +84,14 @@ class FakeStore:
         self.lock = threading.Lock()
         self.battles = {}
         self.last_update_payload = None
+        # Emulates public.battle BEFORE UPDATE trigger trg_set_battle_ended_at
+        # (migration 13b): a COMPLETED transition that omits ended_at receives
+        # a timestamp from the database clock instead of the Python/web-server
+        # clock.
+        self.ended_at_now = "2026-02-02T00:00:00+00:00"
+        # Records rpc() invocations (migration 13c: record_battle_statistics).
+        self.rpc_calls = []
+        self.fail_rpc = False
 
     def add(self, battle):
         self.battles[battle["battle_id"]] = battle
@@ -126,6 +134,8 @@ class FakeStore:
                     if stored is None or not _jsonb_contains(stored, wanted):
                         continue
                     battle.update(payload)
+                    if "ended_at" not in payload and battle.get("status") == "COMPLETED":
+                        battle["ended_at"] = self.ended_at_now
                     self.last_update_payload = payload
                     return [dict(battle)]
             return []
@@ -195,12 +205,28 @@ class FakeTable:
         return FakeQuery(self.store, "update", {"update": data})
 
 
+class _FakeRpcQuery:
+    def __init__(self, store, name, params):
+        self.store = store
+        self.name = name
+        self.params = params
+
+    def execute(self):
+        self.store.rpc_calls.append((self.name, self.params))
+        if self.store.fail_rpc:
+            raise RuntimeError("statistics rpc failed")
+        return Result([])
+
+
 class FakeClient:
     def __init__(self, store):
         self.store = store
 
     def table(self, table_name):
         return FakeTable(self.store)
+
+    def rpc(self, name, params):
+        return _FakeRpcQuery(self.store, name, params)
 
 
 class FakeAuth:
@@ -285,9 +311,10 @@ class ResolveEndpointTests(unittest.TestCase):
         battle = build_battle(max_rounds=5)
         self._resolve(battle=battle)
         allowed = {"battle_state", "current_turn", "status", "winner_player_id",
-                   "defeated_player_id", "ended_at"}
+                   "defeated_player_id"}
         self.assertLessEqual(set(self.store.last_update_payload), allowed)
         self.assertNotIn("pending_fire", self.store.last_update_payload["battle_state"])
+        self.assertNotIn("ended_at", self.store.last_update_payload)
 
     def test_game_over_sets_winner_defeated_and_ended_at(self):
         battle = build_battle(max_rounds=1)
@@ -306,6 +333,58 @@ class ResolveEndpointTests(unittest.TestCase):
         self.assertEqual(final["status"], "COMPLETED")
         self.assertEqual(final["winner_player_id"], P1)
         self.assertNotIn("pending_fire", final["battle_state"])
+
+    def test_game_over_update_omits_ended_at_for_database_default(self):
+        battle = build_battle(max_rounds=1)
+        self._resolve(battle=battle)
+
+        payload = self.store.last_update_payload
+        self.assertEqual(payload["status"], "COMPLETED")
+        self.assertIn("battle_state", payload)
+        self.assertIn("winner_player_id", payload)
+        self.assertIn("defeated_player_id", payload)
+        self.assertNotIn("ended_at", payload)
+        self.assertNotIn("current_turn", payload)
+
+        final = self.store.battles[BATTLE_ID]
+        self.assertEqual(final["ended_at"], self.store.ended_at_now)
+        self.assertEqual(final["started_at"], battle["started_at"])
+
+    def test_non_game_over_update_leaves_ended_at_untouched(self):
+        battle = build_battle(max_rounds=5)
+        response = self._resolve(battle=battle)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.store.battles[BATTLE_ID]["status"], "IN_PROGRESS")
+        self.assertNotIn("ended_at", self.store.last_update_payload)
+        self.assertIn("current_turn", self.store.last_update_payload)
+        self.assertIn("battle_state", self.store.last_update_payload)
+
+    def test_game_over_triggers_statistics_rpc_once(self):
+        battle = build_battle(max_rounds=1)
+        response = self._resolve(battle=battle)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.store.rpc_calls,
+            [("record_battle_statistics", {"p_battle_id": BATTLE_ID})],
+        )
+
+    def test_valid_resolve_does_not_record_statistics(self):
+        battle = build_battle(max_rounds=5)
+        response = self._resolve(battle=battle)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.store.rpc_calls, [])
+
+    def test_statistics_rpc_failure_keeps_resolve_200(self):
+        battle = build_battle(max_rounds=1)
+        self.store.fail_rpc = True
+        response = self._resolve(battle=battle)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["battle"]["status"], "COMPLETED")
+        self.assertEqual(len(self.store.rpc_calls), 1)
 
     def test_resolve_without_pending_fire_is_conflict(self):
         state = build_flat_state()

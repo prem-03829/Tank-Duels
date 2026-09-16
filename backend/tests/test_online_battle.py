@@ -35,6 +35,7 @@ from postgrest.exceptions import APIError as PostgrestAPIError
 P1 = "11111111-1111-1111-1111-111111111111"
 P2 = "22222222-2222-2222-2222-222222222222"
 P3 = "33333333-3333-3333-3333-333333333333"
+P4 = "44444444-4444-4444-4444-444444444444"
 
 BATTLE_CODE_FORMAT = r"^[A-HJ-NP-Z2-9]{4}$"
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -70,6 +71,7 @@ class Store:
         self.rpc_missing_player = False
         self.fail_update = False
         self.noop_update = False
+        self.fail_select = False
 
     def next_id(self):
         return str(uuid.uuid4())
@@ -107,14 +109,24 @@ class Store:
         eq = params.get("eq", {})
         or_expr = params.get("or")
         columns = params.get("columns", "")
-        col_list = [c.strip() for c in columns.split(",") if c.strip()]
-        rows = []
-        for battle in self.battles.values():
-            if any(battle.get(key) != value for key, value in eq.items()):
-                continue
-            if or_expr and not self._or_matches(or_expr, battle):
-                continue
-            rows.append({c: battle[c] for c in col_list if c in battle})
+        order = params.get("order", [])
+        with self.lock:
+            if self.fail_select:
+                self.fail_select = False
+                raise _rpc_error('could not scan the "battle" relation', code="PGRST101")
+            col_list = [c.strip() for c in columns.split(",") if c.strip()]
+            rows = []
+            for battle in self.battles.values():
+                if any(battle.get(key) != value for key, value in eq.items()):
+                    continue
+                if or_expr and not self._or_matches(or_expr, battle):
+                    continue
+                rows.append({c: battle[c] for c in col_list if c in battle})
+        for column, desc in order:
+            rows.sort(
+                key=lambda r, c=column: (r.get(c) is not None, r.get(c) or ""),
+                reverse=desc,
+            )
         return rows
 
     def update(self, params):
@@ -192,6 +204,10 @@ class FakeQuery:
 
     def or_(self, expression):
         self.params["or"] = expression
+        return self
+
+    def order(self, column, desc=False):
+        self.params.setdefault("order", []).append((column, desc))
         return self
 
     def select(self, columns):
@@ -308,6 +324,14 @@ class OnlineBattleTests(unittest.TestCase):
         return self.client.get(
             f"/api/battles/{battle_id}",
             headers=self._headers() if headers is None else headers,
+        )
+
+    def _list(self, query=None, headers=None):
+        url = "/api/battles"
+        if query:
+            url += "?" + query
+        return self.client.get(
+            url, headers=self._headers() if headers is None else headers
         )
 
     def _seed_waiting(self, code="A234", map_key="valley", rounds=3, player1=P1):
@@ -596,6 +620,130 @@ class OnlineBattleTests(unittest.TestCase):
     def test_get_nonexistent_battle_404(self):
         response = self._get(str(uuid.uuid4()))
         self.assertEqual(response.status_code, 404)
+
+    # ---- list -----------------------------------------------------------
+
+    def _seed_battle(self, battle_id=None, player1=P1, player2=P2, winner=P1,
+                     status="COMPLETED", game_mode="ONLINE", map_key="valley",
+                     max_rounds=3, scores=None, ended_at="2026-09-01T00:01:30.000Z",
+                     created_at="2026-09-01T00:00:00.000Z"):
+        battle = {
+            "battle_id": battle_id or str(uuid.uuid4()),
+            "player1_id": player1,
+            "player2_id": player2,
+            "winner_player_id": winner if status == "COMPLETED" else None,
+            "defeated_player_id": player2 if status == "COMPLETED" else None,
+            "current_turn": player1,
+            "game_mode": game_mode,
+            "status": status,
+            "battle_state": {
+                "version": 2,
+                "setup": {
+                    "map": map_key,
+                    "max_rounds": max_rounds,
+                    "scores": dict(scores) if scores else {player1: 2, player2: 1},
+                },
+                "damage_dealt": {player1: 30, player2: 10},
+            },
+            "battle_code": None,
+            "created_at": created_at,
+            "started_at": "2026-09-01T00:00:05.000Z",
+            "ended_at": ended_at,
+        }
+        self.store.add(battle)
+        return battle
+
+    def test_list_requires_auth(self):
+        response = self._list(headers={})
+        self.assertEqual(response.status_code, 401)
+
+    def test_list_empty_history(self):
+        response = self._list()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"battles": []})
+
+    def test_list_returns_participant_battles_only(self):
+        mine = self._seed_battle()
+        self._seed_battle(battle_id=str(uuid.uuid4()), player1=P3, player2=P4)
+        response = self._list()
+        self.assertEqual(response.status_code, 200)
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        self.assertEqual(battles[0]["battle_id"], mine["battle_id"])
+
+    def test_list_payload_carries_history_fields(self):
+        battle = self._seed_battle(map_key="frostbite", max_rounds=3)
+        response = self._list()
+        battles = response.get_json()["battles"]
+        self.assertEqual(battles[0]["battle_id"], battle["battle_id"])
+        self.assertEqual(battles[0]["status"], "COMPLETED")
+        self.assertEqual(battles[0]["game_mode"], "ONLINE")
+        self.assertEqual(battles[0]["winner_player_id"], P1)
+        self.assertEqual(battles[0]["defeated_player_id"], P2)
+        self.assertEqual(battles[0]["started_at"], "2026-09-01T00:00:05.000Z")
+        self.assertEqual(battles[0]["ended_at"], "2026-09-01T00:01:30.000Z")
+        setup = battles[0]["battle_state"]["setup"]
+        self.assertEqual(setup["map"], "frostbite")
+        self.assertEqual(setup["max_rounds"], 3)
+        self.assertEqual(setup["scores"], {P1: 2, P2: 1})
+
+    def test_list_excludes_non_online_battles(self):
+        online = self._seed_battle()
+        self._seed_battle(battle_id=str(uuid.uuid4()), game_mode="LOCAL")
+        self._seed_battle(battle_id=str(uuid.uuid4()), game_mode="LAN")
+        response = self._list()
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        self.assertEqual(battles[0]["battle_id"], online["battle_id"])
+
+    def test_list_status_filter_completed(self):
+        completed = self._seed_battle()
+        self._seed_battle(battle_id=str(uuid.uuid4()), status="IN_PROGRESS", ended_at=None)
+        response = self._list(query="status=COMPLETED")
+        self.assertEqual(response.status_code, 200)
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        self.assertEqual(battles[0]["battle_id"], completed["battle_id"])
+
+    def test_list_normalizes_status_case(self):
+        completed = self._seed_battle()
+        response = self._list(query="status=completed")
+        self.assertEqual(response.status_code, 200)
+        battles = response.get_json()["battles"]
+        self.assertEqual(len(battles), 1)
+        self.assertEqual(battles[0]["battle_id"], completed["battle_id"])
+
+    def test_list_rejects_invalid_status(self):
+        for bad in ("DONE", "finished", " RESOLVED "):
+            response = self._list(query=f"status={bad}")
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.get_json()["error"], "unsupported status")
+        response = self._list(query="status=")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "status must not be blank")
+
+    def test_list_newest_first(self):
+        older = self._seed_battle(
+            battle_id=str(uuid.uuid4()),
+            ended_at="2026-09-01T00:01:00.000Z",
+            created_at="2026-09-01T00:00:00.000Z",
+        )
+        newer = self._seed_battle(
+            battle_id=str(uuid.uuid4()),
+            ended_at="2026-09-02T00:01:00.000Z",
+            created_at="2026-09-02T00:00:00.000Z",
+        )
+        response = self._list()
+        battles = response.get_json()["battles"]
+        self.assertEqual(
+            [b["battle_id"] for b in battles], [newer["battle_id"], older["battle_id"]]
+        )
+
+    def test_list_db_error_500(self):
+        self.store.fail_select = True
+        response = self._list()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.get_json()["error"], "Internal server error")
 
 
 if __name__ == "__main__":

@@ -45,6 +45,12 @@ TD.GameEngine = function (canvas, elements) {
   this._onlineRequestPhase = '';
   this._onlineResolutionPending = false;
   this._onlineCompleted = false;
+  this._onlineBattleStatus = '';
+  this._onlineNavigatedAway = false;
+  this._onlinePollingTimer = null;
+  this._onlinePollInFlight = false;
+  this._lastOnlineShotSignature = null;
+  this._onOnlinePageUnload = null;
 
   this._bgImages = {};
   this._bgLoaded = {};
@@ -98,6 +104,9 @@ TD.GameEngine.prototype.init = function (config) {
   this.lastTime = performance.now();
   this._saveState();
   this._loop();
+
+  /* No-op for local/guest matches; only an authenticated online init polls. */
+  if (this._isOnlineBattle()) this._startOnlinePolling();
 };
 
 /* =========================
@@ -210,6 +219,7 @@ TD.GameEngine.prototype._generateWind = function () {
 };
 
 TD.GameEngine.prototype.cleanup = function () {
+  this._stopOnlinePolling();
   this.running = false;
   if (this.animFrameId) {
     cancelAnimationFrame(this.animFrameId);
@@ -778,6 +788,9 @@ TD.GameEngine.prototype._completeOnlineFire = function (battleId) {
    battle.battle_state, then show the (cosmetic) impact and run a brief
    explosion before advancing to the server-determined next turn. */
 TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData) {
+  /* Mark this shot as processed so later polls observe (not replay) it. */
+  this._lastOnlineShotSignature = this._onlineShotSignature(battleData);
+
   var completed = this._applyOnlineBattleState(battleData, shotData);
 
   this._playOnlineShotVisual(shotData);
@@ -808,6 +821,7 @@ TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData
   var setup = (state && typeof state === 'object') ? (state.setup || {}) : {};
 
   var completed = battleData.status === 'COMPLETED';
+  this._onlineBattleStatus = battleData.status || this._onlineBattleStatus;
 
   if (setup.map && TD.MAP_KEYS.indexOf(setup.map) !== -1) this.mapType = setup.map;
 
@@ -917,12 +931,21 @@ TD.GameEngine.prototype._afterOnlineExplosion = function () {
   this._enableControls(false);
 };
 
-/* Restore control state using only the authoritative turn: the local slot's
-   controls come back only when it really is (still) their turn. */
+/* Restore control state using only the authoritative turn and battle status:
+   the local slot's controls come back only when it is (still) their turn, the
+   local tank is still alive, and the battle has not been completed/cancelled. */
 TD.GameEngine.prototype._restoreOnlineControls = function () {
   var active = false;
-  if (this._onlineBattle && typeof this._onlineBattle.localServerSlot === 'number') {
-    active = this._onlineBattle.localServerSlot === this.currentTurn;
+  var ctx = this._onlineBattle;
+  if (ctx && typeof ctx.localServerSlot === 'number') {
+    var status = this._onlineBattleStatus || 'IN_PROGRESS';
+    var localAlive =
+      this.tanks && this.tanks[ctx.localServerSlot] &&
+      this.tanks[ctx.localServerSlot].alive;
+    active =
+      status === 'IN_PROGRESS' &&
+      ctx.localServerSlot === this.currentTurn &&
+      localAlive;
   }
   this._enableControls(active && this.state === TD.STATES.AIMING);
 };
@@ -993,6 +1016,164 @@ TD.GameEngine.prototype._handleOnlineAuthError = function () {
   TD.clearActiveMatch();
   this.cleanup();
   window.location.href = './login.html';
+};
+
+/* =========================
+   ONLINE BATTLE POLLING (REMOTE SYNC)
+   Only authenticated ONLINE matches poll. Guest and Same Device matches never
+   set _onlineBattle, so every guard below is a no-op for them. Polling observes
+   the authoritative backend battle_state — it never issues fire/resolve and
+   never runs local projectile physics. The shooter's own fire/resolve response
+   stays the immediate source of truth; a shot signature prevents replaying the
+   same authoritative outcome on every interval.
+========================== */
+
+TD.GameEngine.prototype._startOnlinePolling = function () {
+  if (!this._isOnlineBattle()) return;
+  var ctx = this._onlineBattle;
+  if (!ctx || !ctx.battle_id) return;
+  if (this._onlinePollingTimer != null) return;
+
+  var self = this;
+  this._onlinePollingTimer = setInterval(function () {
+    self._pollOnlineBattle();
+  }, TD.ONLINE_POLL_INTERVAL_MS || 1700);
+
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    this._onOnlinePageUnload = function () { self._stopOnlinePolling(); };
+    window.addEventListener('pagehide', this._onOnlinePageUnload);
+  }
+};
+
+TD.GameEngine.prototype._stopOnlinePolling = function () {
+  if (this._onlinePollingTimer != null) {
+    clearInterval(this._onlinePollingTimer);
+    this._onlinePollingTimer = null;
+  }
+  this._onlinePollInFlight = false;
+  if (this._onOnlinePageUnload && typeof window !== 'undefined') {
+    window.removeEventListener('pagehide', this._onOnlinePageUnload);
+    this._onOnlinePageUnload = null;
+  }
+};
+
+TD.GameEngine.prototype._pollOnlineBattle = function () {
+  if (!this._isOnlineBattle() || !this.running || this._onlineNavigatedAway) {
+    this._stopOnlinePolling();
+    return;
+  }
+  /* While the local player is mid fire/resolve, that direct flow owns the
+     authoritative transition; polling must not read race it or replay it. */
+  if (this._onlineFiringInFlight) return;
+  if (this._onlinePollInFlight) return;
+
+  var ctx = this._onlineBattle;
+  if (!ctx || !ctx.battle_id || typeof TD.getBattle !== 'function') return;
+
+  var self = this;
+  this._onlinePollInFlight = true;
+  TD.getBattle(ctx.battle_id)
+    .then(function (json) {
+      self._onlinePollInFlight = false;
+      var battleData = json && json.battle ? json.battle : null;
+      if (!battleData) return;
+      self._handleOnlineBattleUpdate(battleData);
+    })
+    .catch(function (err) {
+      self._onlinePollInFlight = false;
+      if (err && err.status === 401) {
+        self._handleOnlineAuthError();
+        return;
+      }
+      /* The battle no longer exists: stop polling and leave cleanly. */
+      if (err && (err.status === 404 || err.status === 410)) {
+        self._stopOnlinePolling();
+        self._handleOnlineBattleEnded();
+        return;
+      }
+      /* Transient failure: keep the last valid authoritative state. */
+    });
+};
+
+/* A stable identity for the newest authoritative shot. It is null when no shot
+   has been resolved yet, and only changes when the server resolves a NEW shot
+   (current_turn and round are folded in so two identical-looking shots cannot
+   collide). Not persisted — remote-shot detection is per game-session only. */
+TD.GameEngine.prototype._onlineShotSignature = function (battleData) {
+  if (!battleData) return null;
+  var state = battleData.battle_state;
+  var ls = state && state.last_shot;
+  if (!ls) return null;
+  var im = ls.impact || {};
+  return [
+    String(ls.player_id || ''),
+    ls.angle,
+    ls.power,
+    String(ls.hit_type || ''),
+    im.x,
+    im.y,
+    String(battleData.current_turn || ''),
+    (state.setup && state.setup.round) || ''
+  ].join('|');
+};
+
+TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
+  if (!this._isOnlineBattle() || this._onlineNavigatedAway) return;
+  if (this._onlineFiringInFlight) return;
+  if (!battleData) return;
+
+  var status = battleData.status || '';
+
+  if (status === 'CANCELLED') {
+    this._stopOnlinePolling();
+    this._handleOnlineBattleEnded();
+    return;
+  }
+
+  var sig = this._onlineShotSignature(battleData);
+
+  if (sig !== null && sig !== this._lastOnlineShotSignature) {
+    /* A genuinely new authoritative shot (typically the opponent's). Apply the
+       server result once and play its cosmetic impact — no local physics. */
+    this._lastOnlineShotSignature = sig;
+    this._beginOnlineResolution(
+      battleData,
+      battleData.battle_state ? battleData.battle_state.last_shot : null
+    );
+    return;
+  }
+
+  if (status === 'COMPLETED') {
+    /* The battle is over. If the shooter's own resolve already began the final
+       EXPLODING, let it finish and navigate exactly once; otherwise start it. */
+    this._onlineCompleted = true;
+    if (this.state !== TD.STATES.EXPLODING && this.state !== TD.STATES.GAME_OVER) {
+      this._beginOnlineResolution(
+        battleData,
+        battleData.battle_state ? battleData.battle_state.last_shot : null
+      );
+    }
+    return;
+  }
+
+  /* Same shot (or none): silently observe the resulting authoritative state
+     without replaying any visual or state transition. */
+  this._applyOnlineBattleState(battleData, null);
+  this._updateHUD();
+  this._saveState();
+  this._restoreOnlineControls();
+};
+
+/* Battle is CANCELLED or the battle_id is no longer valid: stop polling, clear
+   the local active match and return to the dashboard without a fabricated
+   result. */
+TD.GameEngine.prototype._handleOnlineBattleEnded = function () {
+  this._stopOnlinePolling();
+  if (this._onlineNavigatedAway) return;
+  this._onlineNavigatedAway = true;
+  TD.clearActiveMatch();
+  this.cleanup();
+  if (typeof window !== 'undefined') window.location.href = './dashboard.html';
 };
 
 /* =========================
@@ -1207,18 +1388,30 @@ TD.GameEngine.prototype._startShake = function (intensity, duration) {
 };
 
 TD.GameEngine.prototype._saveAndNavigate = function () {
-  var playerWins = this.scores[0];
-  var opponentWins = this.scores[1];
+  /* ONLINE matches map server slots to engine indices 0/1, and the local human
+     may occupy either slot. For LOCAL/GUEST the engine keeps player 1 = index 0,
+     so localSlot 0 reproduces the original behavior exactly. */
+  var localSlot = 0;
+  if (this._onlineBattle && typeof this._onlineBattle.localServerSlot === 'number') {
+    localSlot = this._onlineBattle.localServerSlot;
+  }
+  var playerWins = this.scores[localSlot] || 0;
+  var opponentWins = this.scores[1 - localSlot] || 0;
 
   var result = 'loss';
   if (playerWins > opponentWins) result = 'win';
   else if (playerWins === opponentWins) result = 'win';
 
+  var localName =
+    this.tanks && this.tanks[localSlot] ? this.tanks[localSlot].name : this.playerName;
+  var oppTank =
+    this.tanks && this.tanks[1 - localSlot] ? this.tanks[1 - localSlot].name : this.opponentName;
+
   localStorage.setItem('tankDuelLastResult', result);
   localStorage.setItem('tankDuelLastPlayerScore', String(playerWins));
   localStorage.setItem('tankDuelLastOpponentScore', String(opponentWins));
-  localStorage.setItem('tankDuelLastPlayerName', this.playerName);
-  localStorage.setItem('tankDuelLastOpponentName', this.opponentName);
+  localStorage.setItem('tankDuelLastPlayerName', localName);
+  localStorage.setItem('tankDuelLastOpponentName', oppTank);
 
   // ONLINE matches are finalised on the server (a later step). A finished
   // online battle is never written into same-device / guest local history and
@@ -1429,6 +1622,10 @@ TD.GameEngine.prototype.restore = function (saved, config) {
 
   this._enableControls(this.state === TD.STATES.AIMING);
   this._loop();
+
+  /* Only authenticated ONLINE matches start remote polling; guest/same-device
+     games have no _onlineBattle so this is a no-op for them. */
+  if (this._isOnlineBattle()) this._startOnlinePolling();
 };
 
 TD.GameEngine.prototype._resolveExplosionOutcome = function () {

@@ -2,7 +2,6 @@ import re
 import secrets
 import traceback
 import uuid
-from datetime import datetime, timezone
 
 from flask import Blueprint, current_app, g, jsonify, request
 from postgrest.exceptions import APIError as PostgrestAPIError
@@ -22,6 +21,7 @@ from app.supabase import get_authenticated_client
 battle_bp = Blueprint("battle", __name__)
 
 _VALID_GAME_MODES = {"LOCAL", "LAN", "ONLINE"}
+_BATTLE_STATUS_FILTERS = {"WAITING", "IN_PROGRESS", "COMPLETED", "CANCELLED"}
 _INTERNAL_ERROR = {"error": "Internal server error"}
 _INITIAL_HEALTH = 100
 _ANGLE_MIN = 0
@@ -361,6 +361,53 @@ def get_battle(battle_id):
     return jsonify({"battle": _battle_payload(rows[0])}), 200
 
 
+@battle_bp.get("/api/battles")
+@require_auth
+def list_battles():
+    """List the authenticated caller's ONLINE battles, newest first.
+
+    Every SELECT runs through the caller's RLS-scoped client; the existing
+    "Players can view their battles" policy restricts the rows to battles the
+    caller is a participant of (player1_id / player2_id), so other players'
+    battles can never leak. An optional ``status`` query filter narrows the
+    result (e.g. ``?status=COMPLETED`` for match history); each payload keeps
+    the full ``battle_state`` so readers can derive map, scores and rounds.
+    """
+    status_filter = request.args.get("status")
+    if status_filter is not None:
+        status_filter = str(status_filter).strip().upper()
+        if not status_filter:
+            return jsonify({"error": "status must not be blank"}), 400
+        if status_filter not in _BATTLE_STATUS_FILTERS:
+            return jsonify({"error": "unsupported status"}), 400
+
+    user_id = _get_obj_field(g.user, "id")
+    token = _extract_bearer_token()
+
+    try:
+        query = (
+            get_authenticated_client(token)
+            .table("battle")
+            .select(_BATTLE_COLUMNS)
+            .eq("game_mode", "ONLINE")
+            .or_(f"player1_id.eq.{user_id},player2_id.eq.{user_id}")
+            .order("ended_at", desc=True)
+            .order("created_at", desc=True)
+        )
+        if status_filter is not None:
+            query = query.eq("status", status_filter)
+        response = query.execute()
+    except PostgrestAPIError:
+        _log_redacted("Battle history fetch failed")
+        return jsonify(_INTERNAL_ERROR), 500
+    except Exception:
+        _log_redacted("Battle history fetch failed unexpectedly")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    rows = getattr(response, "data", None) or []
+    return jsonify({"battles": [_battle_payload(row) for row in rows]}), 200
+
+
 @battle_bp.post("/api/battles/<battle_id>/turn/check")
 @require_auth
 def check_turn(battle_id):
@@ -502,7 +549,10 @@ def resolve_fire_action(battle_id):
         updates["status"] = "COMPLETED"
         updates["winner_player_id"] = outcome["round_winner_player_id"]
         updates["defeated_player_id"] = outcome["defeated_player_id"]
-        updates["ended_at"] = datetime.now(timezone.utc).isoformat()
+        # ended_at is intentionally omitted: the trg_set_battle_ended_at
+        # BEFORE UPDATE trigger stamps it from PostgreSQL's clock so
+        # ended_at >= started_at (valid_battle_times) holds regardless of
+        # web-server clock skew.
 
     battle_uuid = _parse_uuid(battle_id)
     token = _extract_bearer_token()

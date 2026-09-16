@@ -185,6 +185,18 @@ TD.getBattle = function (battleId) {
   );
 };
 
+/* List the authenticated player's ONLINE battles, newest first (battle_id
+   participants only — RLS ensures the caller never sees other players'
+   battles). Optional status filter, e.g. TD.getBattles("COMPLETED") for
+   online match history. */
+TD.getBattles = function (status) {
+  var url = "/api/battles";
+  if (status) {
+    url += "?status=" + encodeURIComponent(status);
+  }
+  return TD_apiRequest("GET", url, undefined, true);
+};
+
 /* Register the authenticated player's shot on the authoritative server battle.
    The server validates the caller is a participant AND it is their turn, then
    stores the pending_fire. angle/power are normalized server-side. */
