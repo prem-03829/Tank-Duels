@@ -18,9 +18,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (raw) cust = JSON.parse(raw);
   } catch (e) { /* fall through */ }
 
-  var playerName = (cust && cust.playerOneName && cust.playerOneName.trim()) ||
+  var playerName = localStorage.getItem('tankDuelLastPlayerName') ||
+                   (cust && cust.playerOneName && cust.playerOneName.trim()) ||
                    localStorage.getItem('tankDuelPlayerName') || 'Player';
-  var opponentName = (cust && cust.playerTwoName && cust.playerTwoName.trim()) || 'Opponent';
+  var opponentName = localStorage.getItem('tankDuelLastOpponentName') ||
+                     (cust && cust.playerTwoName && cust.playerTwoName.trim()) || 'Opponent';
 
   if (playerScoreName) {
     playerScoreName.textContent = playerName;

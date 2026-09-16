@@ -1,3 +1,5 @@
+import re
+import secrets
 import traceback
 import uuid
 from datetime import datetime, timezone
@@ -29,6 +31,10 @@ _POWER_MAX = 100
 _DEFAULT_ROUNDS = 1
 _ROUNDS_MIN = 1
 _ROUNDS_MAX = 3
+_BATTLE_CODE_LENGTH = 4
+_BATTLE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+_BATTLE_CODE_FORMAT = r"^[A-HJ-NP-Z2-9]{4}$"
+_BATTLE_CODE_ATTEMPTS = 8
 _BATTLE_FIELDS = [
     "battle_id",
     "player1_id",
@@ -39,6 +45,7 @@ _BATTLE_FIELDS = [
     "game_mode",
     "status",
     "battle_state",
+    "battle_code",
     "created_at",
     "started_at",
     "ended_at",
@@ -68,18 +75,24 @@ def create_battle():
     if "player1_id" in data:
         return jsonify({"error": "player1_id must not be supplied by the client"}), 400
 
-    player2_id = data.get("player2_id")
-    if player2_id is None or not isinstance(player2_id, str) or not player2_id.strip():
-        return jsonify({"error": "player2_id is required"}), 400
-    player2_uuid = _parse_uuid(player2_id.strip())
-    if player2_uuid is None:
-        return jsonify({"error": "player2_id must be a valid UUID"}), 400
-
     game_mode = data.get("game_mode")
     if game_mode is None or not isinstance(game_mode, str):
         return jsonify({"error": "game_mode is required"}), 400
     if game_mode not in _VALID_GAME_MODES:
         return jsonify({"error": "unsupported game_mode"}), 400
+
+    player2_uuid = None
+    if game_mode != "ONLINE":
+        player2_id = data.get("player2_id")
+        if player2_id is None or not isinstance(player2_id, str) or not player2_id.strip():
+            return jsonify({"error": "player2_id is required"}), 400
+        player2_uuid = _parse_uuid(player2_id.strip())
+        if player2_uuid is None:
+            return jsonify({"error": "player2_id must be a valid UUID"}), 400
+    elif "player2_id" in data:
+        return jsonify(
+            {"error": "player2_id must not be supplied for ONLINE battles"}
+        ), 400
 
     map_key = data.get("map")
     if map_key is not None and not isinstance(map_key, str):
@@ -96,29 +109,25 @@ def create_battle():
 
     user_id = _get_obj_field(g.user, "id")
     user_uuid = _parse_uuid(user_id)
-    if user_uuid is not None and user_uuid == player2_uuid:
+    if player2_uuid is not None and user_uuid is not None and user_uuid == player2_uuid:
         return jsonify({"error": "player2_id must be different from the authenticated player"}), 400
 
     token = _extract_bearer_token()
 
     try:
-        result = (
-            get_authenticated_client(token)
-            .table("battle")
-            .insert(
-                {
-                    "player1_id": str(user_id),
-                    "player2_id": str(player2_uuid),
-                    "game_mode": game_mode,
-                    "status": "IN_PROGRESS",
-                    "current_turn": str(user_id),
-                    "battle_state": build_initial_battle_state(
-                        str(user_id), str(player2_uuid), map_key=map_key, rounds=rounds
-                    ),
-                }
+        if game_mode == "ONLINE":
+            rows = _insert_online_waiting(
+                token, str(user_id), map_key=map_key, rounds=rounds
             )
-            .execute()
-        )
+        else:
+            rows = _insert_local_lan(
+                token,
+                str(user_id),
+                str(player2_uuid),
+                game_mode,
+                map_key=map_key,
+                rounds=rounds,
+            )
     except PostgrestAPIError as exc:
         if _get_obj_field(exc, "code") == "23503":
             return jsonify({"error": "Player not found"}), 404
@@ -128,11 +137,195 @@ def create_battle():
         _log_redacted("Battle creation failed unexpectedly")
         return jsonify(_INTERNAL_ERROR), 500
 
-    rows = getattr(result, "data", None) or []
     if not rows:
         return jsonify(_INTERNAL_ERROR), 500
 
     return jsonify({"battle": _battle_payload(rows[0])}), 201
+
+
+def _insert_online_waiting(token, player1_id, map_key=None, rounds=_DEFAULT_ROUNDS):
+    """Insert a WAITING ONLINE battle with a server-generated join code.
+
+    The body may only carry game_mode (ONLINE) plus the optional map/rounds; the
+    join code and every control field are generated server-side. The db unique
+    index on battle_code is the final collision guard: a 23505 during insert is
+    retried with a fresh code for a handful of attempts. Since a full setup
+    needs both players, the placeholder state keeps the chosen map/rounds so the
+    joining player can rebuild the authoritative state via build_initial_battle_state.
+    """
+    client = get_authenticated_client(token)
+    for _ in range(_BATTLE_CODE_ATTEMPTS):
+        code = _generate_battle_code()
+        try:
+            result = (
+                client.table("battle")
+                .insert(
+                    {
+                        "player1_id": player1_id,
+                        "player2_id": None,
+                        "game_mode": "ONLINE",
+                        "status": "WAITING",
+                        "current_turn": player1_id,
+                        "battle_state": _waiting_battle_state(
+                            player1_id, map_key, rounds
+                        ),
+                        "battle_code": code,
+                    }
+                )
+                .execute()
+            )
+        except PostgrestAPIError as exc:
+            if _get_obj_field(exc, "code") == "23505":
+                continue
+            raise
+        rows = getattr(result, "data", None) or []
+        if rows:
+            return rows
+        raise RuntimeError("battle_code collisions exhausted")
+
+
+def _insert_local_lan(
+    token, player1_id, player2_id, game_mode, map_key=None, rounds=_DEFAULT_ROUNDS
+):
+    result = (
+        get_authenticated_client(token)
+        .table("battle")
+        .insert(
+            {
+                "player1_id": player1_id,
+                "player2_id": player2_id,
+                "game_mode": game_mode,
+                "status": "IN_PROGRESS",
+                "current_turn": player1_id,
+                "battle_state": build_initial_battle_state(
+                    player1_id, player2_id, map_key=map_key, rounds=rounds
+                ),
+            }
+        )
+        .execute()
+    )
+    return getattr(result, "data", None) or []
+
+
+@battle_bp.post("/api/battles/join")
+@require_auth
+def join_battle():
+    data = _read_json_body()
+    if data is None:
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    raw_code = data.get("battle_code")
+    if not isinstance(raw_code, str):
+        return jsonify({"error": "battle_code is required"}), 400
+
+    code = raw_code.strip().upper()
+    if not _valid_battle_code(code):
+        return jsonify({"error": "battle_code must be a valid 4-character code"}), 400
+
+    user_id = _get_obj_field(g.user, "id")
+    token = _extract_bearer_token()
+
+    try:
+        result = (
+            get_authenticated_client(token)
+            .rpc("join_online_waiting_battle", {"p_battle_code": code})
+            .execute()
+        )
+    except PostgrestAPIError as exc:
+        return _join_rpc_error(exc)
+    except Exception:
+        _log_redacted("Online battle join failed unexpectedly")
+        return jsonify(_INTERNAL_ERROR), 500
+
+    rows = getattr(result, "data", None) or []
+    if not rows:
+        return jsonify(_INTERNAL_ERROR), 500
+
+    claimed = rows[0]
+    player1_id = str(_get_obj_field(claimed, "player1_id"))
+
+    # The RPC atomically claimed this battle for the caller. Now -- and only
+    # now, as the authoritative player2_id -- replace the placeholder waiting
+    # state with the real setup from battle_setup.py. The map/rounds were stored
+    # in the placeholder at creation time so the join body stays just battle_code.
+    map_key, rounds = _waiting_parameters(_get_obj_field(claimed, "battle_state"))
+    battle_state = build_initial_battle_state(
+        player1_id, str(user_id), map_key=map_key, rounds=rounds
+    )
+
+    battle_id = str(_get_obj_field(claimed, "battle_id"))
+    try:
+        update_result = (
+            get_authenticated_client(token)
+            .table("battle")
+            .update({"battle_state": battle_state})
+            .eq("battle_id", battle_id)
+            .eq("status", "IN_PROGRESS")
+            .eq("player2_id", str(user_id))
+            .execute()
+        )
+    except PostgrestAPIError:
+        # The RPC claim already committed; only state initialization failed. The
+        # battle is IN_PROGRESS with the placeholder state and the caller owns
+        # player2_id, so report an explicit error instead of silently entering
+        # the game without an authoritative setup.
+        _log_redacted("Online battle setup initialization failed")
+        return jsonify({"error": "Battle could not be initialized"}), 500
+    except Exception:
+        _log_redacted("Online battle setup initialization failed unexpectedly")
+        return jsonify({"error": "Battle could not be initialized"}), 500
+
+    updated_rows = getattr(update_result, "data", None) or []
+    if not updated_rows:
+        return jsonify({"error": "Battle not found"}), 404
+
+    return jsonify({"battle": _battle_payload(updated_rows[0])}), 200
+
+
+def _generate_battle_code():
+    return "".join(
+        secrets.choice(_BATTLE_CODE_ALPHABET) for _ in range(_BATTLE_CODE_LENGTH)
+    )
+
+
+def _valid_battle_code(value):
+    return bool(re.fullmatch(_BATTLE_CODE_FORMAT, value))
+
+
+def _waiting_battle_state(player1_id, map_key, rounds):
+    return {
+        "version": 2,
+        "waiting": True,
+        "setup": {"map": map_key, "rounds": rounds},
+        "damage_dealt": {},
+    }
+
+
+def _waiting_parameters(state):
+    if not isinstance(state, dict):
+        return None, None
+    setup = state.get("setup")
+    if not isinstance(setup, dict):
+        return None, None
+    return setup.get("map"), setup.get("rounds")
+
+
+def _join_rpc_error(exc):
+    code = _get_obj_field(exc, "code")
+    message = (_get_obj_field(exc, "message") or "").strip()
+    if code == "23503":
+        return jsonify({"error": "Player not found"}), 404
+    if isinstance(code, str) and code.startswith("PGRST"):
+        return jsonify({"error": "Invalid request"}), 400
+    if code == "P0001":
+        if "Authentication required" in message:
+            return jsonify({"error": "Authentication required"}), 401
+        if "Invalid battle code" in message:
+            return jsonify({"error": "battle_code must be a valid 4-character code"}), 400
+        if "not found or is no longer joinable" in message:
+            return jsonify({"error": "Battle not found or is no longer joinable"}), 404
+    _log_redacted("Online battle join failed")
+    return jsonify(_INTERNAL_ERROR), 500
 
 
 @battle_bp.get("/api/battles/<battle_id>")

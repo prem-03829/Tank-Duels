@@ -150,6 +150,41 @@ TD.getLocalBattles = function () {
   return TD_apiRequest("GET", "/api/local-battles", undefined, true);
 };
 
+/* =========================
+   ONLINE BATTLES (1v1 MULTIPLAYER)
+   Create / join the authenticated player's online battles and poll a waiting
+   battle until an opponent joins (GET when status flips to IN_PROGRESS).
+   These endpoints require the JWT; Guest Mode must NEVER call them.
+   game_mode, battle_code and every control field are derived server-side.
+   The create response is a WAITING battle carrying the join code; the join
+   response is the IN_PROGRESS battle whose battle_state is authoritative.
+   GET /api/battles/<id> refreshes a waiting battle.
+   Errors are normalized to { status, error } by TD_apiRequest and only ever
+   contain backend-provided, already user-facing strings.
+========================= */
+
+TD.createBattle = function (data) {
+  return TD_apiRequest("POST", "/api/battles", data, true);
+};
+
+TD.joinBattle = function (battleCode) {
+  return TD_apiRequest(
+    "POST",
+    "/api/battles/join",
+    { battle_code: battleCode },
+    true
+  );
+};
+
+TD.getBattle = function (battleId) {
+  return TD_apiRequest(
+    "GET",
+    "/api/battles/" + encodeURIComponent(battleId),
+    undefined,
+    true
+  );
+};
+
 TD.logout = function () {
   var token = TD_getAccessToken();
   var request = TD_apiRequest ? TD_apiRequest("POST", "/api/auth/logout", undefined, true) : Promise.resolve();

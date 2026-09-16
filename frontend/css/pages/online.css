@@ -1,0 +1,235 @@
+/* =========================
+   ONLINE BATTLE (1v1 MULTIPLAYER)
+   Create / join screens for the Online flow. Reuses the setup/button/form
+   tokens from the rest of the app (map previews, match chips, .btn, .form-*).
+   Rendered inside the standard .online-page layout wrapper (layering handled
+   in main.css).
+========================= */
+
+.online-page {
+  position: relative;
+  z-index: var(--z-base);
+}
+
+.online-content {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-lg) var(--space-4xl);
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.online-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-2xl);
+}
+
+.online-back {
+  align-self: flex-start;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-normal);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.online-back:hover {
+  color: var(--color-primary);
+}
+
+.online-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.online-description {
+  margin: 0;
+  max-width: 56ch;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+/* =========================
+   VIEW CONTAINER
+========================= */
+
+.online-view {
+  background: var(--bg-panel-transparent);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-xl);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+}
+
+.online-back-link {
+  display: inline-block;
+  margin-bottom: var(--space-lg);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-normal);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.online-back-link:hover {
+  color: var(--color-primary);
+}
+
+/* =========================
+   MODE CHOICE
+========================= */
+
+.online-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.online-choice-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  background: var(--surface-subtle);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.online-choice-card:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-primary);
+}
+
+.online-choice-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.online-choice-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.online-choice-subtitle {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+/* =========================
+   BATTLE CODE ENTRY
+========================= */
+
+.online-code-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.online-code-input {
+  width: 100%;
+  max-width: 240px;
+  padding: var(--space-md) var(--space-md);
+  background: var(--bg-elevated);
+  border: var(--border-width) solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xl);
+  letter-spacing: var(--letter-spacing-wider);
+  text-align: center;
+  text-transform: uppercase;
+  caret-color: var(--color-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.online-code-input::placeholder {
+  color: var(--text-muted);
+  letter-spacing: var(--letter-spacing-wider);
+}
+
+.online-code-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--glow-primary);
+}
+
+/* =========================
+   WAITING LOBBY
+========================= */
+
+.online-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl) var(--space-md);
+  text-align: center;
+}
+
+.online-waiting-label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.online-waiting-code {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-elevated);
+  border: var(--border-width) solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+}
+
+.online-code-value {
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xl);
+  letter-spacing: var(--letter-spacing-wider);
+}
+
+.online-waiting-status {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.online-waiting-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-lg);
+}
+
+/* =========================
+   ERRORS
+========================= */
+
+.online-error {
+  margin-top: var(--space-md);
+}

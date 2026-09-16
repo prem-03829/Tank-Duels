@@ -126,6 +126,23 @@ document.addEventListener('DOMContentLoaded', function () {
   var p2ColorId = (cust && cust.playerTwoColor) || 'blue';
   var trajectoryTrail = cust ? (cust.trajectoryTrail !== false) : true;
 
+  /* When a saved/online match is being restored, the engine already knows the
+     exact player names (an online match can't rely on the local customization
+     names), so prefer them for the header before the engine takes over. */
+  try {
+    if (typeof TD.loadActiveMatch === 'function') {
+      var activeMatch = TD.loadActiveMatch();
+      if (activeMatch && activeMatch.players) {
+        if (activeMatch.players.player1 && activeMatch.players.player1.name) {
+          playerName = activeMatch.players.player1.name;
+        }
+        if (activeMatch.players.player2 && activeMatch.players.player2.name) {
+          opponentName = activeMatch.players.player2.name;
+        }
+      }
+    }
+  } catch (e) { /* fall back to customization / default names */ }
+
   if (playerNameElement) {
     playerNameElement.textContent = playerName.toUpperCase();
   }

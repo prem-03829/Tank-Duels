@@ -59,6 +59,7 @@ TD.GameEngine.prototype.init = function (config) {
   this.playerOneColorId = config.playerOneColor || 'orange';
   this.playerTwoColorId = config.playerTwoColor || 'blue';
   this.trajectoryTrail = config.trajectoryTrail !== false;
+  this._online = false;
 
   this.canvas.width = TD.W;
   this.canvas.height = TD.H;
@@ -871,6 +872,18 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   localStorage.setItem('tankDuelLastResult', result);
   localStorage.setItem('tankDuelLastPlayerScore', String(playerWins));
   localStorage.setItem('tankDuelLastOpponentScore', String(opponentWins));
+  localStorage.setItem('tankDuelLastPlayerName', this.playerName);
+  localStorage.setItem('tankDuelLastOpponentName', this.opponentName);
+
+  // ONLINE matches are finalised on the server (a later step). A finished
+  // online battle is never written into same-device / guest local history and
+  // never touches the local win counters — only the result above is shown.
+  if (this._online) {
+    TD.clearActiveMatch();
+    this.cleanup();
+    window.location.href = './results.html';
+    return;
+  }
 
   var games = Number(localStorage.getItem('tankDuelGames')) || 0;
   var wins = Number(localStorage.getItem('tankDuelWins')) || 0;
@@ -930,6 +943,7 @@ TD.GameEngine.prototype._saveState = function () {
     version: 1,
     active: true,
     status: 'active',
+    online: this._online === true,
     map: this.terrain.type,
     seed: this._terrainSeed || this.terrain._s,
     terrain: this.terrain.heights,
@@ -986,6 +1000,7 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   this.playerOneColorId = saved.players.player1.color;
   this.playerTwoColorId = saved.players.player2.color;
   this.trajectoryTrail = saved.trajectoryTrail !== false;
+  this._online = saved.online === true;
 
   this.canvas.width = TD.W;
   this.canvas.height = TD.H;
@@ -999,9 +1014,13 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   var p1colors = TD.makeTankColors(findPlayerColorHex(this.playerOneColorId));
   var p2colors = TD.makeTankColors(findPlayerColorHex(this.playerTwoColorId));
 
+  // Local saved games always had player 1 on the left; ONLINE matches may put
+  // the local player on either side, so derive the facing from tank positions.
+  var dir0 = saved.players.player1.x < saved.players.player2.x ? 1 : -1;
+
   this.tanks = [
-    new TD.Tank(0, this.playerName, saved.players.player1.x, this.terrain, p1colors, 1),
-    new TD.Tank(1, this.opponentName, saved.players.player2.x, this.terrain, p2colors, -1)
+    new TD.Tank(0, this.playerName, saved.players.player1.x, this.terrain, p1colors, dir0),
+    new TD.Tank(1, this.opponentName, saved.players.player2.x, this.terrain, p2colors, -dir0)
   ];
 
   this.tanks[0].x = saved.players.player1.x;

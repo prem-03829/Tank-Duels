@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Online Battle | Tank Duel</title>
+
+  <meta name="description" content="Create or join an online Tank Duel battle." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="online-page">
+
+    <section class="online-content">
+
+      <!-- Header -->
+      <header class="online-header">
+
+        <a href="./game-mode.html" class="online-back">
+          ← Back to Battle Mode
+        </a>
+
+        <h1 class="online-title">
+          Online Battle
+        </h1>
+
+        <p class="online-description">
+          Create a battle and share the code, or join a waiting opponent.
+        </p>
+
+      </header>
+
+      <!-- =========================
+           VIEW: MODE CHOICE
+      ========================== -->
+      <div class="online-view" id="view-menu" data-view="menu">
+
+        <div class="online-choice">
+
+          <button class="online-choice-card" id="online-create-choice" type="button">
+            <span class="online-choice-title">Create Battle</span>
+            <span class="online-choice-subtitle">Host a new battle and wait for an opponent.</span>
+          </button>
+
+          <button class="online-choice-card" id="online-join-choice" type="button">
+            <span class="online-choice-title">Join Battle</span>
+            <span class="online-choice-subtitle">Enter a 4-character code to join.</span>
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- =========================
+           VIEW: CREATE BATTLE
+      ========================== -->
+      <div class="online-view" id="view-create" data-view="create" hidden>
+
+        <button class="online-back-link" id="create-back" type="button">← Back</button>
+
+        <!-- Battlefield Selection (same controls as the local battle setup) -->
+        <section class="setup-section">
+          <span class="setup-section-label">Select Battlefield</span>
+          <div class="setup-options" id="online-map-options">
+
+            <button class="setup-option map-preview map-preview-dustlands active" type="button" data-map="desert">
+              <span class="setup-option-name">Dustlands</span>
+              <span class="setup-option-description">Rolling desert dunes under a dark amber sky.</span>
+            </button>
+
+            <button class="setup-option map-preview map-preview-green-valley" type="button" data-map="hills">
+              <span class="setup-option-name">Green Valley</span>
+              <span class="setup-option-description">Lush forested hills with steep slopes.</span>
+            </button>
+
+            <button class="setup-option map-preview map-preview-frostbite" type="button" data-map="frostbite">
+              <span class="setup-option-name">Frostbite</span>
+              <span class="setup-option-description">Frozen tundra with jagged ice formations.</span>
+            </button>
+
+            <button class="setup-option map-preview map-preview-ashfall" type="button" data-map="ashhill">
+              <span class="setup-option-name">Ashfall</span>
+              <span class="setup-option-description">Volcanic wasteland with smoldering embers.</span>
+            </button>
+
+            <button class="setup-option map-preview map-preview-moonbase" type="button" data-map="moonbase">
+              <span class="setup-option-name">Moonbase</span>
+              <span class="setup-option-description">Silent lunar craters beneath distant stars.</span>
+            </button>
+
+            <button class="setup-option map-preview map-preview-canyon" type="button" data-map="canyon">
+              <span class="setup-option-name">Canyon</span>
+              <span class="setup-option-description">Deep ravines carved through rust-red rock.</span>
+            </button>
+
+            <button class="setup-option map-random" type="button" data-map="random">
+              <span class="setup-option-name">Random</span>
+              <span class="setup-option-description">Generate an unpredictable battlefield.</span>
+            </button>
+
+          </div>
+        </section>
+
+        <!-- Match Format -->
+        <section class="setup-section">
+          <span class="setup-section-label">Match Format</span>
+          <div class="match-options" id="online-match-options">
+            <button class="match-option active" type="button" data-rounds="1">Quick Match</button>
+            <button class="match-option" type="button" data-rounds="3">Best of 3</button>
+          </div>
+        </section>
+
+        <div class="setup-start">
+          <button class="btn btn-primary btn-lg btn-block" id="online-create-btn" type="button">
+            Create Battle
+          </button>
+        </div>
+
+        <p class="form-error online-error" id="create-error" role="alert" hidden></p>
+
+      </div>
+
+      <!-- =========================
+           VIEW: JOIN BATTLE
+      ========================== -->
+      <div class="online-view" id="view-join" data-view="join" hidden>
+
+        <button class="online-back-link" id="join-back" type="button">← Back</button>
+
+        <section class="setup-section">
+          <span class="setup-section-label">Battle Code</span>
+          <div class="online-code-field">
+            <input
+              class="online-code-input"
+              id="online-code-input"
+              type="text"
+              inputmode="text"
+              autocapitalize="characters"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="4"
+              placeholder="A234"
+              aria-label="4-character battle code"
+            />
+            <p class="form-helper" id="online-code-hint">
+              Letters A–H, J–N, P–Z and digits 2–9. Codes are shown in uppercase.
+            </p>
+          </div>
+        </section>
+
+        <div class="setup-start">
+          <button class="btn btn-primary btn-lg btn-block" id="online-join-btn" type="button">
+            Join Battle
+          </button>
+        </div>
+
+        <p class="form-error online-error" id="join-error" role="alert" hidden></p>
+
+      </div>
+
+      <!-- =========================
+           VIEW: WAITING FOR OPPONENT
+      ========================== -->
+      <div class="online-view" id="view-waiting" data-view="waiting" hidden>
+
+        <div class="online-waiting">
+
+          <span class="online-waiting-label">Battle Code</span>
+
+          <div class="online-waiting-code">
+            <span class="online-code-value" id="waiting-code">----</span>
+            <button class="btn btn-sm btn-outline" id="waiting-copy-btn" type="button">Copy</button>
+          </div>
+
+          <span class="online-waiting-status" aria-live="polite">Waiting for opponent</span>
+
+        </div>
+
+        <p class="form-error online-error" id="waiting-error" role="alert" hidden></p>
+
+        <div class="online-waiting-actions">
+          <button class="btn btn-outline" id="waiting-cancel-btn" type="button">Cancel</button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/game/constants.js"></script>
+  <script src="../js/shared/api.js"></script>
+  <script src="../js/pages/online.js"></script>
+
+</body>
+
+</html>
