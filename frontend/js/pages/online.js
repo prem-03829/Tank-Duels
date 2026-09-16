@@ -15,9 +15,13 @@
                                                         ▼
                                              enter game (game.html)
 
-   The active match put into tankDuelActiveMatch always maps the LOCAL human
-   to index 0 (player 1) regardless of which backend side they were assigned,
-   so the engine's existing restore path works unchanged.
+   ONLINE battle state is written into tankDuelActiveMatch with the ENGINE
+   player index mapped 1:1 to the SERVER slot (index 0 = backend player1,
+   index 1 = backend player2) so both clients display and drive the same
+   authoritative assignment. Deterministic online colors: slot 1 = orange,
+   slot 2 = blue. The local human's own server slot is stored in
+   battle.localServerSlot so turn enforcement (Step 13C Phase 2) knows which
+   engine index to unlock.
 ========================= */
 
 (function () {
@@ -223,11 +227,16 @@
        battle.battle_state.setup.{map, seed, terrain.heights, wind, round,
                                     max_rounds, players.{uuid:{x,y,health}},
                                     scores.{uuid:0}}
-     Engine shape (version 1):
+Engine shape (version 1):
        { version, map, seed, terrain[], bg*, round, maxRounds, currentTurn,
-         scores[], wind, trajectoryTrail, state, players.player1/player2 }
-     The local human is always mapped to engine player 1 (index 0).
-  ========================== */
+         scores[], wind, trajectoryTrail, state, players.player1/player2,
+         battle? }
+       Engine player index == backend server slot:
+         players.player1 <-> battle.player1_id (orange)
+         players.player2 <-> battle.player2_id (blue)
+       currentTurn is the engine index of the server's current_turn owner.
+       battle.localServerSlot is this client's own server slot (0 or 1).
+   ========================== */
 
   function buildActiveMatch(battle, profile) {
     var myId = getMyUserId(profile);
@@ -238,22 +247,29 @@
 
     var p1Id = String(battle.player1_id || '');
     var p2Id = String(battle.player2_id || '');
-    var meIsP1 = myId === p1Id;
-    var meId = meIsP1 ? p1Id : p2Id;
-    var oppId = meIsP1 ? p2Id : p1Id;
+    var meIsP1 = !!myId && myId === p1Id;
+    var meIsP2 = !!myId && myId === p2Id;
+    var localSlot = meIsP1 ? 0 : (meIsP2 ? 1 : -1);
 
-    var mePos = players[meId] || {};
-    var oppPos = players[oppId] || {};
+    var p1Pos = players[p1Id] || {};
+    var p2Pos = players[p2Id] || {};
 
     var myName = getMyName(profile);
-    var cust = getCustomization();
     var oppName = 'OPPONENT';
+    var cust = getCustomization();
+    var p1Name = meIsP1 ? myName : oppName;
+    var p2Name = meIsP2 ? myName : oppName;
 
-    var meX = typeof mePos.x === 'number' ? mePos.x : 40;
-    var oppX = typeof oppPos.x === 'number' ? oppPos.x : 600;
-    var currentTurn = 0;
-    if (battle.current_turn === oppId) currentTurn = 1;
-    else if (battle.current_turn && battle.current_turn !== meId) currentTurn = meIsP1 ? 0 : 1;
+    /* Deterministic ONLINE identity by server slot — the local customization
+       colors are NEVER used for online visuals. */
+    var P1_COLOR = 'orange';
+    var P2_COLOR = 'blue';
+
+    var p1x = typeof p1Pos.x === 'number' ? p1Pos.x : 40;
+    var p2x = typeof p2Pos.x === 'number' ? p2Pos.x : 600;
+
+    var currentTurn = 0; // engine index == server slot
+    if (String(battle.current_turn || '') === p2Id) currentTurn = 1;
 
     var heights = (setup.terrain && Array.isArray(setup.terrain.heights))
       ? setup.terrain.heights.slice()
@@ -278,29 +294,36 @@
       maxRounds: setup.max_rounds || 1,
       currentTurn: currentTurn,
       scores: [
-        typeof scores[meId] === 'number' ? scores[meId] : 0,
-        typeof scores[oppId] === 'number' ? scores[oppId] : 0
+        typeof scores[p1Id] === 'number' ? scores[p1Id] : 0,
+        typeof scores[p2Id] === 'number' ? scores[p2Id] : 0
       ],
       wind: typeof setup.wind === 'number' ? setup.wind : 0,
       trajectoryTrail: cust.trajectoryTrail,
+      battle: {
+        battle_id: battle.battle_id || '',
+        my_user_id: myId,
+        player1_id: p1Id,
+        player2_id: p2Id,
+        localServerSlot: localSlot
+      },
       state: 'turn_start',
       players: {
         player1: {
-          name: myName,
-          color: cust.playerOneColor,
-          x: meX,
-          y: typeof mePos.y === 'number' ? mePos.y : 0,
-          health: typeof mePos.health === 'number' ? mePos.health : maxHealth,
-          angle: meX < oppX ? 0 : 180,
+          name: p1Name,
+          color: P1_COLOR,
+          x: p1x,
+          y: typeof p1Pos.y === 'number' ? p1Pos.y : 0,
+          health: typeof p1Pos.health === 'number' ? p1Pos.health : maxHealth,
+          angle: p1x < p2x ? 0 : 180,
           power: 50
         },
         player2: {
-          name: oppName,
-          color: cust.playerTwoColor,
-          x: oppX,
-          y: typeof oppPos.y === 'number' ? oppPos.y : 0,
-          health: typeof oppPos.health === 'number' ? oppPos.health : maxHealth,
-          angle: oppX < meX ? 0 : 180,
+          name: p2Name,
+          color: P2_COLOR,
+          x: p2x,
+          y: typeof p2Pos.y === 'number' ? p2Pos.y : 0,
+          health: typeof p2Pos.health === 'number' ? p2Pos.health : maxHealth,
+          angle: p2x < p1x ? 0 : 180,
           power: 50
         }
       }
@@ -310,8 +333,17 @@
   function enterBattle(battle) {
     stopPolling();
     getProfile().then(function (profile) {
+      var myId = getMyUserId(profile);
+      var p1Id = String(battle.player1_id || '');
+      var p2Id = String(battle.player2_id || '');
+      if (!myId || (myId !== p1Id && myId !== p2Id)) {
+        clearOnlineBattle();
+        stopPolling();
+        showView('menu');
+        return;
+      }
       var activeMatch = buildActiveMatch(battle, profile);
-      if (typeof TD_clearActiveMatch === 'function') TD_clearActiveMatch();
+      if (typeof TD.clearActiveMatch === 'function') TD.clearActiveMatch();
       try {
         localStorage.setItem('tankDuelActiveMatch', JSON.stringify(activeMatch));
       } catch (e) { }

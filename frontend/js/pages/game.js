@@ -234,11 +234,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     var activeMatch = TD.loadActiveMatch();
+    var onlineBattle = null;
+
+    if (activeMatch && activeMatch.online && activeMatch.battle) {
+      var b = activeMatch.battle;
+      onlineBattle = {
+        battle_id: b.battle_id,
+        my_user_id: b.my_user_id,
+        player1_id: b.player1_id,
+        player2_id: b.player2_id,
+        localServerSlot: b.localServerSlot
+      };
+    }
 
     if (activeMatch) {
       engine.restore(activeMatch, {
         accentColor: accentColor,
-        reducedMotion: reducedMotion
+        reducedMotion: reducedMotion,
+        onlineBattle: onlineBattle
       });
     } else {
       engine.init({

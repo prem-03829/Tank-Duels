@@ -185,6 +185,39 @@ TD.getBattle = function (battleId) {
   );
 };
 
+/* Register the authenticated player's shot on the authoritative server battle.
+   The server validates the caller is a participant AND it is their turn, then
+   stores the pending_fire. angle/power are normalized server-side. */
+TD.fireBattleAction = function (battleId, angle, power) {
+  return TD_apiRequest(
+    "POST",
+    "/api/battles/" + encodeURIComponent(battleId) + "/actions/fire",
+    { angle: angle, power: power },
+    true
+  );
+};
+
+/* Ask the server to resolve the currently pending shot (empty body). Returns
+   the updated authoritative battle_state plus the shot outcome. */
+TD.resolveBattleAction = function (battleId) {
+  return TD_apiRequest(
+    "POST",
+    "/api/battles/" + encodeURIComponent(battleId) + "/actions/fire/resolve",
+    {},
+    true
+  );
+};
+
+/* Confirm whether it is currently the authenticated caller's turn. */
+TD.checkBattleTurn = function (battleId) {
+  return TD_apiRequest(
+    "POST",
+    "/api/battles/" + encodeURIComponent(battleId) + "/turn/check",
+    undefined,
+    true
+  );
+};
+
 TD.logout = function () {
   var token = TD_getAccessToken();
   var request = TD_apiRequest ? TD_apiRequest("POST", "/api/auth/logout", undefined, true) : Promise.resolve();

@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then((payload) => {
           // A 201 with a session is common (email confirmation disabled).
           if (payload.session) {
-            TD_saveSession(payload.session发生);
+            TD_saveSession(payload.session);
             localStorage.setItem("tankDuelPlayerType", "user");
             localStorage.setItem("tankDuelPlayerName", username.replace(/[<>&"']/g, ""));
             window.location.href = "./dashboard.html";

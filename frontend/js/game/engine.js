@@ -39,6 +39,12 @@ TD.GameEngine = function (canvas, elements) {
   this.trajectoryTrail = true;
   this.playerOneColorId = 'orange';
   this.playerTwoColorId = 'blue';
+  this._onlineBattle = null;
+
+  this._onlineFiringInFlight = false;
+  this._onlineRequestPhase = '';
+  this._onlineResolutionPending = false;
+  this._onlineCompleted = false;
 
   this._bgImages = {};
   this._bgLoaded = {};
@@ -60,6 +66,7 @@ TD.GameEngine.prototype.init = function (config) {
   this.playerTwoColorId = config.playerTwoColor || 'blue';
   this.trajectoryTrail = config.trajectoryTrail !== false;
   this._online = false;
+  this._onlineBattle = config.onlineBattle || null;
 
   this.canvas.width = TD.W;
   this.canvas.height = TD.H;
@@ -91,6 +98,28 @@ TD.GameEngine.prototype.init = function (config) {
   this.lastTime = performance.now();
   this._saveState();
   this._loop();
+};
+
+/* =========================
+   ONLINE CONTEXT & TURN ENFORCEMENT
+   In ONLINE matches the backend battle is authoritative: engine index 0 is
+   backend player1 and index 1 is backend player2 on BOTH clients. The local
+   human occupies one of those slots (onlineBattle.localServerSlot); only that
+   slot's controls may be active. LOCAL/GUEST matches never set _onlineBattle,
+   so every check below is a no-op for them.
+========================== */
+
+TD.GameEngine.prototype._isOnlineBattle = function () {
+  return this._online === true && !!this._onlineBattle;
+};
+
+TD.GameEngine.prototype._canControl = function () {
+  if (this.state !== TD.STATES.AIMING) return false;
+  if (this._isOnlineBattle()) {
+    var slot = this._onlineBattle.localServerSlot;
+    if (typeof slot === 'number' && slot !== this.currentTurn) return false;
+  }
+  return true;
 };
 
 TD.GameEngine.prototype._preloadBackground = function (mapType) {
@@ -263,7 +292,12 @@ TD.GameEngine.prototype._update = function () {
         }
       }
       if (this.stateTimer <= 0) {
-        this._afterExplosion();
+        if (this._onlineResolutionPending) {
+          this._onlineResolutionPending = false;
+          this._afterOnlineExplosion();
+        } else {
+          this._afterExplosion();
+        }
       }
       break;
 
@@ -596,6 +630,10 @@ TD.GameEngine.prototype._showRound = function () {
 };
 
 TD.GameEngine.prototype._enableControls = function (enabled) {
+  if (enabled && this._isOnlineBattle()) {
+    var slot = this._onlineBattle.localServerSlot;
+    if (typeof slot === 'number' && slot !== this.currentTurn) enabled = false;
+  }
   var fb = document.getElementById('fire-button');
   if (fb) fb.disabled = !enabled;
   if (this.el.angleControl) this.el.angleControl.classList.toggle('is-disabled', !enabled);
@@ -608,7 +646,7 @@ TD.GameEngine.prototype._enableControls = function (enabled) {
 };
 
 TD.GameEngine.prototype.setAngle = function (value) {
-  if (this.state !== TD.STATES.AIMING) return;
+  if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
   tank.angle = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, Math.round(value)));
@@ -617,7 +655,7 @@ TD.GameEngine.prototype.setAngle = function (value) {
 };
 
 TD.GameEngine.prototype.setPower = function (value) {
-  if (this.state !== TD.STATES.AIMING) return;
+  if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
   tank.power = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, Math.round(value)));
@@ -636,9 +674,17 @@ TD.GameEngine.prototype.getPower = function () {
 };
 
 TD.GameEngine.prototype.fire = function () {
-  if (this.state !== TD.STATES.AIMING) return;
+  if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank || !tank.alive) return;
+
+  /* ONLINE matches fire through the authoritative backend; the local engine
+     never simulates the projectile for them. LOCAL/GUEST games keep the
+     original local physics path below untouched. */
+  if (this._isOnlineBattle()) {
+    this._fireOnline();
+    return;
+  }
 
   this._enableControls(false);
   this.audio.playShoot();
@@ -649,6 +695,304 @@ TD.GameEngine.prototype.fire = function () {
   this.state = TD.STATES.FLYING;
   this._updateHUD();
   this._saveState();
+};
+
+/* =========================
+   ONLINE FIRE (AUTHORITATIVE)
+   Online shots are submitted and resolved by the backend:
+     fire()   -> POST /api/battles/<id>/actions/fire   (stores pending_fire)
+     resolve -> POST /api/battles/<id>/actions/fire/resolve
+   The local engine NEVER simulates the projectile for an online match; the
+   returned battle_state is the single source of truth. Visuals are cosmetic
+   only (impact particles) and never affect any authoritative value.
+========================== */
+
+TD.GameEngine.prototype._fireOnline = function () {
+  if (this._onlineFiringInFlight) return;
+  var ctx = this._onlineBattle;
+  if (!ctx || !ctx.battle_id) {
+    this._showOnlineErrorMessage('THIS BATTLE IS NO LONGER AVAILABLE');
+    return;
+  }
+  if (typeof TD.fireBattleAction !== 'function' || typeof TD.resolveBattleAction !== 'function') {
+    this._showOnlineErrorMessage('ONLINE PLAY IS UNAVAILABLE');
+    return;
+  }
+
+  var slot = ctx.localServerSlot;
+  if (typeof slot !== 'number' || slot !== this.currentTurn) return;
+
+  var tank = this.tanks[this.currentTurn];
+  if (!tank || !tank.alive) return;
+
+  this._onlineFiringInFlight = true;
+  this._onlineRequestPhase = 'fire';
+  this._enableControls(false);
+  this.audio.playShoot();
+
+  var battleId = ctx.battle_id;
+  var angle = tank.angle;
+  var power = tank.power;
+  var self = this;
+
+  TD.fireBattleAction(battleId, angle, power)
+    .then(function () {
+      self._onlineRequestPhase = 'resolve';
+      return self._completeOnlineFire(battleId);
+    })
+    .catch(function (err) {
+      self._onlineFiringInFlight = false;
+      if (err && err.status === 401) {
+        self._handleOnlineAuthError();
+        return;
+      }
+      if (self._onlineRequestPhase === 'resolve') {
+        self._reconcileOnlineAfterFailure(battleId);
+      } else {
+        self._restoreOnlineControls();
+        self._showOnlineErrorMessage('FIRE FAILED - TRY AGAIN');
+      }
+    });
+};
+
+/* Resolve the shot the backend already recorded as pending_fire and commit the
+   authoritative result. Reused by the normal fire flow and by reconciliation
+   when the resolve call is retried after transient failure. */
+TD.GameEngine.prototype._completeOnlineFire = function (battleId) {
+  var self = this;
+  return TD.resolveBattleAction(battleId)
+    .then(function (json) {
+      self._onlineFiringInFlight = false;
+      var battleData = json && json.battle ? json.battle : null;
+      var shotData = json && json.shot ? json.shot : null;
+      if (!battleData) {
+        self._restoreOnlineControls();
+        self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+        return;
+      }
+      self._beginOnlineResolution(battleData, shotData);
+    });
+};
+
+/* Commit an authoritative back-end battle snapshot: rehydrate the engine from
+   battle.battle_state, then show the (cosmetic) impact and run a brief
+   explosion before advancing to the server-determined next turn. */
+TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData) {
+  var completed = this._applyOnlineBattleState(battleData, shotData);
+
+  this._playOnlineShotVisual(shotData);
+
+  this.projectile.deactivate();
+  this.state = TD.STATES.EXPLODING;
+  this.stateTimer = 30;
+  this._onlineResolutionPending = true;
+  this._onlineCompleted = completed === true;
+
+  this._updateHUD();
+  this._saveState();
+};
+
+/* Apply the authoritative battle_state that the backend returned. The server
+   owns terrain, positions, health, wind, round, scores and the winner — the
+   frontend only rehydrates them. Returns true when the battle is COMPLETED. */
+TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData) {
+  var ctx = this._onlineBattle;
+  if (!ctx || !battleData) return false;
+
+  var p1Id = String(battleData.player1_id || ctx.player1_id || '');
+  var p2Id = String(battleData.player2_id || ctx.player2_id || '');
+  ctx.player1_id = p1Id;
+  ctx.player2_id = p2Id;
+
+  var state = battleData.battle_state || {};
+  var setup = (state && typeof state === 'object') ? (state.setup || {}) : {};
+
+  var completed = battleData.status === 'COMPLETED';
+
+  if (setup.map && TD.MAP_KEYS.indexOf(setup.map) !== -1) this.mapType = setup.map;
+
+  var seed = typeof setup.seed === 'number' ? setup.seed : this._terrainSeed;
+  var heights = setup.terrain && Array.isArray(setup.terrain.heights)
+    ? setup.terrain.heights
+    : null;
+
+  if (heights) {
+    this._terrainSeed = seed;
+    this.terrain.restore(this.mapType, seed, heights, {});
+  }
+
+  var round = Math.round(Number(setup.round));
+  var maxRounds = Math.round(Number(setup.max_rounds));
+  if (!isFinite(round) || round < 1) round = this.round;
+  if (!isFinite(maxRounds) || maxRounds < 1) maxRounds = this.maxRounds;
+  var roundChanged = round !== this.round;
+
+  var players = setup.players || {};
+  var scores = setup.scores || {};
+  var p1 = players[p1Id] || {};
+  var p2 = players[p2Id] || {};
+
+  if (typeof p1.x === 'number') {
+    this.tanks[0].x = Math.round(p1.x);
+    this.tanks[0].health = Math.max(0, Math.min(TD.MAX_HEALTH, Math.round(Number(p1.health) || 0)));
+    this.tanks[0].alive = this.tanks[0].health > 0;
+    this.tanks[0].syncToTerrain(this.terrain);
+  }
+  if (typeof p2.x === 'number') {
+    this.tanks[1].x = Math.round(p2.x);
+    this.tanks[1].health = Math.max(0, Math.min(TD.MAX_HEALTH, Math.round(Number(p2.health) || 0)));
+    this.tanks[1].alive = this.tanks[1].health > 0;
+    this.tanks[1].syncToTerrain(this.terrain);
+  }
+
+  /* Face each tank toward the other (matches the backend's tank x convention). */
+  var p1Left = this.tanks[0].x < this.tanks[1].x;
+  this.tanks[0].facing = p1Left ? 1 : -1;
+  this.tanks[1].facing = p1Left ? -1 : 1;
+
+  if (roundChanged) {
+    this.tanks[0].angle = p1Left ? 0 : 180;
+    this.tanks[1].angle = p1Left ? 180 : 0;
+    this.tanks[0].power = TD.POWER_DEFAULT;
+    this.tanks[1].power = TD.POWER_DEFAULT;
+  }
+
+  this.round = round;
+  this.maxRounds = maxRounds;
+  if (typeof scores[p1Id] === 'number') this.scores[0] = scores[p1Id];
+  if (typeof scores[p2Id] === 'number') this.scores[1] = scores[p2Id];
+  if (typeof setup.wind === 'number') this.wind = setup.wind;
+
+  if (!completed && battleData.current_turn != null && battleData.current_turn !== '') {
+    if (String(battleData.current_turn) === p1Id) this.currentTurn = 0;
+    else if (String(battleData.current_turn) === p2Id) this.currentTurn = 1;
+  }
+
+  return completed;
+};
+
+/* Cosmetic-only shot feedback: spark the authoritative impact point and, if a
+   tank was destroyed, its wreck. This never alters the applied server state. */
+TD.GameEngine.prototype._playOnlineShotVisual = function (shotData) {
+  var impact = shotData && shotData.impact;
+  var x = impact && typeof impact.x === 'number' ? impact.x : NaN;
+  var y = impact && typeof impact.y === 'number' ? impact.y : NaN;
+  if (isFinite(x) && isFinite(y)) {
+    var tankHit = shotData && shotData.hit_type === 'tank';
+    this.audio.playExplosion();
+    this.particles.addExplosion(
+      x, y,
+      tankHit ? TD.EXPLOSION_RADIUS * 0.8 : TD.EXPLOSION_RADIUS,
+      this.terrain.palette
+    );
+    this._startShake(tankHit ? 7 : 4, tankHit ? 5 : 3);
+  }
+
+  for (var i = 0; i < this.tanks.length; i++) {
+    if (!this.tanks[i].alive) {
+      var t = this.tanks[i];
+      this.particles.addTankExplosion(t.x, t.y + t.bodyH / 2);
+      this._startShake(8, 5);
+      break;
+    }
+  }
+};
+
+/* Finish the brief post-shot explosion. A completed battle navigates to the
+   results page; otherwise the engine moves to the server's next turn and the
+   existing Online turn enforcement decides whether controls unlock. */
+TD.GameEngine.prototype._afterOnlineExplosion = function () {
+  this._onlineResolutionPending = false;
+  if (this._onlineCompleted) {
+    this._onlineCompleted = false;
+    this._saveAndNavigate();
+    return;
+  }
+  this.particles.clear();
+  this.projectile.deactivate();
+  this.state = TD.STATES.TURN_START;
+  this.stateTimer = TD.TURN_ANNOUNCE_DURATION;
+  this._updateHUD();
+  this._saveState();
+  this._enableControls(false);
+};
+
+/* Restore control state using only the authoritative turn: the local slot's
+   controls come back only when it really is (still) their turn. */
+TD.GameEngine.prototype._restoreOnlineControls = function () {
+  var active = false;
+  if (this._onlineBattle && typeof this._onlineBattle.localServerSlot === 'number') {
+    active = this._onlineBattle.localServerSlot === this.currentTurn;
+  }
+  this._enableControls(active && this.state === TD.STATES.AIMING);
+};
+
+/* Reconcile a failed resolve (or missing snapshot) by re-reading the battle
+   from the server and applying whatever authoritative state exists. Never
+   falls back to local projectile physics. */
+TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
+  var self = this;
+  if (typeof TD.getBattle !== 'function') {
+    self._restoreOnlineControls();
+    self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+    return;
+  }
+  TD.getBattle(battleId)
+    .then(function (json) {
+      var battleData = json && json.battle ? json.battle : null;
+      if (!battleData) {
+        self._restoreOnlineControls();
+        self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+        return;
+      }
+      /* If the fire committed but the resolve never landed, the backend still
+         holds our pending_fire — re-issuing the resolve is the correct, safe
+         recovery instead of guessing an outcome locally. */
+      var state = battleData.battle_state || {};
+      var pending = state.pending_fire;
+      var ctx = self._onlineBattle;
+      if (battleData.status === 'IN_PROGRESS' && pending && ctx &&
+          ctx.my_user_id && String(pending.player_id) === String(ctx.my_user_id)) {
+        self._onlineFiringInFlight = true;
+        self._onlineRequestPhase = 'resolve';
+        self._completeOnlineFire(battleId).catch(function (err) {
+          self._onlineFiringInFlight = false;
+          if (err && err.status === 401) {
+            self._handleOnlineAuthError();
+            return;
+          }
+          self._restoreOnlineControls();
+          self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+        });
+        return;
+      }
+      self._beginOnlineResolution(battleData, null);
+    })
+    .catch(function (err) {
+      if (err && err.status === 401) {
+        self._handleOnlineAuthError();
+        return;
+      }
+      self._restoreOnlineControls();
+      self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+    });
+};
+
+TD.GameEngine.prototype._showOnlineErrorMessage = function (msg) {
+  if (this.el && this.el.gameStatus) {
+    this.el.gameStatus.textContent = String(msg).toUpperCase();
+  }
+  try { console.warn('[ONLINE] ' + msg); } catch (e) { /* console unavailable */ }
+};
+
+TD.GameEngine.prototype._handleOnlineAuthError = function () {
+  if (typeof TD_clearSession === 'function') {
+    try { TD_clearSession(); } catch (e) { /* ignore */ }
+  }
+  try { localStorage.removeItem('tankDuelPlayerType'); } catch (e) { /* ignore */ }
+  TD.clearActiveMatch();
+  this.cleanup();
+  window.location.href = './login.html';
 };
 
 /* =========================
@@ -689,6 +1033,7 @@ TD.GameEngine.prototype._handleKeyDown = function (e) {
   }
 
   if (this.state !== TD.STATES.AIMING) return;
+  if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
 
@@ -720,7 +1065,7 @@ TD.GameEngine.prototype._handleKeyUp = function (e) {
 };
 
 TD.GameEngine.prototype.adjustAngle = function (delta) {
-  if (this.state !== TD.STATES.AIMING) return;
+  if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
   tank.angle = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, tank.angle + delta));
@@ -729,7 +1074,7 @@ TD.GameEngine.prototype.adjustAngle = function (delta) {
 };
 
 TD.GameEngine.prototype.adjustPower = function (delta) {
-  if (this.state !== TD.STATES.AIMING) return;
+  if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
   tank.power = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, tank.power + delta));
@@ -982,6 +1327,16 @@ TD.GameEngine.prototype._saveState = function () {
     }
   };
 
+  if (this._isOnlineBattle()) {
+    saved.battle = {
+      battle_id: this._onlineBattle.battle_id,
+      my_user_id: this._onlineBattle.my_user_id,
+      player1_id: this._onlineBattle.player1_id,
+      player2_id: this._onlineBattle.player2_id,
+      localServerSlot: this._onlineBattle.localServerSlot
+    };
+  }
+
   try {
     localStorage.setItem('tankDuelActiveMatch', JSON.stringify(saved));
   } catch (e) { /* storage may be unavailable or full */ }
@@ -1001,6 +1356,7 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   this.playerTwoColorId = saved.players.player2.color;
   this.trajectoryTrail = saved.trajectoryTrail !== false;
   this._online = saved.online === true;
+  this._onlineBattle = config.onlineBattle || (saved.battle || null);
 
   this.canvas.width = TD.W;
   this.canvas.height = TD.H;
