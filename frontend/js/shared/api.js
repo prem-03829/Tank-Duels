@@ -18,14 +18,29 @@ var TD = TD || {};
    CONFIG
 ========================= */
 
-var TD_API_BASE_URL_DEFAULT = "http://127.0.0.1:5000";
+var TD_API_BASE_URL_LOCAL = "http://127.0.0.1:5000";
+var TD_API_BASE_URL_PRODUCTION = "https://tank-duels.onrender.com";
 
 function TD_apiBaseUrl() {
   var override = null;
+
   try {
     override = localStorage.getItem("tankDuelApiBaseUrl");
-  } catch (e) { /* ignored — use default */ }
-  return (override && override.trim()) || TD_API_BASE_URL_DEFAULT;
+  } catch (e) {
+    /* ignored */
+  }
+
+  if (override && override.trim()) {
+    return override.trim();
+  }
+
+  var hostname = window.location.hostname;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return TD_API_BASE_URL_LOCAL;
+  }
+
+  return TD_API_BASE_URL_PRODUCTION;
 }
 
 /* =========================
@@ -41,20 +56,26 @@ function TD_saveSession(session) {
     if (session.refresh_token) {
       localStorage.setItem("tankDuelRefreshToken", session.refresh_token);
     }
-  } catch (e) { /* storage unavailable — session lost on reload */ }
+  } catch (e) {
+    /* storage unavailable — session lost on reload */
+  }
 }
 
 function TD_getAccessToken() {
   try {
     return localStorage.getItem("tankDuelAccessToken") || null;
-  } catch (e) { return null; }
+  } catch (e) {
+    return null;
+  }
 }
 
 function TD_clearSession() {
   try {
     localStorage.removeItem("tankDuelAccessToken");
     localStorage.removeItem("tankDuelRefreshToken");
-  } catch (e) { /* ignored */ }
+  } catch (e) {
+    /* ignored */
+  }
 }
 
 function TD_isAuthenticated() {
@@ -81,19 +102,20 @@ function TD_apiRequest(method, path, body, authenticated, keepalive) {
     keepalive: !!keepalive,
     headers: headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
-    .then(async function (response) {
-      var payload = null;
-      try {
-        payload = await response.json();
-      } catch (e) { payload = null; }
+  }).then(async function (response) {
+    var payload = null;
+    try {
+      payload = await response.json();
+    } catch (e) {
+      payload = null;
+    }
 
-      if (!response.ok) {
-        var error = payload && payload.error ? payload.error : "Request failed";
-        throw { status: response.status, error: error };
-      }
-      return payload;
-    });
+    if (!response.ok) {
+      var error = payload && payload.error ? payload.error : "Request failed";
+      throw { status: response.status, error: error };
+    }
+    return payload;
+  });
 }
 
 /* =========================
@@ -103,11 +125,21 @@ function TD_apiRequest(method, path, body, authenticated, keepalive) {
 var TD = TD || {};
 
 TD.login = function (email, password) {
-  return TD_apiRequest("POST", "/api/auth/login", { email: email, password: password }, false);
+  return TD_apiRequest(
+    "POST",
+    "/api/auth/login",
+    { email: email, password: password },
+    false,
+  );
 };
 
 TD.signup = function (username, email, password) {
-  return TD_apiRequest("POST", "/api/auth/signup", { username: username, email: email, password: password }, false);
+  return TD_apiRequest(
+    "POST",
+    "/api/auth/signup",
+    { username: username, email: email, password: password },
+    false,
+  );
 };
 
 TD.me = function () {
@@ -172,7 +204,7 @@ TD.joinBattle = function (battleCode) {
     "POST",
     "/api/battles/join",
     { battle_code: battleCode },
-    true
+    true,
   );
 };
 
@@ -181,7 +213,7 @@ TD.getBattle = function (battleId) {
     "GET",
     "/api/battles/" + encodeURIComponent(battleId),
     undefined,
-    true
+    true,
   );
 };
 
@@ -205,7 +237,7 @@ TD.fireBattleAction = function (battleId, angle, power) {
     "POST",
     "/api/battles/" + encodeURIComponent(battleId) + "/actions/fire",
     { angle: angle, power: power },
-    true
+    true,
   );
 };
 
@@ -216,7 +248,7 @@ TD.resolveBattleAction = function (battleId) {
     "POST",
     "/api/battles/" + encodeURIComponent(battleId) + "/actions/fire/resolve",
     {},
-    true
+    true,
   );
 };
 
@@ -226,15 +258,19 @@ TD.checkBattleTurn = function (battleId) {
     "POST",
     "/api/battles/" + encodeURIComponent(battleId) + "/turn/check",
     undefined,
-    true
+    true,
   );
 };
 
 TD.logout = function () {
   var token = TD_getAccessToken();
-  var request = TD_apiRequest ? TD_apiRequest("POST", "/api/auth/logout", undefined, true) : Promise.resolve();
+  var request = TD_apiRequest
+    ? TD_apiRequest("POST", "/api/auth/logout", undefined, true)
+    : Promise.resolve();
   return request
-    .catch(function (e) { /* ignore — local clear below is what matters */ })
+    .catch(function (e) {
+      /* ignore — local clear below is what matters */
+    })
     .then(function () {
       TD_clearSession();
       return true;
@@ -244,7 +280,9 @@ TD.logout = function () {
 /* Reconstruct a complete authoritative activeMatch object for the GameEngine
    from a server battle snapshot and optional user profile / myUserId. */
 TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
-  var myId = myUserId || (profile && profile.player ? String(profile.player.player_id) : "");
+  var myId =
+    myUserId ||
+    (profile && profile.player ? String(profile.player.player_id) : "");
   var state = (battle && battle.battle_state) || {};
   var setup = state.setup || {};
   var players = setup.players || {};
@@ -254,7 +292,7 @@ TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
   var p2Id = String(battle.player2_id || "");
   var meIsP1 = !!myId && myId === p1Id;
   var meIsP2 = !!myId && myId === p2Id;
-  var localSlot = meIsP1 ? 0 : (meIsP2 ? 1 : -1);
+  var localSlot = meIsP1 ? 0 : meIsP2 ? 1 : -1;
 
   var p1Pos = players[p1Id] || {};
   var p2Pos = players[p2Id] || {};
@@ -271,11 +309,13 @@ TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
   var currentTurn = 0;
   if (String(battle.current_turn || "") === p2Id) currentTurn = 1;
 
-  var heights = (setup.terrain && Array.isArray(setup.terrain.heights))
-    ? setup.terrain.heights.slice()
-    : [];
+  var heights =
+    setup.terrain && Array.isArray(setup.terrain.heights)
+      ? setup.terrain.heights.slice()
+      : [];
 
-  var maxHealth = (typeof TD !== "undefined" && TD.MAX_HEALTH) ? TD.MAX_HEALTH : 100;
+  var maxHealth =
+    typeof TD !== "undefined" && TD.MAX_HEALTH ? TD.MAX_HEALTH : 100;
   var p1Health = typeof p1Pos.health === "number" ? p1Pos.health : maxHealth;
   var p2Health = typeof p2Pos.health === "number" ? p2Pos.health : maxHealth;
 
@@ -298,7 +338,7 @@ TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
     currentTurn: currentTurn,
     scores: [
       typeof scores[p1Id] === "number" ? scores[p1Id] : 0,
-      typeof scores[p2Id] === "number" ? scores[p2Id] : 0
+      typeof scores[p2Id] === "number" ? scores[p2Id] : 0,
     ],
     wind: typeof setup.wind === "number" ? setup.wind : 0,
     trajectoryTrail: setup.trajectory !== false,
@@ -307,7 +347,7 @@ TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
       my_user_id: myId,
       player1_id: p1Id,
       player2_id: p2Id,
-      localServerSlot: localSlot
+      localServerSlot: localSlot,
     },
     state: "aiming",
     players: {
@@ -318,7 +358,7 @@ TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
         y: typeof p1Pos.y === "number" ? p1Pos.y : 0,
         health: p1Health,
         angle: p1x < p2x ? 0 : 180,
-        power: 50
+        power: 50,
       },
       player2: {
         name: p2Name,
@@ -327,9 +367,8 @@ TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
         y: typeof p2Pos.y === "number" ? p2Pos.y : 0,
         health: p2Health,
         angle: p2x < p1x ? 0 : 180,
-        power: 50
-      }
-    }
+        power: 50,
+      },
+    },
   };
 };
-
