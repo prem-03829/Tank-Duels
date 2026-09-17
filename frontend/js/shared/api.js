@@ -240,3 +240,96 @@ TD.logout = function () {
       return true;
     });
 };
+
+/* Reconstruct a complete authoritative activeMatch object for the GameEngine
+   from a server battle snapshot and optional user profile / myUserId. */
+TD.buildOnlineActiveMatch = function (battle, profile, myUserId) {
+  var myId = myUserId || (profile && profile.player ? String(profile.player.player_id) : "");
+  var state = (battle && battle.battle_state) || {};
+  var setup = state.setup || {};
+  var players = setup.players || {};
+  var scores = setup.scores || {};
+
+  var p1Id = String(battle.player1_id || "");
+  var p2Id = String(battle.player2_id || "");
+  var meIsP1 = !!myId && myId === p1Id;
+  var meIsP2 = !!myId && myId === p2Id;
+  var localSlot = meIsP1 ? 0 : (meIsP2 ? 1 : -1);
+
+  var p1Pos = players[p1Id] || {};
+  var p2Pos = players[p2Id] || {};
+
+  var p1Name = battle.player1_name || "PLAYER";
+  var p2Name = battle.player2_name || "OPPONENT";
+
+  var P1_COLOR = "orange";
+  var P2_COLOR = "blue";
+
+  var p1x = typeof p1Pos.x === "number" ? p1Pos.x : 40;
+  var p2x = typeof p2Pos.x === "number" ? p2Pos.x : 600;
+
+  var currentTurn = 0;
+  if (String(battle.current_turn || "") === p2Id) currentTurn = 1;
+
+  var heights = (setup.terrain && Array.isArray(setup.terrain.heights))
+    ? setup.terrain.heights.slice()
+    : [];
+
+  var maxHealth = (typeof TD !== "undefined" && TD.MAX_HEALTH) ? TD.MAX_HEALTH : 100;
+  var p1Health = typeof p1Pos.health === "number" ? p1Pos.health : maxHealth;
+  var p2Health = typeof p2Pos.health === "number" ? p2Pos.health : maxHealth;
+
+  return {
+    version: 1,
+    active: true,
+    status: "active",
+    online: true,
+    map: setup.map || "dustlands",
+    seed: typeof setup.seed === "number" ? setup.seed : 0,
+    terrain: heights,
+    stars: [],
+    clouds: [],
+    bgMountains: [],
+    bgHills: [],
+    decorations: [],
+    details: [],
+    round: setup.round || 1,
+    maxRounds: setup.max_rounds || 1,
+    currentTurn: currentTurn,
+    scores: [
+      typeof scores[p1Id] === "number" ? scores[p1Id] : 0,
+      typeof scores[p2Id] === "number" ? scores[p2Id] : 0
+    ],
+    wind: typeof setup.wind === "number" ? setup.wind : 0,
+    trajectoryTrail: setup.trajectory !== false,
+    battle: {
+      battle_id: battle.battle_id || "",
+      my_user_id: myId,
+      player1_id: p1Id,
+      player2_id: p2Id,
+      localServerSlot: localSlot
+    },
+    state: "aiming",
+    players: {
+      player1: {
+        name: p1Name,
+        color: P1_COLOR,
+        x: p1x,
+        y: typeof p1Pos.y === "number" ? p1Pos.y : 0,
+        health: p1Health,
+        angle: p1x < p2x ? 0 : 180,
+        power: 50
+      },
+      player2: {
+        name: p2Name,
+        color: P2_COLOR,
+        x: p2x,
+        y: typeof p2Pos.y === "number" ? p2Pos.y : 0,
+        health: p2Health,
+        angle: p2x < p1x ? 0 : 180,
+        power: 50
+      }
+    }
+  };
+};
+

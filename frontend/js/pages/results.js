@@ -104,14 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
     fallbackOpponentPoints
   );
 
-  /* Never show a stale ONLINE result on a later visit. The offline/same-device
-     keys are left untouched (they are overwritten fresh by each match). */
-  try {
-    localStorage.removeItem("tankDuelLastResultOnline");
-    localStorage.removeItem("tankDuelLastBattleId");
-    localStorage.removeItem("tankDuelLastLocalSlot");
-  } catch (e) { /* ignore */ }
-
   if (isOnlineResult && battleId && typeof TD !== "undefined" && typeof TD.getBattle === "function") {
     TD.getBattle(battleId)
       .then(function (json) {

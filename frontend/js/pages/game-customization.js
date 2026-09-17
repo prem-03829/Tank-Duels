@@ -211,6 +211,11 @@ document.addEventListener('DOMContentLoaded', function () {
       saveCustomization(state);
 
       localStorage.removeItem('tankDuelActiveMatch');
+      try {
+        localStorage.removeItem('tankDuelLastResultOnline');
+        localStorage.removeItem('tankDuelLastBattleId');
+        localStorage.removeItem('tankDuelLastLocalSlot');
+      } catch (e) {}
 
       window.location.href = './game.html';
     });

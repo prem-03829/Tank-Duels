@@ -344,7 +344,9 @@ Engine shape (version 1):
         showView('menu');
         return;
       }
-      var activeMatch = buildActiveMatch(battle, profile);
+      var activeMatch = (typeof TD.buildOnlineActiveMatch === 'function')
+        ? TD.buildOnlineActiveMatch(battle, profile, myId)
+        : buildActiveMatch(battle, profile);
       if (typeof TD.clearActiveMatch === 'function') TD.clearActiveMatch();
       try {
         localStorage.setItem('tankDuelActiveMatch', JSON.stringify(activeMatch));
@@ -424,6 +426,11 @@ Engine shape (version 1):
     var btn = el.createBtn;
     if (btn) btn.disabled = true;
     hideError('create-error');
+    try {
+      localStorage.removeItem("tankDuelLastResultOnline");
+      localStorage.removeItem("tankDuelLastBattleId");
+      localStorage.removeItem("tankDuelLastLocalSlot");
+    } catch (e) {}
 
     var payload = {
       game_mode: 'ONLINE',
@@ -477,6 +484,11 @@ Engine shape (version 1):
     }
 
     if (btn) btn.disabled = true;
+    try {
+      localStorage.removeItem("tankDuelLastResultOnline");
+      localStorage.removeItem("tankDuelLastBattleId");
+      localStorage.removeItem("tankDuelLastLocalSlot");
+    } catch (e) {}
     TD.joinBattle(code).then(function (json) {
       if (btn) btn.disabled = false;
       var battle = unwrapBattle(json);
@@ -574,22 +586,39 @@ Engine shape (version 1):
       clearOnlineBattle();
       return;
     }
-    // Re-validate against the server before showing the waiting lobby.
+
+    // Immediately show waiting screen with stored code to eliminate menu flicker on refresh
+    showView('waiting');
+    if (el.waitingCode) el.waitingCode.textContent = stored.battle_code || '----';
+
+    // Re-validate against the server before continuing polling.
     TD.getBattle(stored.battle_id).then(function (json) {
       var battle = unwrapBattle(json);
       if (!battle) {
         clearOnlineBattle();
+        showView('menu');
         return;
       }
       if (battle.status === 'IN_PROGRESS') {
         enterBattle(battle);
         return;
       }
-      startPolling(battle);
+      if (battle.status === 'WAITING') {
+        startPolling(battle);
+        return;
+      }
+      clearOnlineBattle();
+      showView('menu');
     }).catch(function (err) {
       if (handleAuthError(err)) return;
-      clearOnlineBattle();
-      // Allow the player to simply start again.
+      if (err && (err.status === 404 || err.status === 410)) {
+        clearOnlineBattle();
+        showView('menu');
+        return;
+      }
+      // Transient error: keep waiting screen active and resume polling
+      startPolling(stored);
+      showError('waiting-error', friendlyError(err));
     });
   }
 

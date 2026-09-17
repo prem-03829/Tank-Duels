@@ -1,4 +1,4 @@
-﻿/* =========================
+/* =========================
    GAME ENGINE
 ========================== */
 
@@ -1986,6 +1986,14 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   this.trajectoryTrail = saved.trajectoryTrail !== false;
   this._online = saved.online === true;
   this._onlineBattle = config.onlineBattle || (saved.battle || null);
+  if (config.battleData && typeof this._onlineShotSignature === 'function') {
+    this._lastOnlineShotSignature = this._onlineShotSignature(config.battleData);
+  } else if (config.lastShotSignature) {
+    this._lastOnlineShotSignature = config.lastShotSignature;
+  }
+  if (config.battleData && config.battleData.status) {
+    this._onlineBattleStatus = config.battleData.status;
+  }
 
   this.canvas.width = TD.W;
   this.canvas.height = TD.H;

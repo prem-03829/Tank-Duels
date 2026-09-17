@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
   /* =========================
      ELEMENTS
   ========================= */
@@ -234,39 +234,189 @@
     });
 
     var activeMatch = TD.loadActiveMatch();
-    var onlineBattle = null;
+    var isOnline = !!(activeMatch && activeMatch.online === true && activeMatch.battle && activeMatch.battle.battle_id);
 
-    if (activeMatch && activeMatch.online && activeMatch.battle) {
-      var b = activeMatch.battle;
-      onlineBattle = {
-        battle_id: b.battle_id,
-        my_user_id: b.my_user_id,
-        player1_id: b.player1_id,
-        player2_id: b.player2_id,
-        localServerSlot: b.localServerSlot
-      };
-    }
-
-    if (activeMatch) {
-      engine.restore(activeMatch, {
-        accentColor: accentColor,
-        reducedMotion: reducedMotion,
-        onlineBattle: onlineBattle
-      });
-    } else {
-      engine.init({
-        playerName: playerName,
-        opponentName: opponentName,
-        maxRounds: selectedRounds,
-        accentColor: accentColor,
-        reducedMotion: reducedMotion,
-        mapType: selectedMap,
-        playerOneColor: p1ColorId,
-        playerTwoColor: p2ColorId,
-        trajectoryTrail: trajectoryTrail
-      });
-
+    if (isOnline) {
+      /* =========================
+         ONLINE 1v1 FLOW
+         Authoritative server state is the single source of truth.
+         Controls are held disabled while fetching the latest snapshot.
+      ========================= */
       engine._enableControls(false);
+      if (gameStatusElement) gameStatusElement.textContent = "CONNECTING...";
+
+      if (typeof TD_isAuthenticated === 'function' && !TD_isAuthenticated()) {
+        TD.clearActiveMatch();
+        window.location.href = './login.html';
+        return;
+      }
+
+      var battleId = activeMatch.battle.battle_id;
+      var profilePromise = (typeof TD.profile === 'function')
+        ? TD.profile().catch(function () { return null; })
+        : Promise.resolve(null);
+
+      Promise.all([TD.getBattle(battleId), profilePromise])
+        .then(function (results) {
+          var json = results[0];
+          var profile = results[1];
+          var battle = json && json.battle ? json.battle : json;
+
+          if (!battle || !battle.battle_id) {
+            TD.clearActiveMatch();
+            window.location.href = './dashboard.html';
+            return;
+          }
+
+          var myId = (profile && profile.player && profile.player.player_id)
+            ? String(profile.player.player_id)
+            : String(activeMatch.battle.my_user_id || '');
+          var p1Id = String(battle.player1_id || '');
+          var p2Id = String(battle.player2_id || '');
+
+          if (!myId || (myId !== p1Id && myId !== p2Id)) {
+            TD.clearActiveMatch();
+            window.location.href = './dashboard.html';
+            return;
+          }
+
+          var localSlot = (myId === p1Id) ? 0 : 1;
+          var status = battle.status || '';
+
+          if (status === 'COMPLETED') {
+            var state = battle.battle_state || {};
+            var setup = state.setup || {};
+            var scores = setup.scores || {};
+            var p1Score = typeof scores[p1Id] === 'number' ? scores[p1Id] : 0;
+            var p2Score = typeof scores[p2Id] === 'number' ? scores[p2Id] : 0;
+            var myScore = localSlot === 0 ? p1Score : p2Score;
+            var oppScore = localSlot === 0 ? p2Score : p1Score;
+            var myName = localSlot === 0 ? (battle.player1_name || 'PLAYER') : (battle.player2_name || 'OPPONENT');
+            var oppName = localSlot === 0 ? (battle.player2_name || 'OPPONENT') : (battle.player1_name || 'PLAYER');
+            var result = myScore >= oppScore ? 'win' : 'loss';
+
+            localStorage.setItem('tankDuelLastResult', result);
+            localStorage.setItem('tankDuelLastPlayerScore', String(myScore));
+            localStorage.setItem('tankDuelLastOpponentScore', String(oppScore));
+            localStorage.setItem('tankDuelLastPlayerName', myName);
+            localStorage.setItem('tankDuelLastOpponentName', oppName);
+            localStorage.setItem('tankDuelLastResultOnline', 'true');
+            localStorage.setItem('tankDuelLastBattleId', battle.battle_id);
+            localStorage.setItem('tankDuelLastLocalSlot', String(localSlot));
+
+            TD.clearActiveMatch();
+            window.location.href = './results.html';
+            return;
+          }
+
+          if (status === 'CANCELLED') {
+            TD.clearActiveMatch();
+            window.location.href = './dashboard.html';
+            return;
+          }
+
+          if (status === 'WAITING') {
+            window.location.href = './online.html';
+            return;
+          }
+
+          var authoritativeMatch = (typeof TD.buildOnlineActiveMatch === 'function')
+            ? TD.buildOnlineActiveMatch(battle, profile, myId)
+            : activeMatch;
+
+          /* Preserve local player's angle/power adjustments if it is their turn */
+          if (activeMatch && activeMatch.players) {
+            if (localSlot === 0 && activeMatch.players.player1) {
+              if (typeof activeMatch.players.player1.angle === 'number') {
+                authoritativeMatch.players.player1.angle = activeMatch.players.player1.angle;
+              }
+              if (typeof activeMatch.players.player1.power === 'number') {
+                authoritativeMatch.players.player1.power = activeMatch.players.player1.power;
+              }
+            } else if (localSlot === 1 && activeMatch.players.player2) {
+              if (typeof activeMatch.players.player2.angle === 'number') {
+                authoritativeMatch.players.player2.angle = activeMatch.players.player2.angle;
+              }
+              if (typeof activeMatch.players.player2.power === 'number') {
+                authoritativeMatch.players.player2.power = activeMatch.players.player2.power;
+              }
+            }
+          }
+
+          try {
+            localStorage.setItem('tankDuelActiveMatch', JSON.stringify(authoritativeMatch));
+          } catch (e) {}
+
+          if (playerNameElement && authoritativeMatch.players.player1.name) {
+            playerNameElement.textContent = authoritativeMatch.players.player1.name.toUpperCase();
+          }
+          if (opponentNameElement && authoritativeMatch.players.player2.name) {
+            opponentNameElement.textContent = authoritativeMatch.players.player2.name.toUpperCase();
+          }
+
+          var onlineBattle = authoritativeMatch.battle;
+          engine.restore(authoritativeMatch, {
+            accentColor: accentColor,
+            reducedMotion: reducedMotion,
+            onlineBattle: onlineBattle,
+            battleData: battle
+          });
+
+          engine._restoreOnlineControls();
+        })
+        .catch(function (err) {
+          if (err && err.status === 401) {
+            if (typeof TD_clearSession === 'function') TD_clearSession();
+            try { localStorage.removeItem('tankDuelPlayerType'); } catch (e) {}
+            TD.clearActiveMatch();
+            window.location.href = './login.html';
+            return;
+          }
+          if (err && (err.status === 404 || err.status === 410)) {
+            TD.clearActiveMatch();
+            window.location.href = './dashboard.html';
+            return;
+          }
+          /* Transient network failure: fallback to local cache and retry via polling */
+          var onlineBattle = activeMatch.battle;
+          engine.restore(activeMatch, {
+            accentColor: accentColor,
+            reducedMotion: reducedMotion,
+            onlineBattle: onlineBattle
+          });
+          engine._restoreOnlineControls();
+        });
+    } else {
+      /* =========================
+         SAME DEVICE / GUEST FLOW (100% UNCHANGED)
+         Local matches remain entirely offline and untouched.
+      ========================= */
+      try {
+        localStorage.removeItem('tankDuelLastResultOnline');
+        localStorage.removeItem('tankDuelLastBattleId');
+        localStorage.removeItem('tankDuelLastLocalSlot');
+      } catch (e) {}
+
+      if (activeMatch) {
+        engine.restore(activeMatch, {
+          accentColor: accentColor,
+          reducedMotion: reducedMotion
+        });
+      } else {
+        engine.init({
+          playerName: playerName,
+          opponentName: opponentName,
+          maxRounds: selectedRounds,
+          accentColor: accentColor,
+          reducedMotion: reducedMotion,
+          mapType: selectedMap,
+          playerOneColor: p1ColorId,
+          playerTwoColor: p2ColorId,
+          trajectoryTrail: trajectoryTrail
+        });
+
+        engine._enableControls(false);
+      }
     }
   }
 
