@@ -60,13 +60,14 @@
 
         <!-- Compact wind-status group at the top-center of the battlefield -->
         <div class="match-status" role="status" aria-label="Wind status">
-          <span class="info-item"><span class="info-label">WIND</span> <span class="info-value" id="wind-display">&mdash;</span></span>
+          <span class="info-item"><span class="info-label">WIND</span> <span class="info-value"
+              id="wind-display">&mdash;</span></span>
         </div>
 
         <!-- Shared pixel-art arrow used by the active-player indicator.
              The <g> is populated from a pixel map at runtime (js/pages/game.js). -->
         <svg width="0" height="0" aria-hidden="true" focusable="false"
-             style="position:absolute;width:0;height:0;overflow:hidden">
+          style="position:absolute;width:0;height:0;overflow:hidden">
           <defs>
             <g id="active-player-indicator" shape-rendering="crispEdges"></g>
           </defs>
@@ -104,14 +105,14 @@
           </div>
         </div>
 
-        <button class="game-fullscreen-btn" id="fullscreen-btn" type="button"
-                aria-label="Toggle fullscreen" title="Toggle fullscreen">
+        <button class="game-fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Toggle fullscreen"
+          title="Toggle fullscreen">
           <svg class="fullscreen-icon icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true" focusable="false">
+            stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true" focusable="false">
             <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
           </svg>
           <svg class="fullscreen-icon icon-exit" width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true" focusable="false">
+            stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true" focusable="false">
             <path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5" />
           </svg>
         </button>
@@ -133,7 +134,7 @@
           <div class="slider-controls-row">
             <button class="adj-btn" id="angle-minus" type="button" aria-label="Decrease angle">&minus;</button>
             <div class="dial-control angle-dial" id="angle-control" data-control="angle" role="button" tabindex="0"
-                 aria-label="Angle control. Click and drag around the dial to aim.">
+              aria-label="Angle control. Click and drag around the dial to aim.">
               <span class="dial-ring" aria-hidden="true"></span>
               <span class="dial-hand" aria-hidden="true"></span>
               <span class="dial-value" id="angle-value">45&deg;</span>
@@ -158,7 +159,7 @@
           <div class="slider-controls-row">
             <button class="adj-btn" id="power-minus" type="button" aria-label="Decrease power">&minus;</button>
             <div class="dial-control power-control" id="power-control" data-control="power" role="button" tabindex="0"
-                 aria-label="Power control. Click, then move the mouse left or right to adjust power.">
+              aria-label="Power control. Click, then move the mouse left or right to adjust power.">
               <span class="power-bar" aria-hidden="true">
                 <span class="power-bar-fill" id="power-bar-fill"></span>
               </span>
@@ -241,6 +242,7 @@
   <script src="../js/game/particles.js"></script>
   <script src="../js/game/engine.js"></script>
   <script src="../js/pages/game.js"></script>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="924d3042-3358-4f71-a9cc-cb7e8e51c27a"></script>
 
 </body>
 
