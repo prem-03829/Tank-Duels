@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
   /* =========================
      ELEMENTS
   ========================= */
@@ -319,7 +319,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function placeAngleCursor(deg) {
     if (!angleCursor || !engine) return;
-    var tank = engine.tanks[engine.currentTurn];
+    /* Online: always reference the local player's tank; Same Device / Guest:
+       the current-turn tank (existing behaviour). _displaySlot() handles both. */
+    var tank = engine.tanks[engine._displaySlot ? engine._displaySlot() : engine.currentTurn];
     if (!tank || !tank.alive) return;
     /* Ride the EXACT predicted trajectory: the engine steps the same launch
        vector (cos/-sin of the shared angle), gravity and wind as the preview,

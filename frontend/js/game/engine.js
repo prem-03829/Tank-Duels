@@ -1,4 +1,4 @@
-/* =========================
+﻿/* =========================
    GAME ENGINE
 ========================== */
 
@@ -132,6 +132,20 @@ TD.GameEngine.prototype._canControl = function () {
     if (typeof slot === 'number' && slot !== this.currentTurn) return false;
   }
   return true;
+};
+
+/* Returns the engine tank slot whose controls this client ALWAYS displays.
+   For Online battles this is the local authenticated player's fixed slot
+   (determined once from my_user_id vs player1_id/player2_id), independent
+   of whose turn it currently is.
+   For Same Device / Guest it falls back to this.currentTurn, preserving
+   exactly the existing turn-switching behaviour for those paths. */
+TD.GameEngine.prototype._displaySlot = function () {
+  if (this._isOnlineBattle()) {
+    var slot = this._onlineBattle.localServerSlot;
+    if (typeof slot === 'number') return slot;
+  }
+  return this.currentTurn;
 };
 
 TD.GameEngine.prototype._preloadBackground = function (mapType) {
@@ -767,9 +781,10 @@ TD.GameEngine.prototype._updateHUD = function () {
   var p1Colors = TD.makeTankColors(findPlayerColorHex(this.playerOneColorId));
   var p2Colors = TD.makeTankColors(findPlayerColorHex(this.playerTwoColorId));
 
-  /* ACTIVE-player theme: the current turn owner's tank color drives the
-     tank-related controls (ANGLE / POWER / FIRE / turn indicator). */
-  var activeColors = this.currentTurn === 0 ? p1Colors : p2Colors;
+  /* ACTIVE-player theme: for Online battles this is the LOCAL player's fixed
+     color (so the controls never visually switch sides); for Same Device /
+     Guest it remains the current turn owner's color (existing behaviour). */
+  var activeColors = this._displaySlot() === 0 ? p1Colors : p2Colors;
 
   var rootEl = document.documentElement;
   if (rootEl) {
@@ -790,7 +805,9 @@ TD.GameEngine.prototype._updateHUD = function () {
     }
   }
 
-  var tank = this.tanks[this.currentTurn];
+  /* Read angle / power from the LOCAL player's tank (Online) or the current-
+     turn tank (Same Device / Guest) -- _displaySlot() distinguishes them. */
+  var tank = this.tanks[this._displaySlot()];
   if (tank) {
     if (this.el.angleValue) this.el.angleValue.textContent = tank.angle + '\u00B0';
     if (this.el.powerValue) this.el.powerValue.textContent = tank.power + '%';
