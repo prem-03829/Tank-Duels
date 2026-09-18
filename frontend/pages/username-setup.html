@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Choose Username | Tank Duel</title>
+
+  <meta name="description" content="Choose your Tank-Duels username to complete your profile." />
+
+  <meta name="theme-color" content="#0d0f0d" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+
+  <link rel="icon" type="image/png" href="../assets/favicon.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <canvas class="animated-background" aria-hidden="true"></canvas>
+
+  <main class="auth-page">
+
+    <section class="auth-content">
+
+      <div class="auth-container">
+
+        <!-- Back -->
+        <a href="./login.html" class="auth-back">
+          ← Back to Login
+        </a>
+
+        <!-- Header -->
+        <header class="auth-header">
+          <div class="auth-logo">TANK DUEL</div>
+
+          <h1 class="auth-title">Choose Username</h1>
+
+          <p class="auth-description">
+            Choose your Tank-Duels username to complete your profile.
+          </p>
+        </header>
+
+        <!-- Form -->
+        <form class="auth-form" id="username-setup-form" style="display: none;">
+
+          <div class="form-group">
+            <label class="form-label" for="username">
+              Username
+            </label>
+
+            <input class="form-input" type="text" id="username" name="username" placeholder="Choose a username"
+              autocomplete="username" minlength="3" maxlength="20" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Continue
+          </button>
+
+        </form>
+
+        <!-- Checking / Loading Indicator -->
+        <div id="setup-loading" style="text-align: center; color: var(--text-muted); margin: 2rem 0;">
+          Checking profile…
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/animated-background.js"></script>
+  <script src="../js/shared/api.js"></script>
+  <script src="../js/pages/username-setup.js"></script>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="924d3042-3358-4f71-a9cc-cb7e8e51c27a"></script>
+
+</body>
+
+</html>

@@ -6,12 +6,21 @@ from flask import Blueprint, current_app, g, jsonify, request
 from postgrest.exceptions import APIError as PostgrestAPIError
 from supabase_auth.errors import AuthApiError
 
+from app.config import Config
 from app.logging_utils import redact_log_message
 from app.supabase import get_auth_client, get_authenticated_client, get_supabase
 
 auth_bp = Blueprint("auth", __name__)
 
 _MAX_USERNAME_LENGTH = 50
+
+
+@auth_bp.get("/api/auth/config")
+def get_auth_config():
+    return jsonify({
+        "supabase_url": Config.SUPABASE_URL or "",
+        "supabase_key": Config.SUPABASE_KEY or "",
+    }), 200
 
 
 def require_auth(view):

@@ -3,10 +3,85 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.querySelector("#signup-form");
 
   // =========================
+  // GOOGLE SIGN-IN
+  // =========================
+  const googleBtn = document.querySelector("#google-signin-btn");
+  if (googleBtn) {
+    googleBtn.addEventListener("click", () => {
+      const originalHtml = googleBtn.innerHTML;
+      googleBtn.disabled = true;
+      googleBtn.textContent = "Connecting to Google…";
+
+      const redirectTo = window.location.origin + "/pages/login.html";
+
+      TD.getSupabaseClient().then((supabase) => {
+        return supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: redirectTo,
+          },
+        });
+      }).catch((err) => {
+        googleBtn.disabled = false;
+        googleBtn.innerHTML = originalHtml;
+        alert((err && err.message) || "Failed to initialize Google Sign-In.");
+      });
+    });
+  }
+  // =========================
   // LOGIN
   // =========================
 
   if (loginForm) {
+    // Check for returning Google OAuth session on page load
+    if (typeof TD !== "undefined" && typeof TD.getSupabaseClient === "function") {
+      const hash = window.location.hash || "";
+      const search = window.location.search || "";
+      if (hash.includes("access_token=") || hash.includes("error=") || search.includes("code=")) {
+        TD.getSupabaseClient().then((supabase) => {
+          return supabase.auth.getSession();
+        }).then((res) => {
+          if (!res) return;
+          const session = res.data ? res.data.session : null;
+          const error = res.error;
+
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, "", window.location.pathname);
+          }
+
+          if (error || !session) {
+            if (error) alert("Google Sign-In failed: " + (error.message || "Unknown error"));
+            return;
+          }
+
+          // Use existing session storage mechanism
+          TD_saveSession(session);
+          localStorage.setItem("tankDuelPlayerType", "user");
+
+          // Call existing authenticated profile GET /api/player/me
+          return TD.profile()
+            .then((profileRes) => {
+              const player = profileRes.player || {};
+              const username = player.username || "Player";
+              localStorage.setItem("tankDuelPlayerName", String(username).replace(/[<>&"']/g, ""));
+              window.location.href = "./dashboard.html";
+            })
+            .catch((profileErr) => {
+              if (profileErr && profileErr.status === 404) {
+                // First-time Google user: no profile yet
+                window.location.href = "./username-setup.html";
+              } else {
+                handleAuthError(profileErr);
+              }
+            });
+        }).catch(() => {
+          /* ignored if client fails */
+        });
+      }
+    }
+
+
+
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
 

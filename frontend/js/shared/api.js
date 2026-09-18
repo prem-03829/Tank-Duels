@@ -163,15 +163,35 @@ TD.me = function () {
   return TD_apiRequest("GET", "/api/auth/me", undefined, true);
 };
 
+var _supabaseInstance = null;
+
+TD.getSupabaseClient = function () {
+  if (_supabaseInstance) {
+    return Promise.resolve(_supabaseInstance);
+  }
+  return TD_apiRequest("GET", "/api/auth/config", undefined, false).then(function (cfg) {
+    if (typeof window.supabase === "undefined" || typeof window.supabase.createClient !== "function") {
+      throw new Error("Supabase JS SDK not loaded");
+    }
+    _supabaseInstance = window.supabase.createClient(cfg.supabase_url, cfg.supabase_key);
+    return _supabaseInstance;
+  });
+};
+
 /* =========================
    PLAYER PROFILE
    GET /api/player/me → {"player": {player_id, username, created_at, updated_at}}
+   POST /api/player/me → create first-time player profile
    GET /api/player/stats → {"statistics": {player_id, battles_played,
    battles_won, battles_lost, total_damage, updated_at}}
 ========================= */
 
 TD.profile = function () {
   return TD_apiRequest("GET", "/api/player/me", undefined, true);
+};
+
+TD.createProfile = function (username) {
+  return TD_apiRequest("POST", "/api/player/me", { username: username }, true);
 };
 
 TD.stats = function () {
