@@ -90,7 +90,7 @@ function TD_apiRequest(method, path, body, authenticated, keepalive) {
   var headers = { "Content-Type": "application/json" };
 
   if (authenticated) {
-    var token = TD_getAccessToken();
+    var token = typeof authenticated === "string" ? authenticated : TD_getAccessToken();
     if (!token) {
       return Promise.reject({ status: 401, error: "no session token" });
     }
@@ -139,6 +139,23 @@ TD.signup = function (username, email, password) {
     "/api/auth/signup",
     { username: username, email: email, password: password },
     false,
+  );
+};
+
+TD.forgotPassword = function (email, redirectTo) {
+  var body = { email: email };
+  if (redirectTo) {
+    body.redirect_to = redirectTo;
+  }
+  return TD_apiRequest("POST", "/api/auth/forgot-password", body, false);
+};
+
+TD.resetPassword = function (password, recoveryToken) {
+  return TD_apiRequest(
+    "POST",
+    "/api/auth/reset-password",
+    { password: password },
+    recoveryToken || true
   );
 };
 

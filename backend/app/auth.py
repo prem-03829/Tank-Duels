@@ -228,4 +228,76 @@ def _auth_error_response(exc):
         return jsonify({"error": "Email not confirmed"}), 401
     if code == "user_already_exists" or "already registered" in message:
         return jsonify({"error": "User already exists"}), 409
-    return jsonify({"error": "Authentication failed"}), 400
+    return jsonify({"error": getattr(exc, "message", None) or "Authentication failed"}), 400
+
+
+ALLOWED_RESET_REDIRECT_URLS = {
+    "http://127.0.0.1:5500/pages/reset-password.html",
+    "https://tank-duels-flax.vercel.app/pages/reset-password.html",
+}
+
+
+@auth_bp.post("/api/auth/forgot-password")
+def forgot_password():
+    data = _read_json_body()
+    if data is None:
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    email = _require_string(data, "email")
+    if email is None:
+        return jsonify({"error": "email is required"}), 400
+
+    redirect_to = data.get("redirect_to")
+    if redirect_to is not None:
+        if not isinstance(redirect_to, str) or redirect_to.strip() not in ALLOWED_RESET_REDIRECT_URLS:
+            return jsonify({"error": "Invalid redirect URL"}), 400
+        redirect_to = redirect_to.strip()
+    else:
+        origin = request.headers.get("Origin", "")
+        if "tank-duels-flax.vercel.app" in origin:
+            redirect_to = "https://tank-duels-flax.vercel.app/pages/reset-password.html"
+        else:
+            redirect_to = "http://127.0.0.1:5500/pages/reset-password.html"
+
+    try:
+        get_auth_client().auth.reset_password_for_email(
+            email,
+            options={"redirect_to": redirect_to}
+        )
+    except AuthApiError as exc:
+        code = getattr(exc, "code", None)
+        if code in {"over_email_send_rate_limit", "over_email_otp_rate_limit"}:
+            return jsonify({"error": "Too many requests. Please try again later."}), 429
+    except Exception:
+        pass
+
+    return jsonify(
+        {"message": "If an account exists for this email, a password reset link has been sent."}
+    ), 200
+
+
+@auth_bp.post("/api/auth/reset-password")
+def reset_password():
+    token = _extract_bearer_token()
+    if token is None:
+        return jsonify({"error": "Authentication required"}), 401
+
+    data = _read_json_body()
+    if data is None:
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    password = _require_string(data, "password", strip_value=False)
+    if password is None or len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    try:
+        authenticated_client = get_authenticated_client(token)
+        response = authenticated_client.auth.update_user({"password": password})
+        if _get_obj_field(response, "user") is None:
+            return jsonify({"error": "Failed to reset password. Link may be invalid or expired."}), 400
+    except AuthApiError as exc:
+        return _auth_error_response(exc)
+    except Exception:
+        return jsonify({"error": "Failed to reset password. Link may be invalid or expired."}), 400
+
+    return jsonify({"message": "Password updated successfully"}), 200
