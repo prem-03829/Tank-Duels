@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }).catch((err) => {
         googleBtn.disabled = false;
         googleBtn.innerHTML = originalHtml;
-        alert((err && err.message) || "Failed to initialize Google Sign-In.");
+        TD.notify((err && err.message) || "Failed to initialize Google Sign-In.", "error");
       });
     });
   }
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           if (error || !session) {
-            if (error) alert("Google Sign-In failed: " + (error.message || "Unknown error"));
+            if (error) TD.notify("Google Sign-In failed: " + (error.message || "Unknown error"), "error");
             return;
           }
 
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const password = loginForm.password.value.trim();
 
       if (!email || !password) {
-        alert("Please fill in all fields.");
+        TD.formError(loginForm, "Please fill in all fields.");
         return;
       }
 
@@ -131,6 +131,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
 
   if (signupForm) {
+    const usernameInput = signupForm.querySelector("#username");
+    if (usernameInput) {
+      usernameInput.addEventListener("input", () => {
+        TD.formErrorClear(signupForm);
+      });
+    }
+
     signupForm.addEventListener("submit", (event) => {
       event.preventDefault();
 
@@ -140,15 +147,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const confirmPassword = signupForm['confirm-password'].value;
 
       if (!username || !email || !password || !confirmPassword) {
-        alert("Please fill in all fields.");
+        TD.formError(signupForm, "Please fill in all fields.");
         return;
       }
 
       if (password !== confirmPassword) {
-        alert("Passwords do not match.");
+        TD.formError(signupForm, "Passwords do not match.");
         return;
       }
 
+      TD.formErrorClear(signupForm);
       const submitButton = signupForm.querySelector('button[type="submit"]');
       const originalLabel = submitButton ? submitButton.textContent : null;
       if (submitButton) {
@@ -167,14 +175,18 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
 
-          // No session yet (email confirmation required): go straight to login.
-          alert("Account created. Please check your email to confirm, then log in.");
-          window.location.href = "./login.html";
+          // No session yet (email confirmation required): show inline success and redirect.
+          TD.notify("Account created! Please check your email to confirm, then log in.", "success");
+          setTimeout(function () { window.location.href = "./login.html"; }, 2500);
         })
         .catch((error) => {
           if (submitButton) {
             submitButton.disabled = false;
             submitButton.textContent = originalLabel;
+          }
+          if (error && error.status === 409 && error.error === "Username already taken") {
+            TD.formError(signupForm, "Username already taken");
+            return;
           }
           handleAuthError(error);
         });
@@ -184,23 +196,32 @@ document.addEventListener("DOMContentLoaded", () => {
   /* Map backend errors to friendly, human-readable messages. */
   function handleAuthError(error) {
     const status = (error && error.status) || 0;
+    var msg;
 
     if (status === 400) {
-      alert((error && error.error) || "Please check your input.");
+      msg = (error && error.error) || "Please check your input.";
     } else if (status === 401) {
-      alert((error && error.error) || "Invalid email or password.");
+      msg = (error && error.error) || "Invalid email or password.";
     } else if (status === 404) {
-      alert((error && error.error) || "Account not found.");
+      msg = (error && error.error) || "Account not found.";
     } else if (status === 409) {
-      alert((error && error.error) || "An account with these details already exists.");
+      msg = (error && error.error) || "An account with these details already exists.";
     } else if (status === 429) {
-      alert("Too many attempts. Please try again later.");
+      msg = "Too many attempts. Please try again later.";
     } else if (status >= 500) {
-      alert("Something went wrong on our end. Please try again shortly.");
+      msg = "Something went wrong on our end. Please try again shortly.";
     } else if (!status) {
-      alert("Cannot reach the server. Please make sure the backend is running.");
+      msg = "Cannot reach the server. Please make sure the backend is running.";
     } else {
-      alert((error && error.error) || "Authentication failed.");
+      msg = (error && error.error) || "Authentication failed.";
+    }
+
+    // Show in active form if present, otherwise toast
+    var activeForm = loginForm || signupForm;
+    if (activeForm) {
+      TD.formError(activeForm, msg);
+    } else {
+      TD.notify(msg, "error");
     }
   }
 });

@@ -22,8 +22,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (err && err.status === 404) {
         showForm();
       } else {
-        alert("Session error. Please log in again.");
-        window.location.href = "./login.html";
+        TD.notify("Session error. Please log in again.", "error");
+        setTimeout(function () { window.location.href = "./login.html"; }, 2000);
       }
     });
 
@@ -33,26 +33,34 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   if (form) {
+    var usernameInput = form.querySelector("#username");
+    if (usernameInput) {
+      usernameInput.addEventListener("input", function() {
+        TD.formErrorClear(form);
+      });
+    }
+
     form.addEventListener("submit", function (event) {
       event.preventDefault();
 
       var username = form.username.value.trim();
 
       if (!username) {
-        alert("Please enter a username.");
+        TD.formError(form, "Please enter a username.");
         return;
       }
 
       if (username.length < 3) {
-        alert("Username must be at least 3 characters long.");
+        TD.formError(form, "Username must be at least 3 characters long.");
         return;
       }
 
       if (username.length > 50) {
-        alert("Username must be 50 characters or fewer.");
+        TD.formError(form, "Username must be 50 characters or fewer.");
         return;
       }
 
+      TD.formErrorClear(form);
       var submitButton = form.querySelector('button[type="submit"]');
       var originalLabel = submitButton ? submitButton.textContent : null;
       if (submitButton) {
@@ -75,8 +83,12 @@ document.addEventListener("DOMContentLoaded", function () {
             submitButton.disabled = false;
             submitButton.textContent = originalLabel;
           }
+          if (error && error.status === 409 && error.error === "Username already taken") {
+            TD.formError(form, "Username already taken");
+            return;
+          }
           var msg = (error && error.error) || "Could not create profile. Please try again.";
-          alert(msg);
+          TD.formError(form, msg);
         });
     });
   }

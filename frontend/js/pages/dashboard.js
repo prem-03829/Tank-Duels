@@ -79,11 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Network failure / 5xx: keep the placeholder defaults (no fabricated
         // values) and surface a readable message via the existing dashboard UI.
         setStats("—", "—", "—");
-        if (window.alert) {
-          alert(
-            "Could not load your statistics right now. Please try again shortly."
-          );
-        }
+        TD.notify("Could not load your statistics right now. Please try again shortly.", "warning");
       });
   } else {
     // Guest Mode: 100% local, untouched.

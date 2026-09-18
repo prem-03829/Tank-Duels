@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       var email = form.email.value.trim();
       if (!email) {
-        alert("Please enter your email.");
+        TD.formError(form, "Please enter your email.");
         return;
       }
 
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .catch(function (error) {
           if (error && error.status === 429) {
-            alert("Too many attempts. Please try again later.");
+            TD.formError(form, "Too many attempts. Please try again later.");
             if (submitButton) {
               submitButton.disabled = false;
               submitButton.textContent = originalLabel;

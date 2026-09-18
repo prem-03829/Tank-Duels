@@ -60,17 +60,17 @@ document.addEventListener("DOMContentLoaded", function () {
       var confirmPassword = form["confirm-password"].value;
 
       if (!password || !confirmPassword) {
-        alert("Please fill in both password fields.");
+        showFormError("Please fill in both password fields.");
         return;
       }
 
       if (password.length < 6) {
-        alert("Password must be at least 6 characters long.");
+        showFormError("Password must be at least 6 characters long.");
         return;
       }
 
       if (password !== confirmPassword) {
-        alert("Passwords do not match.");
+        showFormError("Passwords do not match.");
         return;
       }
 
@@ -96,8 +96,16 @@ document.addEventListener("DOMContentLoaded", function () {
           var msg =
             (error && error.error) ||
             "Failed to reset password. The link may have expired.";
-          alert(msg);
+          showFormError(msg);
         });
     });
+  }
+
+  function showFormError(msg) {
+    if (form) {
+      TD.formError(form, msg);
+    } else {
+      TD.notify(msg, "error");
+    }
   }
 });
