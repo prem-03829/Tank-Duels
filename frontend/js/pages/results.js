@@ -32,7 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
      RENDER
   ========================= */
 
-  function renderData(result, playerName, opponentName, playerPoints, opponentPoints) {
+  function renderData(
+    result,
+    playerName,
+    opponentName,
+    playerPoints,
+    opponentPoints,
+  ) {
     var win = result === "win";
 
     if (resultTitle) resultTitle.textContent = win ? "Victory" : "Defeat";
@@ -43,10 +49,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (playerScoreName) playerScoreName.textContent = playerName || "Player";
-    if (opponentScoreName) opponentScoreName.textContent = opponentName || "Opponent";
+    if (opponentScoreName)
+      opponentScoreName.textContent = opponentName || "Opponent";
 
-    if (playerScore) playerScore.textContent = String(Number(playerPoints) || 0);
-    if (opponentScore) opponentScore.textContent = String(Number(opponentPoints) || 0);
+    if (playerScore)
+      playerScore.textContent = String(Number(playerPoints) || 0);
+    if (opponentScore)
+      opponentScore.textContent = String(Number(opponentPoints) || 0);
   }
 
   /* =======================
@@ -56,40 +65,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
   var cust = null;
   try {
-    var raw = localStorage.getItem("tankDuelGameCustomization");
+    var raw = localStorage.getItem("tankDuelsGameCustomization");
     if (raw) cust = JSON.parse(raw);
-  } catch (e) { /* fall through */ }
+  } catch (e) {
+    /* fall through */
+  }
 
   function defaultPlayerName() {
-    return (cust && cust.playerOneName && cust.playerOneName.trim()) ||
-           localStorage.getItem("tankDuelPlayerName") || "Player";
+    return (
+      (cust && cust.playerOneName && cust.playerOneName.trim()) ||
+      localStorage.getItem("tankDuelsPlayerName") ||
+      "Player"
+    );
   }
 
   function defaultOpponentName() {
-    return (cust && cust.playerTwoName && cust.playerTwoName.trim()) || "Opponent";
+    return (
+      (cust && cust.playerTwoName && cust.playerTwoName.trim()) || "Opponent"
+    );
   }
 
   /* =======================
      ONLINE RESULT (authenticated)
      The engine stamps these keys right before navigating here:
-       tankDuelLastResultOnline === "true"
-       tankDuelLastBattleId     — the completed battle_id
-       tankDuelLastLocalSlot    — 0 or 1 (server slot = engine index of the local player)
+       tankDuelsLastResultOnline === "true"
+       tankDuelsLastBattleId     — the completed battle_id
+       tankDuelsLastLocalSlot    — 0 or 1 (server slot = engine index of the local player)
      When possible we RE-FETCH the completed battle by battle_id from the
      authenticated API and render the AUTHORITATIVE server scores
      (battle_state.setup.scores, keyed by player id), so a stale or tampered
      localStorage value can never leak into the current Online result.
   ======================= */
 
-  var isOnlineResult = localStorage.getItem("tankDuelLastResultOnline") === "true";
-  var battleId = isOnlineResult ? localStorage.getItem("tankDuelLastBattleId") : null;
-  var localSlot = Number(localStorage.getItem("tankDuelLastLocalSlot"));
+  var isOnlineResult =
+    localStorage.getItem("tankDuelsLastResultOnline") === "true";
+  var battleId = isOnlineResult
+    ? localStorage.getItem("tankDuelsLastBattleId")
+    : null;
+  var localSlot = Number(localStorage.getItem("tankDuelsLastLocalSlot"));
 
-  var fallbackResult = localStorage.getItem("tankDuelLastResult") || "win";
-  var fallbackPlayerPoints = scoreFromStorage("tankDuelLastPlayerScore");
-  var fallbackOpponentPoints = scoreFromStorage("tankDuelLastOpponentScore");
-  var fallbackPlayerName = nameFromStorage("tankDuelLastPlayerName") || defaultPlayerName();
-  var fallbackOpponentName = nameFromStorage("tankDuelLastOpponentName") || defaultOpponentName();
+  var fallbackResult = localStorage.getItem("tankDuelsLastResult") || "win";
+  var fallbackPlayerPoints = scoreFromStorage("tankDuelsLastPlayerScore");
+  var fallbackOpponentPoints = scoreFromStorage("tankDuelsLastOpponentScore");
+  var fallbackPlayerName =
+    nameFromStorage("tankDuelsLastPlayerName") || defaultPlayerName();
+  var fallbackOpponentName =
+    nameFromStorage("tankDuelsLastOpponentName") || defaultOpponentName();
 
   // Same-device behavior keeps its original defaults when no result was written
   // (only genuine "0" values are now preserved).
@@ -101,10 +122,15 @@ document.addEventListener("DOMContentLoaded", () => {
     fallbackPlayerName,
     fallbackOpponentName,
     fallbackPlayerPoints,
-    fallbackOpponentPoints
+    fallbackOpponentPoints,
   );
 
-  if (isOnlineResult && battleId && typeof TD !== "undefined" && typeof TD.getBattle === "function") {
+  if (
+    isOnlineResult &&
+    battleId &&
+    typeof TD !== "undefined" &&
+    typeof TD.getBattle === "function"
+  ) {
     TD.getBattle(battleId)
       .then(function (json) {
         var battle = json && json.battle ? json.battle : null;
@@ -118,16 +144,25 @@ document.addEventListener("DOMContentLoaded", () => {
         var p2Id = String(battle.player2_id || "");
         if (!p1Id || !p2Id) return;
 
-        var slot = (isFinite(localSlot) && (localSlot === 0 || localSlot === 1)) ? localSlot : 0;
+        var slot =
+          isFinite(localSlot) && (localSlot === 0 || localSlot === 1)
+            ? localSlot
+            : 0;
         var myId = slot === 0 ? p1Id : p2Id;
         var theirId = slot === 0 ? p2Id : p1Id;
 
-        var myScore = isFinite(Number(scores[myId])) ? Math.max(0, Number(scores[myId])) : null;
-        var theirScore = isFinite(Number(scores[theirId])) ? Math.max(0, Number(scores[theirId])) : null;
+        var myScore = isFinite(Number(scores[myId]))
+          ? Math.max(0, Number(scores[myId]))
+          : null;
+        var theirScore = isFinite(Number(scores[theirId]))
+          ? Math.max(0, Number(scores[theirId]))
+          : null;
         if (myScore === null || theirScore === null) return;
 
-        var p1Name = typeof battle.player1_name === "string" ? battle.player1_name : null;
-        var p2Name = typeof battle.player2_name === "string" ? battle.player2_name : null;
+        var p1Name =
+          typeof battle.player1_name === "string" ? battle.player1_name : null;
+        var p2Name =
+          typeof battle.player2_name === "string" ? battle.player2_name : null;
         var myName = (slot === 0 ? p1Name : p2Name) || fallbackPlayerName;
         var theirName = (slot === 0 ? p2Name : p1Name) || fallbackOpponentName;
 
@@ -135,13 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (myScore > theirScore) authoritativeResult = "win";
         else if (myScore === theirScore) authoritativeResult = "win";
 
-        renderData(
-          authoritativeResult,
-          myName,
-          theirName,
-          myScore,
-          theirScore
-        );
+        renderData(authoritativeResult, myName, theirName, myScore, theirScore);
       })
       .catch(function () {
         /* Network/auth failure: the engine's freshly stamped authoritative

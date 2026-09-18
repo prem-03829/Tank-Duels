@@ -3,9 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const matchOptions = document.querySelectorAll(".match-option");
   const startBattleButton = document.querySelector("#start-battle");
 
-  let selectedMap = localStorage.getItem("tankDuelSelectedMap") || "desert";
+  let selectedMap = localStorage.getItem("tankDuelsSelectedMap") || "desert";
 
-  let selectedRounds = localStorage.getItem("tankDuelSelectedRounds") || "1";
+  let selectedRounds = localStorage.getItem("tankDuelsSelectedRounds") || "1";
 
   // =========================
   // INITIAL STATE
@@ -52,8 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
 
   startBattleButton?.addEventListener("click", () => {
-    localStorage.setItem("tankDuelSelectedMap", selectedMap);
+    localStorage.setItem("tankDuelsSelectedMap", selectedMap);
 
-    localStorage.setItem("tankDuelSelectedRounds", selectedRounds);
+    localStorage.setItem("tankDuelsSelectedRounds", selectedRounds);
   });
 });

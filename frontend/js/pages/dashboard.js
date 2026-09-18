@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // PLAYER STATE
   // =========================
 
-  const playerType = localStorage.getItem("tankDuelPlayerType");
+  const playerType = localStorage.getItem("tankDuelsPlayerType");
 
   // If no player session exists, return to main menu
   if (!playerType) {
@@ -42,8 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (player && player.username) {
           localStorage.setItem(
-            "tankDuelPlayerName",
-            String(player.username).replace(/[<>&"']/g, "")
+            "tankDuelsPlayerName",
+            String(player.username).replace(/[<>&"']/g, ""),
           );
         }
 
@@ -63,8 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (typeof TD_clearSession === "function") {
             TD_clearSession();
           }
-          localStorage.removeItem("tankDuelPlayerType");
-          localStorage.removeItem("tankDuelPlayerName");
+          localStorage.removeItem("tankDuelsPlayerType");
+          localStorage.removeItem("tankDuelsPlayerName");
           window.location.href = "./login.html";
           return;
         }
@@ -79,7 +79,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Network failure / 5xx: keep the placeholder defaults (no fabricated
         // values) and surface a readable message via the existing dashboard UI.
         setStats("—", "—", "—");
-        TD.notify("Could not load your statistics right now. Please try again shortly.", "warning");
+        TD.notify(
+          "Could not load your statistics right now. Please try again shortly.",
+          "warning",
+        );
       });
   } else {
     // Guest Mode: 100% local, untouched.
@@ -166,23 +169,23 @@ document.addEventListener("DOMContentLoaded", () => {
       ) {
         TD.logout()
           .then(() => {
-            localStorage.removeItem("tankDuelPlayerType");
-            localStorage.removeItem("tankDuelPlayerName");
+            localStorage.removeItem("tankDuelsPlayerType");
+            localStorage.removeItem("tankDuelsPlayerName");
             window.location.href = "../index.html";
           })
           .catch(() => {
             // Even if the server call fails, end the local session so the
             // user is never stranded on a dashboard with nowhere to go.
-            localStorage.removeItem("tankDuelPlayerType");
-            localStorage.removeItem("tankDuelPlayerName");
+            localStorage.removeItem("tankDuelsPlayerType");
+            localStorage.removeItem("tankDuelsPlayerName");
             window.location.href = "../index.html";
           });
         return;
       }
 
       // Guest mode: 100% local, untouched.
-      localStorage.removeItem("tankDuelPlayerType");
-      localStorage.removeItem("tankDuelPlayerName");
+      localStorage.removeItem("tankDuelsPlayerType");
+      localStorage.removeItem("tankDuelsPlayerName");
 
       window.location.href = "../index.html";
     });

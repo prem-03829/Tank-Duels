@@ -9,7 +9,7 @@
 
    The Flask API runs at http://127.0.0.1:5000 (see backend/main.py). Override
    the base URL for a deployed environment without touching this file by
-   setting tankDuelApiBaseUrl first.
+   setting tankDuelsApiBaseUrl first.
 ========================= */
 
 var TD = TD || {};
@@ -25,7 +25,7 @@ function TD_apiBaseUrl() {
   var override = null;
 
   try {
-    override = localStorage.getItem("tankDuelApiBaseUrl");
+    override = localStorage.getItem("tankDuelsApiBaseUrl");
   } catch (e) {
     /* ignored */
   }
@@ -51,10 +51,10 @@ function TD_saveSession(session) {
   if (!session || typeof session !== "object") return;
   try {
     if (session.access_token) {
-      localStorage.setItem("tankDuelAccessToken", session.access_token);
+      localStorage.setItem("tankDuelsAccessToken", session.access_token);
     }
     if (session.refresh_token) {
-      localStorage.setItem("tankDuelRefreshToken", session.refresh_token);
+      localStorage.setItem("tankDuelsRefreshToken", session.refresh_token);
     }
   } catch (e) {
     /* storage unavailable — session lost on reload */
@@ -63,7 +63,7 @@ function TD_saveSession(session) {
 
 function TD_getAccessToken() {
   try {
-    return localStorage.getItem("tankDuelAccessToken") || null;
+    return localStorage.getItem("tankDuelsAccessToken") || null;
   } catch (e) {
     return null;
   }
@@ -71,8 +71,8 @@ function TD_getAccessToken() {
 
 function TD_clearSession() {
   try {
-    localStorage.removeItem("tankDuelAccessToken");
-    localStorage.removeItem("tankDuelRefreshToken");
+    localStorage.removeItem("tankDuelsAccessToken");
+    localStorage.removeItem("tankDuelsRefreshToken");
   } catch (e) {
     /* ignored */
   }
@@ -90,7 +90,8 @@ function TD_apiRequest(method, path, body, authenticated, keepalive) {
   var headers = { "Content-Type": "application/json" };
 
   if (authenticated) {
-    var token = typeof authenticated === "string" ? authenticated : TD_getAccessToken();
+    var token =
+      typeof authenticated === "string" ? authenticated : TD_getAccessToken();
     if (!token) {
       return Promise.reject({ status: 401, error: "no session token" });
     }
@@ -155,7 +156,7 @@ TD.resetPassword = function (password, recoveryToken) {
     "POST",
     "/api/auth/reset-password",
     { password: password },
-    recoveryToken || true
+    recoveryToken || true,
   );
 };
 
@@ -169,16 +170,26 @@ TD.getSupabaseClient = function () {
   if (_supabaseInstance) {
     return Promise.resolve(_supabaseInstance);
   }
-  return TD_apiRequest("GET", "/api/auth/config", undefined, false).then(function (cfg) {
-    if (cfg && cfg.supabase_url) {
-      try { localStorage.setItem("tankDuelSupabaseUrl", cfg.supabase_url); } catch (e) {}
-    }
-    if (typeof window.supabase === "undefined" || typeof window.supabase.createClient !== "function") {
-      throw new Error("Supabase JS SDK not loaded");
-    }
-    _supabaseInstance = window.supabase.createClient(cfg.supabase_url, cfg.supabase_key);
-    return _supabaseInstance;
-  });
+  return TD_apiRequest("GET", "/api/auth/config", undefined, false).then(
+    function (cfg) {
+      if (cfg && cfg.supabase_url) {
+        try {
+          localStorage.setItem("tankDuelsSupabaseUrl", cfg.supabase_url);
+        } catch (e) {}
+      }
+      if (
+        typeof window.supabase === "undefined" ||
+        typeof window.supabase.createClient !== "function"
+      ) {
+        throw new Error("Supabase JS SDK not loaded");
+      }
+      _supabaseInstance = window.supabase.createClient(
+        cfg.supabase_url,
+        cfg.supabase_key,
+      );
+      return _supabaseInstance;
+    },
+  );
 };
 
 /* =========================

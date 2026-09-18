@@ -6,7 +6,7 @@ var TD = TD || {};
 
 TD.GameEngine = function (canvas, elements) {
   this.canvas = canvas;
-  this.ctx = canvas.getContext('2d');
+  this.ctx = canvas.getContext("2d");
   this.el = elements;
 
   this.terrain = new TD.Terrain();
@@ -32,20 +32,20 @@ TD.GameEngine = function (canvas, elements) {
   this.shakeDuration = 0;
   this.shakeIntensity = 0;
 
-  this.playerName = 'PLAYER';
-  this.opponentName = 'OPPONENT';
-  this.accentColor = '#ff8933';
+  this.playerName = "PLAYER";
+  this.opponentName = "OPPONENT";
+  this.accentColor = "#ff8933";
   this.reducedMotion = false;
   this.trajectoryTrail = true;
-  this.playerOneColorId = 'orange';
-  this.playerTwoColorId = 'blue';
+  this.playerOneColorId = "orange";
+  this.playerTwoColorId = "blue";
   this._onlineBattle = null;
 
   this._onlineFiringInFlight = false;
-  this._onlineRequestPhase = '';
+  this._onlineRequestPhase = "";
   this._onlineResolutionPending = false;
   this._onlineCompleted = false;
-  this._onlineBattleStatus = '';
+  this._onlineBattleStatus = "";
   this._onlineNavigatedAway = false;
   this._onlinePollingTimer = null;
   this._onlinePollInFlight = false;
@@ -64,15 +64,15 @@ TD.GameEngine = function (canvas, elements) {
 };
 
 TD.GameEngine.prototype.init = function (config) {
-  this.playerName = config.playerName || 'PLAYER';
-  this.opponentName = config.opponentName || 'OPPONENT';
+  this.playerName = config.playerName || "PLAYER";
+  this.opponentName = config.opponentName || "OPPONENT";
   this.maxRounds = config.maxRounds || 1;
-  this.accentColor = config.accentColor || '#ff8933';
+  this.accentColor = config.accentColor || "#ff8933";
   this.reducedMotion = config.reducedMotion || false;
   this._applyMotionPref();
-  this.mapType = config.mapType || 'dustlands';
-  this.playerOneColorId = config.playerOneColor || 'orange';
-  this.playerTwoColorId = config.playerTwoColor || 'blue';
+  this.mapType = config.mapType || "dustlands";
+  this.playerOneColorId = config.playerOneColor || "orange";
+  this.playerTwoColorId = config.playerTwoColor || "blue";
   this.trajectoryTrail = config.trajectoryTrail !== false;
   this._online = false;
   this._onlineBattle = config.onlineBattle || null;
@@ -100,8 +100,8 @@ TD.GameEngine.prototype.init = function (config) {
   this.round = 1;
   this.scores = [0, 0];
 
-  document.addEventListener('keydown', this._onKeyDown);
-  document.addEventListener('keyup', this._onKeyUp);
+  document.addEventListener("keydown", this._onKeyDown);
+  document.addEventListener("keyup", this._onKeyUp);
 
   this.running = true;
   this.lastTime = performance.now();
@@ -129,7 +129,7 @@ TD.GameEngine.prototype._canControl = function () {
   if (this.state !== TD.STATES.AIMING) return false;
   if (this._isOnlineBattle()) {
     var slot = this._onlineBattle.localServerSlot;
-    if (typeof slot === 'number' && slot !== this.currentTurn) return false;
+    if (typeof slot === "number" && slot !== this.currentTurn) return false;
   }
   return true;
 };
@@ -143,7 +143,7 @@ TD.GameEngine.prototype._canControl = function () {
 TD.GameEngine.prototype._displaySlot = function () {
   if (this._isOnlineBattle()) {
     var slot = this._onlineBattle.localServerSlot;
-    if (typeof slot === 'number') return slot;
+    if (typeof slot === "number") return slot;
   }
   return this.currentTurn;
 };
@@ -151,7 +151,7 @@ TD.GameEngine.prototype._displaySlot = function () {
 TD.GameEngine.prototype._preloadBackground = function (mapType) {
   var resolved = TD.resolveMap(mapType);
 
-  if (resolved === 'random' || !TD.MAP_BG[resolved]) {
+  if (resolved === "random" || !TD.MAP_BG[resolved]) {
     for (var i = 0; i < TD.MAP_KEYS.length; i++) {
       this._preloadSingle(TD.MAP_KEYS[i]);
     }
@@ -166,15 +166,23 @@ TD.GameEngine.prototype._preloadSingle = function (key) {
   if (!bgPath) return;
   if (this._bgLoaded[key]) return;
 
-  console.log('[MAP BG] Loading: ' + bgPath + ' for ' + key);
+  console.log("[MAP BG] Loading: " + bgPath + " for " + key);
   var self = this;
   var img = new Image();
   img.onload = function () {
     self._bgLoaded[key] = true;
-    console.log('[MAP BG] Loaded OK: ' + bgPath + ' (' + img.naturalWidth + 'x' + img.naturalHeight + ')');
+    console.log(
+      "[MAP BG] Loaded OK: " +
+        bgPath +
+        " (" +
+        img.naturalWidth +
+        "x" +
+        img.naturalHeight +
+        ")",
+    );
   };
   img.onerror = function () {
-    console.warn('[MAP BG] FAILED: ' + bgPath);
+    console.warn("[MAP BG] FAILED: " + bgPath);
     self._bgLoaded[key] = false;
   };
   img.src = bgPath;
@@ -200,7 +208,7 @@ TD.GameEngine.prototype._placeTanks = function () {
 
   this.tanks = [
     new TD.Tank(0, this.playerName, p1x, this.terrain, p1colors, 1),
-    new TD.Tank(1, this.opponentName, p2x, this.terrain, p2colors, -1)
+    new TD.Tank(1, this.opponentName, p2x, this.terrain, p2colors, -1),
   ];
 
   this.tanks[0].angle = 0;
@@ -242,14 +250,14 @@ TD.GameEngine.prototype.cleanup = function () {
     cancelAnimationFrame(this.animFrameId);
     this.animFrameId = null;
   }
-  document.removeEventListener('keydown', this._onKeyDown);
-  document.removeEventListener('keyup', this._onKeyUp);
-  if (document.body) document.body.classList.remove('motion-reduced');
+  document.removeEventListener("keydown", this._onKeyDown);
+  document.removeEventListener("keyup", this._onKeyUp);
+  if (document.body) document.body.classList.remove("motion-reduced");
 };
 
 TD.GameEngine.prototype._applyMotionPref = function () {
   if (!document.body) return;
-  document.body.classList.toggle('motion-reduced', !!this.reducedMotion);
+  document.body.classList.toggle("motion-reduced", !!this.reducedMotion);
 };
 
 TD.GameEngine.prototype._loop = function () {
@@ -281,7 +289,12 @@ TD.GameEngine.prototype._update = function () {
       this.particles.update();
 
       if (!this.reducedMotion && this.frame % 6 === 0) {
-        this.particles.addBiomeAmbient(this.terrain.type, TD.W, TD.H, this.terrain.heights);
+        this.particles.addBiomeAmbient(
+          this.terrain.type,
+          TD.W,
+          TD.H,
+          this.terrain.heights,
+        );
       }
 
       if (outOfBounds) {
@@ -384,9 +397,19 @@ TD.GameEngine.prototype._cancelOnlineShotVisual = function () {
    restores terrain.heights from the server array and overwrites each tank's
    health/alive, so any prediction divergence is corrected cleanly. Nothing here
    sets wind, turn, scores, or the winner. */
-TD.GameEngine.prototype._beginLocalOnlineImpact = function (x, y, hitTank, oob) {
+TD.GameEngine.prototype._beginLocalOnlineImpact = function (
+  x,
+  y,
+  hitTank,
+  oob,
+) {
   this._onlineShotVisualActive = false;
-  this._onlineLocalImpact = { x: x, y: y, wreckShown: false, wreckTankIndex: -1 };
+  this._onlineLocalImpact = {
+    x: x,
+    y: y,
+    wreckShown: false,
+    wreckTankIndex: -1,
+  };
   this.projectile.deactivate();
 
   if (hitTank) {
@@ -398,9 +421,10 @@ TD.GameEngine.prototype._beginLocalOnlineImpact = function (x, y, hitTank, oob) 
 
   this.audio.playExplosion();
   this.particles.addExplosion(
-    x, y,
+    x,
+    y,
     hitTank ? TD.EXPLOSION_RADIUS * 0.8 : TD.EXPLOSION_RADIUS,
-    this.terrain.palette
+    this.terrain.palette,
   );
 
   if (hitTank && !hitTank.alive) {
@@ -461,7 +485,12 @@ TD.GameEngine.prototype._updateOnlineShot = function () {
   this.particles.update();
 
   if (!this.reducedMotion && this.frame % 6 === 0) {
-    this.particles.addBiomeAmbient(this.terrain.type, TD.W, TD.H, this.terrain.heights);
+    this.particles.addBiomeAmbient(
+      this.terrain.type,
+      TD.W,
+      TD.H,
+      this.terrain.heights,
+    );
   }
 
   if (pending) {
@@ -472,8 +501,10 @@ TD.GameEngine.prototype._updateOnlineShot = function () {
     var dy = pending.impactY - this.projectile.y;
     var eps = TD.ONLINE_SHOT_ARRIVE_EPS;
 
-    if (dx * dx + dy * dy <= eps * eps ||
-        this.projectile.checkTerrainHit(this.terrain)) {
+    if (
+      dx * dx + dy * dy <= eps * eps ||
+      this.projectile.checkTerrainHit(this.terrain)
+    ) {
       this._finishOnlineShotVisual();
       return;
     }
@@ -501,7 +532,12 @@ TD.GameEngine.prototype._updateOnlineShot = function () {
 
   for (var i = 0; i < this.tanks.length; i++) {
     if (this.projectile.checkTankHit(this.tanks[i])) {
-      this._beginLocalOnlineImpact(this.projectile.x, this.projectile.y, this.tanks[i], false);
+      this._beginLocalOnlineImpact(
+        this.projectile.x,
+        this.projectile.y,
+        this.tanks[i],
+        false,
+      );
       return;
     }
   }
@@ -569,7 +605,7 @@ TD.GameEngine.prototype._render = function () {
 
 TD.GameEngine.prototype.getTrajectoryPointAtRadius = function (tank, radius) {
   var pivot = tank.getTurretPivot();
-  var rad = tank.angle * Math.PI / 180;
+  var rad = (tank.angle * Math.PI) / 180;
   var speed = (tank.power / 100) * TD.PROJECTILE_SPEED_CAP;
   var vx = Math.cos(rad) * speed;
   var vy = -Math.sin(rad) * speed;
@@ -610,7 +646,7 @@ TD.GameEngine.prototype.getTrajectoryPointAtRadius = function (tank, radius) {
 
 TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
   var pivot = tank.getTurretPivot();
-  var rad = tank.angle * Math.PI / 180;
+  var rad = (tank.angle * Math.PI) / 180;
   var speed = (tank.power / 100) * TD.PROJECTILE_SPEED_CAP;
   var vx = Math.cos(rad) * speed;
   var vy = -Math.sin(rad) * speed;
@@ -624,9 +660,9 @@ TD.GameEngine.prototype._renderTrajectoryPreview = function (ctx, tank) {
 
   // Per-player accent colors (existing tank palette) with a dark backing so
   // the trail stays visible over both bright terrain and dark sky.
-  var core = tank.colors ? tank.colors.light : '#ff9050';
-  var hint = tank.colors ? tank.colors.body : '#e07030';
-  var SHADOW = 'rgba(5,5,5,0.85)';
+  var core = tank.colors ? tank.colors.light : "#ff9050";
+  var hint = tank.colors ? tank.colors.body : "#e07030";
+  var SHADOW = "rgba(5,5,5,0.85)";
 
   while (steps < maxSteps) {
     px += vx;
@@ -684,57 +720,61 @@ TD.GameEngine.prototype._updateOverlays = function () {
   var scaleY = displayH / TD.H;
 
   // Active-player indicator: show during an active turn, hide at start/end
-  var turnActive = this.state !== TD.STATES.SETUP && this.state !== TD.STATES.GAME_OVER;
+  var turnActive =
+    this.state !== TD.STATES.SETUP && this.state !== TD.STATES.GAME_OVER;
 
   for (var i = 0; i < this.tanks.length; i++) {
     var tank = this.tanks[i];
-    var overlay = this.el['tankOverlay' + i];
+    var overlay = this.el["tankOverlay" + i];
     if (!overlay) continue;
 
-    var indicator = overlay.querySelector('.tank-overlay-indicator');
+    var indicator = overlay.querySelector(".tank-overlay-indicator");
 
     if (!tank.alive) {
-      overlay.style.opacity = '0';
-      if (indicator) indicator.style.opacity = '0';
+      overlay.style.opacity = "0";
+      if (indicator) indicator.style.opacity = "0";
       continue;
     }
-    overlay.style.opacity = '1';
+    overlay.style.opacity = "1";
 
     var px = tank.x * scaleX;
     var py = (tank.y - tank.turretH - 24) * scaleY;
-    overlay.style.left = px + 'px';
-    overlay.style.top = py + 'px';
+    overlay.style.left = px + "px";
+    overlay.style.top = py + "px";
 
     if (indicator) {
-      indicator.style.opacity = (turnActive && i === this.currentTurn) ? '1' : '0';
+      indicator.style.opacity =
+        turnActive && i === this.currentTurn ? "1" : "0";
     }
 
-    var nameEl = overlay.querySelector('.tank-overlay-name');
+    var nameEl = overlay.querySelector(".tank-overlay-name");
     if (nameEl) nameEl.textContent = tank.name.toUpperCase();
 
-    var hpFill = overlay.querySelector('.tank-overlay-hp-fill');
-    if (hpFill) hpFill.style.width = (tank.health / tank.maxHealth * 100) + '%';
+    var hpFill = overlay.querySelector(".tank-overlay-hp-fill");
+    if (hpFill) hpFill.style.width = (tank.health / tank.maxHealth) * 100 + "%";
 
-    var hpText = overlay.querySelector('.tank-overlay-hp-text');
-    if (hpText) hpText.textContent = tank.health + ' HP';
+    var hpText = overlay.querySelector(".tank-overlay-hp-text");
+    if (hpText) hpText.textContent = tank.health + " HP";
 
     if (hpFill) {
       var pct = tank.health / tank.maxHealth;
-      hpFill.style.background = pct > 0.5 ? '#4a8' : pct > 0.25 ? '#ca5' : '#e44';
+      hpFill.style.background =
+        pct > 0.5 ? "#4a8" : pct > 0.25 ? "#ca5" : "#e44";
     }
   }
 
   var windEl = this.el.windDisplay;
   if (windEl) {
     var absW = Math.abs(this.wind);
-    var arrow = '';
-    if (this.wind > 0) arrow = '\u25B6'.repeat(absW);
-    else if (this.wind < 0) arrow = '\u25C0'.repeat(absW);
-    else arrow = '\u2014';
+    var arrow = "";
+    if (this.wind > 0) arrow = "\u25B6".repeat(absW);
+    else if (this.wind < 0) arrow = "\u25C0".repeat(absW);
+    else arrow = "\u2014";
     /* The numeric value is wrapped so the HUD can color it white while the
        arrows keep their direction-based accent color below. */
-    windEl.innerHTML = arrow + ' <span class="wind-value">' + absW + '</span>';
-    windEl.style.color = this.wind > 0 ? '#ff8050' : this.wind < 0 ? '#50a0ff' : '#888';
+    windEl.innerHTML = arrow + ' <span class="wind-value">' + absW + "</span>";
+    windEl.style.color =
+      this.wind > 0 ? "#ff8050" : this.wind < 0 ? "#50a0ff" : "#888";
   }
 };
 
@@ -755,13 +795,13 @@ TD.GameEngine.prototype._renderTurnAnnouncement = function (ctx) {
   var alpha = Math.min(1, this.stateTimer / 20);
   if (this.stateTimer < 12) alpha = this.stateTimer / 12;
 
-  ctx.fillStyle = 'rgba(0,0,0,' + (alpha * 0.5) + ')';
+  ctx.fillStyle = "rgba(0,0,0," + alpha * 0.5 + ")";
   ctx.fillRect(0, Math.round(TD.H / 2) - 22, TD.W, 44);
 };
 
 TD.GameEngine.prototype._renderGameOverOverlay = function (ctx) {
   var alpha = Math.min(1, (TD.GAME_OVER_DELAY - this.stateTimer) / 20);
-  ctx.fillStyle = 'rgba(0,0,0,' + (alpha * 0.6) + ')';
+  ctx.fillStyle = "rgba(0,0,0," + alpha * 0.6 + ")";
   ctx.fillRect(0, 0, TD.W, TD.H);
 };
 
@@ -789,16 +829,16 @@ TD.GameEngine.prototype._updateHUD = function () {
   var rootEl = document.documentElement;
   if (rootEl) {
     var props = [
-      ['--player-one-color', p1Colors.body],
-      ['--player-one-color-light', p1Colors.light],
-      ['--player-one-color-dark', p1Colors.dark],
-      ['--player-one-color-shade', TD.adjustBrightness(p1Colors.body, 0.35)],
-      ['--player-two-color', p2Colors.body],
-      ['--player-two-color-light', p2Colors.light],
-      ['--player-two-color-dark', p2Colors.dark],
-      ['--player-two-color-shade', TD.adjustBrightness(p2Colors.body, 0.35)],
-      ['--active-player-color', activeColors.body],
-      ['--active-player-color-light', activeColors.light]
+      ["--player-one-color", p1Colors.body],
+      ["--player-one-color-light", p1Colors.light],
+      ["--player-one-color-dark", p1Colors.dark],
+      ["--player-one-color-shade", TD.adjustBrightness(p1Colors.body, 0.35)],
+      ["--player-two-color", p2Colors.body],
+      ["--player-two-color-light", p2Colors.light],
+      ["--player-two-color-dark", p2Colors.dark],
+      ["--player-two-color-shade", TD.adjustBrightness(p2Colors.body, 0.35)],
+      ["--active-player-color", activeColors.body],
+      ["--active-player-color-light", activeColors.light],
     ];
     for (var i = 0; i < props.length; i++) {
       rootEl.style.setProperty(props[i][0], props[i][1]);
@@ -809,18 +849,22 @@ TD.GameEngine.prototype._updateHUD = function () {
      turn tank (Same Device / Guest) -- _displaySlot() distinguishes them. */
   var tank = this.tanks[this._displaySlot()];
   if (tank) {
-    if (this.el.angleValue) this.el.angleValue.textContent = tank.angle + '\u00B0';
-    if (this.el.powerValue) this.el.powerValue.textContent = tank.power + '%';
-    if (this.el.angleControl) this.el.angleControl.style.setProperty('--dial-deg', tank.angle + 'deg');
-    if (this.el.powerControl) this.el.powerControl.style.setProperty('--power-pct', tank.power + '%');
+    if (this.el.angleValue)
+      this.el.angleValue.textContent = tank.angle + "\u00B0";
+    if (this.el.powerValue) this.el.powerValue.textContent = tank.power + "%";
+    if (this.el.angleControl)
+      this.el.angleControl.style.setProperty("--dial-deg", tank.angle + "deg");
+    if (this.el.powerControl)
+      this.el.powerControl.style.setProperty("--power-pct", tank.power + "%");
   }
 
   if (this.el.roundValue) {
-    this.el.roundValue.textContent = this.round + ' / ' + this.maxRounds;
+    this.el.roundValue.textContent = this.round + " / " + this.maxRounds;
   }
 
   if (this.el.mapName) {
-    this.el.mapName.textContent = TD.MAP_DISPLAY_NAMES[this.terrain.type] || this.terrain.type;
+    this.el.mapName.textContent =
+      TD.MAP_DISPLAY_NAMES[this.terrain.type] || this.terrain.type;
   }
 };
 
@@ -831,13 +875,15 @@ TD.GameEngine.prototype._showRound = function () {
 TD.GameEngine.prototype._enableControls = function (enabled) {
   if (enabled && this._isOnlineBattle()) {
     var slot = this._onlineBattle.localServerSlot;
-    if (typeof slot === 'number' && slot !== this.currentTurn) enabled = false;
+    if (typeof slot === "number" && slot !== this.currentTurn) enabled = false;
   }
-  var fb = document.getElementById('fire-button');
+  var fb = document.getElementById("fire-button");
   if (fb) fb.disabled = !enabled;
-  if (this.el.angleControl) this.el.angleControl.classList.toggle('is-disabled', !enabled);
-  if (this.el.powerControl) this.el.powerControl.classList.toggle('is-disabled', !enabled);
-  var ids = ['angle-minus', 'angle-plus', 'power-minus', 'power-plus'];
+  if (this.el.angleControl)
+    this.el.angleControl.classList.toggle("is-disabled", !enabled);
+  if (this.el.powerControl)
+    this.el.powerControl.classList.toggle("is-disabled", !enabled);
+  var ids = ["angle-minus", "angle-plus", "power-minus", "power-plus"];
   for (var i = 0; i < ids.length; i++) {
     var btn = document.getElementById(ids[i]);
     if (btn) btn.disabled = !enabled;
@@ -848,7 +894,10 @@ TD.GameEngine.prototype.setAngle = function (value) {
   if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
-  tank.angle = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, Math.round(value)));
+  tank.angle = Math.max(
+    TD.ANGLE_MIN,
+    Math.min(TD.ANGLE_MAX, Math.round(value)),
+  );
   this._updateHUD();
   this._saveState();
 };
@@ -857,7 +906,10 @@ TD.GameEngine.prototype.setPower = function (value) {
   if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
-  tank.power = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, Math.round(value)));
+  tank.power = Math.max(
+    TD.POWER_MIN,
+    Math.min(TD.POWER_MAX, Math.round(value)),
+  );
   this._updateHUD();
   this._saveState();
 };
@@ -889,7 +941,14 @@ TD.GameEngine.prototype.fire = function () {
   this.audio.playShoot();
 
   var tip = tank.getCannonTip();
-  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind, tank.colors);
+  this.projectile.launch(
+    tip.x,
+    tip.y,
+    tank.angle,
+    tank.power,
+    this.wind,
+    tank.colors,
+  );
 
   this.state = TD.STATES.FLYING;
   this._updateHUD();
@@ -912,22 +971,25 @@ TD.GameEngine.prototype._fireOnline = function () {
   if (this._onlineFiringInFlight) return;
   var ctx = this._onlineBattle;
   if (!ctx || !ctx.battle_id) {
-    this._showOnlineErrorMessage('THIS BATTLE IS NO LONGER AVAILABLE');
+    this._showOnlineErrorMessage("THIS BATTLE IS NO LONGER AVAILABLE");
     return;
   }
-  if (typeof TD.fireBattleAction !== 'function' || typeof TD.resolveBattleAction !== 'function') {
-    this._showOnlineErrorMessage('ONLINE PLAY IS UNAVAILABLE');
+  if (
+    typeof TD.fireBattleAction !== "function" ||
+    typeof TD.resolveBattleAction !== "function"
+  ) {
+    this._showOnlineErrorMessage("ONLINE PLAY IS UNAVAILABLE");
     return;
   }
 
   var slot = ctx.localServerSlot;
-  if (typeof slot !== 'number' || slot !== this.currentTurn) return;
+  if (typeof slot !== "number" || slot !== this.currentTurn) return;
 
   var tank = this.tanks[this.currentTurn];
   if (!tank || !tank.alive) return;
 
   this._onlineFiringInFlight = true;
-  this._onlineRequestPhase = 'fire';
+  this._onlineRequestPhase = "fire";
   this._enableControls(false);
   this.audio.playShoot();
 
@@ -942,7 +1004,14 @@ TD.GameEngine.prototype._fireOnline = function () {
   this._onlineShotVisualActive = true;
   this._onlineLocalImpact = null;
   var tip = tank.getCannonTip();
-  this.projectile.launch(tip.x, tip.y, tank.angle, tank.power, this.wind, tank.colors);
+  this.projectile.launch(
+    tip.x,
+    tip.y,
+    tank.angle,
+    tank.power,
+    this.wind,
+    tank.colors,
+  );
   this.state = TD.STATES.ONLINE_SHOT;
   this._updateHUD();
   this._saveState();
@@ -954,7 +1023,7 @@ TD.GameEngine.prototype._fireOnline = function () {
 
   TD.fireBattleAction(battleId, angle, power)
     .then(function () {
-      self._onlineRequestPhase = 'resolve';
+      self._onlineRequestPhase = "resolve";
       return self._completeOnlineFire(battleId);
     })
     .catch(function (err) {
@@ -963,12 +1032,12 @@ TD.GameEngine.prototype._fireOnline = function () {
         self._handleOnlineAuthError();
         return;
       }
-      if (self._onlineRequestPhase === 'resolve') {
+      if (self._onlineRequestPhase === "resolve") {
         self._reconcileOnlineAfterFailure(battleId);
       } else {
         self._cancelOnlineShotVisual();
         self._restoreOnlineControls();
-        self._showOnlineErrorMessage('FIRE FAILED - TRY AGAIN');
+        self._showOnlineErrorMessage("FIRE FAILED - TRY AGAIN");
       }
     });
 };
@@ -978,19 +1047,18 @@ TD.GameEngine.prototype._fireOnline = function () {
    when the resolve call is retried after transient failure. */
 TD.GameEngine.prototype._completeOnlineFire = function (battleId) {
   var self = this;
-  return TD.resolveBattleAction(battleId)
-    .then(function (json) {
-      self._onlineFiringInFlight = false;
-      var battleData = json && json.battle ? json.battle : null;
-      var shotData = json && json.shot ? json.shot : null;
-      if (!battleData) {
-        self._cancelOnlineShotVisual();
-        self._restoreOnlineControls();
-        self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
-        return;
-      }
-      self._beginOnlineResolution(battleData, shotData);
-    });
+  return TD.resolveBattleAction(battleId).then(function (json) {
+    self._onlineFiringInFlight = false;
+    var battleData = json && json.battle ? json.battle : null;
+    var shotData = json && json.shot ? json.shot : null;
+    if (!battleData) {
+      self._cancelOnlineShotVisual();
+      self._restoreOnlineControls();
+      self._showOnlineErrorMessage("COULD NOT RECONCILE BATTLE STATE");
+      return;
+    }
+    self._beginOnlineResolution(battleData, shotData);
+  });
 };
 
 /* Commit an authoritative back-end battle snapshot. In the normal case the
@@ -1006,7 +1074,10 @@ TD.GameEngine.prototype._completeOnlineFire = function (battleId) {
 
    If the shot cannot be replayed (no usable shot data), the snapshot is applied
    immediately exactly as before. */
-TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData) {
+TD.GameEngine.prototype._beginOnlineResolution = function (
+  battleData,
+  shotData,
+) {
   /* Mark this shot as processed so later polls observe (not replay) it. */
   this._lastOnlineShotSignature = this._onlineShotSignature(battleData);
 
@@ -1017,8 +1088,11 @@ TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData)
     if (this._onlineShotVisualActive) {
       /* Still flying: attach the snapshot so the visual arrives at the
          authoritative impact and its single explosion plays there. */
-      var shot = shotData ||
-        (battleData && battleData.battle_state ? battleData.battle_state.last_shot : null);
+      var shot =
+        shotData ||
+        (battleData && battleData.battle_state
+          ? battleData.battle_state.last_shot
+          : null);
       var impact = shot && shot.impact;
       if (shot && isFinite(Number(impact.x)) && isFinite(Number(impact.y))) {
         this._onlineShotVisualActive = false;
@@ -1026,7 +1100,7 @@ TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData)
           battleData: battleData,
           shotData: shot,
           impactX: Number(impact.x),
-          impactY: Number(impact.y)
+          impactY: Number(impact.y),
         };
         this._updateHUD();
         this._saveState();
@@ -1081,18 +1155,27 @@ TD.GameEngine.prototype._beginOnlineResolution = function (battleData, shotData)
    burst plays only when the optimistic impact did NOT already show it for the
    still-dead tank. A completed battle navigates when the current EXPLODING flow
    ends — or immediately if the flow has already moved past it. */
-TD.GameEngine.prototype._reconcileLocalOnlineShot = function (battleData, shotData) {
+TD.GameEngine.prototype._reconcileLocalOnlineShot = function (
+  battleData,
+  shotData,
+) {
   /* Which wreck (if any) the optimistic local impact already showed for which
      tank, before the impact record is cleared. */
-  var wreckShown = !!(this._onlineLocalImpact && this._onlineLocalImpact.wreckShown);
-  var wreckTankIndex = (this._onlineLocalImpact && this._onlineLocalImpact.wreckTankIndex) || -1;
+  var wreckShown = !!(
+    this._onlineLocalImpact && this._onlineLocalImpact.wreckShown
+  );
+  var wreckTankIndex =
+    (this._onlineLocalImpact && this._onlineLocalImpact.wreckTankIndex) || -1;
   this._onlineLocalImpact = null;
 
   var completed = this._applyOnlineBattleState(battleData, shotData);
 
   if (completed) {
     this._onlineCompleted = true;
-    if (this.state !== TD.STATES.EXPLODING && this.state !== TD.STATES.GAME_OVER) {
+    if (
+      this.state !== TD.STATES.EXPLODING &&
+      this.state !== TD.STATES.GAME_OVER
+    ) {
       this._onlineCompleted = false;
       this._saveAndNavigate();
       return;
@@ -1100,8 +1183,10 @@ TD.GameEngine.prototype._reconcileLocalOnlineShot = function (battleData, shotDa
   }
 
   var optimisticAlreadyShown =
-    wreckShown && wreckTankIndex >= 0 &&
-    this.tanks[wreckTankIndex] && !this.tanks[wreckTankIndex].alive;
+    wreckShown &&
+    wreckTankIndex >= 0 &&
+    this.tanks[wreckTankIndex] &&
+    !this.tanks[wreckTankIndex].alive;
   if (!optimisticAlreadyShown) {
     /* The authoritative tank-wreck runs only when the optimistic pass did not
        cover the dead tank — exactly one wreck burst on the shooter either way. */
@@ -1120,15 +1205,21 @@ TD.GameEngine.prototype._reconcileLocalOnlineShot = function (battleData, shotDa
 
    Returns true when a replay was started; false (caller applies immediately)
    when the shot cannot be reconstructed from authoritative data. */
-TD.GameEngine.prototype._startOnlineShotVisual = function (battleData, shotData) {
+TD.GameEngine.prototype._startOnlineShotVisual = function (
+  battleData,
+  shotData,
+) {
   /* Defense: never launch a second projectile if the shooter's visual is still
      active or its local impact is already being shown (the shooter-local branch
      in _beginOnlineResolution should have handled all of these, but catch any
      path that falls through). */
   if (this._onlineShotVisualActive || this._onlineLocalImpact) return false;
 
-  var shot = shotData ||
-    (battleData && battleData.battle_state ? battleData.battle_state.last_shot : null);
+  var shot =
+    shotData ||
+    (battleData && battleData.battle_state
+      ? battleData.battle_state.last_shot
+      : null);
   if (!shot) return false;
 
   var impact = shot.impact || {};
@@ -1140,9 +1231,9 @@ TD.GameEngine.prototype._startOnlineShotVisual = function (battleData, shotData)
     return false;
   }
 
-  var shooterId = String(shot.player_id || '');
-  var p1Id = String(battleData.player1_id || '');
-  var p2Id = String(battleData.player2_id || '');
+  var shooterId = String(shot.player_id || "");
+  var p1Id = String(battleData.player1_id || "");
+  var p2Id = String(battleData.player2_id || "");
   var shooterSlot = -1;
   if (shooterId === p1Id) shooterSlot = 0;
   else if (shooterId === p2Id) shooterSlot = 1;
@@ -1153,10 +1244,10 @@ TD.GameEngine.prototype._startOnlineShotVisual = function (battleData, shotData)
 
   /* Reconstruct the muzzle from the AUTHORITATIVE position and angle (the
      remote client's copy of the opponent tank has stale angle/power). */
-  var rad = angle * Math.PI / 180;
+  var rad = (angle * Math.PI) / 180;
   var tip = {
     x: tank.x + Math.cos(rad) * tank.cannonLength,
-    y: (tank.y - 1) - Math.sin(rad) * tank.cannonLength
+    y: tank.y - 1 - Math.sin(rad) * tank.cannonLength,
   };
 
   var flightWind = isFinite(Number(shot.wind)) ? Number(shot.wind) : this.wind;
@@ -1166,14 +1257,17 @@ TD.GameEngine.prototype._startOnlineShotVisual = function (battleData, shotData)
     battleData: battleData,
     shotData: shot,
     impactX: ix,
-    impactY: iy
+    impactY: iy,
   };
 
   this._enableControls(false);
 
   /* The shooter already heard playShoot() when they pressed FIRE; only the
      remote viewer needs the shot's audio here. */
-  if (this._onlineBattle && this._onlineBattle.localServerSlot !== shooterSlot) {
+  if (
+    this._onlineBattle &&
+    this._onlineBattle.localServerSlot !== shooterSlot
+  ) {
     this.audio.playShoot();
   }
 
@@ -1191,7 +1285,10 @@ TD.GameEngine.prototype._finishOnlineShotVisual = function () {
   this._onlineLocalImpact = null;
   if (!pending) return;
 
-  var completed = this._applyOnlineBattleState(pending.battleData, pending.shotData);
+  var completed = this._applyOnlineBattleState(
+    pending.battleData,
+    pending.shotData,
+  );
 
   this._playOnlineShotVisual(pending.shotData);
 
@@ -1208,27 +1305,32 @@ TD.GameEngine.prototype._finishOnlineShotVisual = function () {
 /* Apply the authoritative battle_state that the backend returned. The server
    owns terrain, positions, health, wind, round, scores and the winner — the
    frontend only rehydrates them. Returns true when the battle is COMPLETED. */
-TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData) {
+TD.GameEngine.prototype._applyOnlineBattleState = function (
+  battleData,
+  shotData,
+) {
   var ctx = this._onlineBattle;
   if (!ctx || !battleData) return false;
 
-  var p1Id = String(battleData.player1_id || ctx.player1_id || '');
-  var p2Id = String(battleData.player2_id || ctx.player2_id || '');
+  var p1Id = String(battleData.player1_id || ctx.player1_id || "");
+  var p2Id = String(battleData.player2_id || ctx.player2_id || "");
   ctx.player1_id = p1Id;
   ctx.player2_id = p2Id;
 
   var state = battleData.battle_state || {};
-  var setup = (state && typeof state === 'object') ? (state.setup || {}) : {};
+  var setup = state && typeof state === "object" ? state.setup || {} : {};
 
-  var completed = battleData.status === 'COMPLETED';
+  var completed = battleData.status === "COMPLETED";
   this._onlineBattleStatus = battleData.status || this._onlineBattleStatus;
 
-  if (setup.map && TD.MAP_KEYS.indexOf(setup.map) !== -1) this.mapType = setup.map;
+  if (setup.map && TD.MAP_KEYS.indexOf(setup.map) !== -1)
+    this.mapType = setup.map;
 
-  var seed = typeof setup.seed === 'number' ? setup.seed : this._terrainSeed;
-  var heights = setup.terrain && Array.isArray(setup.terrain.heights)
-    ? setup.terrain.heights
-    : null;
+  var seed = typeof setup.seed === "number" ? setup.seed : this._terrainSeed;
+  var heights =
+    setup.terrain && Array.isArray(setup.terrain.heights)
+      ? setup.terrain.heights
+      : null;
 
   if (heights) {
     this._terrainSeed = seed;
@@ -1246,15 +1348,21 @@ TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData
   var p1 = players[p1Id] || {};
   var p2 = players[p2Id] || {};
 
-  if (typeof p1.x === 'number') {
+  if (typeof p1.x === "number") {
     this.tanks[0].x = Math.round(p1.x);
-    this.tanks[0].health = Math.max(0, Math.min(TD.MAX_HEALTH, Math.round(Number(p1.health) || 0)));
+    this.tanks[0].health = Math.max(
+      0,
+      Math.min(TD.MAX_HEALTH, Math.round(Number(p1.health) || 0)),
+    );
     this.tanks[0].alive = this.tanks[0].health > 0;
     this.tanks[0].syncToTerrain(this.terrain);
   }
-  if (typeof p2.x === 'number') {
+  if (typeof p2.x === "number") {
     this.tanks[1].x = Math.round(p2.x);
-    this.tanks[1].health = Math.max(0, Math.min(TD.MAX_HEALTH, Math.round(Number(p2.health) || 0)));
+    this.tanks[1].health = Math.max(
+      0,
+      Math.min(TD.MAX_HEALTH, Math.round(Number(p2.health) || 0)),
+    );
     this.tanks[1].alive = this.tanks[1].health > 0;
     this.tanks[1].syncToTerrain(this.terrain);
   }
@@ -1273,12 +1381,16 @@ TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData
 
   this.round = round;
   this.maxRounds = maxRounds;
-  if (typeof scores[p1Id] === 'number') this.scores[0] = scores[p1Id];
-  if (typeof scores[p2Id] === 'number') this.scores[1] = scores[p2Id];
+  if (typeof scores[p1Id] === "number") this.scores[0] = scores[p1Id];
+  if (typeof scores[p2Id] === "number") this.scores[1] = scores[p2Id];
   ctx.finalScores = [this.scores[0], this.scores[1]];
-  if (typeof setup.wind === 'number') this.wind = setup.wind;
+  if (typeof setup.wind === "number") this.wind = setup.wind;
 
-  if (!completed && battleData.current_turn != null && battleData.current_turn !== '') {
+  if (
+    !completed &&
+    battleData.current_turn != null &&
+    battleData.current_turn !== ""
+  ) {
     if (String(battleData.current_turn) === p1Id) this.currentTurn = 0;
     else if (String(battleData.current_turn) === p2Id) this.currentTurn = 1;
   }
@@ -1290,15 +1402,16 @@ TD.GameEngine.prototype._applyOnlineBattleState = function (battleData, shotData
    tank was destroyed, its wreck. This never alters the applied server state. */
 TD.GameEngine.prototype._playOnlineShotVisual = function (shotData) {
   var impact = shotData && shotData.impact;
-  var x = impact && typeof impact.x === 'number' ? impact.x : NaN;
-  var y = impact && typeof impact.y === 'number' ? impact.y : NaN;
+  var x = impact && typeof impact.x === "number" ? impact.x : NaN;
+  var y = impact && typeof impact.y === "number" ? impact.y : NaN;
   if (isFinite(x) && isFinite(y)) {
-    var tankHit = shotData && shotData.hit_type === 'tank';
+    var tankHit = shotData && shotData.hit_type === "tank";
     this.audio.playExplosion();
     this.particles.addExplosion(
-      x, y,
+      x,
+      y,
       tankHit ? TD.EXPLOSION_RADIUS * 0.8 : TD.EXPLOSION_RADIUS,
-      this.terrain.palette
+      this.terrain.palette,
     );
     this._startShake(tankHit ? 7 : 4, tankHit ? 5 : 3);
   }
@@ -1343,13 +1456,14 @@ TD.GameEngine.prototype._afterOnlineExplosion = function () {
 TD.GameEngine.prototype._restoreOnlineControls = function () {
   var active = false;
   var ctx = this._onlineBattle;
-  if (ctx && typeof ctx.localServerSlot === 'number') {
-    var status = this._onlineBattleStatus || 'IN_PROGRESS';
+  if (ctx && typeof ctx.localServerSlot === "number") {
+    var status = this._onlineBattleStatus || "IN_PROGRESS";
     var localAlive =
-      this.tanks && this.tanks[ctx.localServerSlot] &&
+      this.tanks &&
+      this.tanks[ctx.localServerSlot] &&
       this.tanks[ctx.localServerSlot].alive;
     active =
-      status === 'IN_PROGRESS' &&
+      status === "IN_PROGRESS" &&
       ctx.localServerSlot === this.currentTurn &&
       localAlive;
   }
@@ -1361,10 +1475,10 @@ TD.GameEngine.prototype._restoreOnlineControls = function () {
    falls back to local projectile physics. */
 TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
   var self = this;
-  if (typeof TD.getBattle !== 'function') {
+  if (typeof TD.getBattle !== "function") {
     self._cancelOnlineShotVisual();
     self._restoreOnlineControls();
-    self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+    self._showOnlineErrorMessage("COULD NOT RECONCILE BATTLE STATE");
     return;
   }
   TD.getBattle(battleId)
@@ -1373,7 +1487,7 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
       if (!battleData) {
         self._cancelOnlineShotVisual();
         self._restoreOnlineControls();
-        self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+        self._showOnlineErrorMessage("COULD NOT RECONCILE BATTLE STATE");
         return;
       }
       /* If the fire committed but the resolve never landed, the backend still
@@ -1382,10 +1496,15 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
       var state = battleData.battle_state || {};
       var pending = state.pending_fire;
       var ctx = self._onlineBattle;
-      if (battleData.status === 'IN_PROGRESS' && pending && ctx &&
-          ctx.my_user_id && String(pending.player_id) === String(ctx.my_user_id)) {
+      if (
+        battleData.status === "IN_PROGRESS" &&
+        pending &&
+        ctx &&
+        ctx.my_user_id &&
+        String(pending.player_id) === String(ctx.my_user_id)
+      ) {
         self._onlineFiringInFlight = true;
-        self._onlineRequestPhase = 'resolve';
+        self._onlineRequestPhase = "resolve";
         self._completeOnlineFire(battleId).catch(function (err) {
           self._onlineFiringInFlight = false;
           if (err && err.status === 401) {
@@ -1394,7 +1513,7 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
           }
           self._cancelOnlineShotVisual();
           self._restoreOnlineControls();
-          self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+          self._showOnlineErrorMessage("COULD NOT RECONCILE BATTLE STATE");
         });
         return;
       }
@@ -1407,7 +1526,7 @@ TD.GameEngine.prototype._reconcileOnlineAfterFailure = function (battleId) {
       }
       self._cancelOnlineShotVisual();
       self._restoreOnlineControls();
-      self._showOnlineErrorMessage('COULD NOT RECONCILE BATTLE STATE');
+      self._showOnlineErrorMessage("COULD NOT RECONCILE BATTLE STATE");
     });
 };
 
@@ -1415,17 +1534,29 @@ TD.GameEngine.prototype._showOnlineErrorMessage = function (msg) {
   if (this.el && this.el.gameStatus) {
     this.el.gameStatus.textContent = String(msg).toUpperCase();
   }
-  try { console.warn('[ONLINE] ' + msg); } catch (e) { /* console unavailable */ }
+  try {
+    console.warn("[ONLINE] " + msg);
+  } catch (e) {
+    /* console unavailable */
+  }
 };
 
 TD.GameEngine.prototype._handleOnlineAuthError = function () {
-  if (typeof TD_clearSession === 'function') {
-    try { TD_clearSession(); } catch (e) { /* ignore */ }
+  if (typeof TD_clearSession === "function") {
+    try {
+      TD_clearSession();
+    } catch (e) {
+      /* ignore */
+    }
   }
-  try { localStorage.removeItem('tankDuelPlayerType'); } catch (e) { /* ignore */ }
+  try {
+    localStorage.removeItem("tankDuelsPlayerType");
+  } catch (e) {
+    /* ignore */
+  }
   TD.clearActiveMatch();
   this.cleanup();
-  window.location.href = './login.html';
+  window.location.href = "./login.html";
 };
 
 /* =========================
@@ -1450,9 +1581,11 @@ TD.GameEngine.prototype._startOnlinePolling = function () {
     self._pollOnlineBattle();
   }, TD.ONLINE_POLL_INTERVAL_MS || 1700);
 
-  if (typeof window !== 'undefined' && window.addEventListener) {
-    this._onOnlinePageUnload = function () { self._stopOnlinePolling(); };
-    window.addEventListener('pagehide', this._onOnlinePageUnload);
+  if (typeof window !== "undefined" && window.addEventListener) {
+    this._onOnlinePageUnload = function () {
+      self._stopOnlinePolling();
+    };
+    window.addEventListener("pagehide", this._onOnlinePageUnload);
   }
 };
 
@@ -1462,8 +1595,8 @@ TD.GameEngine.prototype._stopOnlinePolling = function () {
     this._onlinePollingTimer = null;
   }
   this._onlinePollInFlight = false;
-  if (this._onOnlinePageUnload && typeof window !== 'undefined') {
-    window.removeEventListener('pagehide', this._onOnlinePageUnload);
+  if (this._onOnlinePageUnload && typeof window !== "undefined") {
+    window.removeEventListener("pagehide", this._onOnlinePageUnload);
     this._onOnlinePageUnload = null;
   }
 };
@@ -1479,7 +1612,7 @@ TD.GameEngine.prototype._pollOnlineBattle = function () {
   if (this._onlinePollInFlight) return;
 
   var ctx = this._onlineBattle;
-  if (!ctx || !ctx.battle_id || typeof TD.getBattle !== 'function') return;
+  if (!ctx || !ctx.battle_id || typeof TD.getBattle !== "function") return;
 
   var self = this;
   this._onlinePollInFlight = true;
@@ -1517,15 +1650,15 @@ TD.GameEngine.prototype._onlineShotSignature = function (battleData) {
   if (!ls) return null;
   var im = ls.impact || {};
   return [
-    String(ls.player_id || ''),
+    String(ls.player_id || ""),
     ls.angle,
     ls.power,
-    String(ls.hit_type || ''),
+    String(ls.hit_type || ""),
     im.x,
     im.y,
-    String(battleData.current_turn || ''),
-    (state.setup && state.setup.round) || ''
-  ].join('|');
+    String(battleData.current_turn || ""),
+    (state.setup && state.setup.round) || "",
+  ].join("|");
 };
 
 TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
@@ -1537,9 +1670,9 @@ TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
      projectile (it would teleport terrain/tanks mid-flight). */
   if (this._onlinePendingShot) return;
 
-  var status = battleData.status || '';
+  var status = battleData.status || "";
 
-  if (status === 'CANCELLED') {
+  if (status === "CANCELLED") {
     this._stopOnlinePolling();
     this._handleOnlineBattleEnded();
     return;
@@ -1553,12 +1686,12 @@ TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
     this._lastOnlineShotSignature = sig;
     this._beginOnlineResolution(
       battleData,
-      battleData.battle_state ? battleData.battle_state.last_shot : null
+      battleData.battle_state ? battleData.battle_state.last_shot : null,
     );
     return;
   }
 
-  if (status === 'COMPLETED') {
+  if (status === "COMPLETED") {
     /* The battle is over. ALWAYS apply the authoritative result (it is
        idempotent) before navigating so the displayed scores/result can never be
        stale — even when the shooter's own optimistic local impact is still in
@@ -1566,10 +1699,13 @@ TD.GameEngine.prototype._handleOnlineBattleUpdate = function (battleData) {
     this._onlineCompleted = true;
     this._applyOnlineBattleState(battleData, null);
     this._updateHUD();
-    if (this.state !== TD.STATES.EXPLODING && this.state !== TD.STATES.GAME_OVER) {
+    if (
+      this.state !== TD.STATES.EXPLODING &&
+      this.state !== TD.STATES.GAME_OVER
+    ) {
       this._beginOnlineResolution(
         battleData,
-        battleData.battle_state ? battleData.battle_state.last_shot : null
+        battleData.battle_state ? battleData.battle_state.last_shot : null,
       );
     }
     return;
@@ -1592,7 +1728,7 @@ TD.GameEngine.prototype._handleOnlineBattleEnded = function () {
   this._onlineNavigatedAway = true;
   TD.clearActiveMatch();
   this.cleanup();
-  if (typeof window !== 'undefined') window.location.href = './dashboard.html';
+  if (typeof window !== "undefined") window.location.href = "./dashboard.html";
 };
 
 /* =========================
@@ -1600,13 +1736,24 @@ TD.GameEngine.prototype._handleOnlineBattleEnded = function () {
 ========================== */
 
 TD.GameEngine.prototype._handleKeyDown = function (e) {
-  var GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'Escape'];
+  var GAME_KEYS = [
+    "Space",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "KeyW",
+    "KeyS",
+    "KeyA",
+    "KeyD",
+    "Escape",
+  ];
   if (GAME_KEYS.indexOf(e.code) !== -1) e.preventDefault();
 
   if (this.keys[e.code]) return;
   this.keys[e.code] = true;
 
-  if (e.code === 'Space') {
+  if (e.code === "Space") {
     if (this.state === TD.STATES.TURN_START) {
       this.state = TD.STATES.AIMING;
       this.stateTimer = 0;
@@ -1620,13 +1767,13 @@ TD.GameEngine.prototype._handleKeyDown = function (e) {
     return;
   }
 
-  if (e.code === 'Escape') {
-    var quitModal = document.getElementById('quit-modal');
-    if (quitModal && quitModal.classList.contains('is-open')) {
-      var cancelBtn = document.getElementById('cancel-quit-btn');
+  if (e.code === "Escape") {
+    var quitModal = document.getElementById("quit-modal");
+    if (quitModal && quitModal.classList.contains("is-open")) {
+      var cancelBtn = document.getElementById("cancel-quit-btn");
       if (cancelBtn) cancelBtn.click();
     } else {
-      var quitBtn = document.getElementById('quit-game-btn');
+      var quitBtn = document.getElementById("quit-game-btn");
       if (quitBtn) quitBtn.click();
     }
     return;
@@ -1638,19 +1785,19 @@ TD.GameEngine.prototype._handleKeyDown = function (e) {
   if (!tank) return;
 
   var changed = false;
-  if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+  if (e.code === "ArrowUp" || e.code === "KeyW") {
     tank.angle = Math.min(TD.ANGLE_MAX, tank.angle + TD.ANGLE_STEP);
     changed = true;
   }
-  if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+  if (e.code === "ArrowDown" || e.code === "KeyS") {
     tank.angle = Math.max(TD.ANGLE_MIN, tank.angle - TD.ANGLE_STEP);
     changed = true;
   }
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+  if (e.code === "ArrowRight" || e.code === "KeyD") {
     tank.power = Math.min(TD.POWER_MAX, tank.power + TD.POWER_STEP);
     changed = true;
   }
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+  if (e.code === "ArrowLeft" || e.code === "KeyA") {
     tank.power = Math.max(TD.POWER_MIN, tank.power - TD.POWER_STEP);
     changed = true;
   }
@@ -1668,7 +1815,10 @@ TD.GameEngine.prototype.adjustAngle = function (delta) {
   if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
-  tank.angle = Math.max(TD.ANGLE_MIN, Math.min(TD.ANGLE_MAX, tank.angle + delta));
+  tank.angle = Math.max(
+    TD.ANGLE_MIN,
+    Math.min(TD.ANGLE_MAX, tank.angle + delta),
+  );
   this._updateHUD();
   this._saveState();
 };
@@ -1677,7 +1827,10 @@ TD.GameEngine.prototype.adjustPower = function (delta) {
   if (!this._canControl()) return;
   var tank = this.tanks[this.currentTurn];
   if (!tank) return;
-  tank.power = Math.max(TD.POWER_MIN, Math.min(TD.POWER_MAX, tank.power + delta));
+  tank.power = Math.max(
+    TD.POWER_MIN,
+    Math.min(TD.POWER_MAX, tank.power + delta),
+  );
   this._updateHUD();
   this._saveState();
 };
@@ -1696,7 +1849,7 @@ TD.GameEngine.prototype._onTerrainHit = function (x, y) {
     if (!this.tanks[i].alive) continue;
     var t = this.tanks[i];
     var dx = t.x - x;
-    var dy = (t.y + t.bodyH / 2) - y;
+    var dy = t.y + t.bodyH / 2 - y;
     var dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < TD.EXPLOSION_RADIUS) {
       var dmg = TD.MAX_DAMAGE * (1 - dist / TD.EXPLOSION_RADIUS);
@@ -1718,7 +1871,12 @@ TD.GameEngine.prototype._onTankHit = function (tank) {
   var y = this.projectile.y;
 
   this.audio.playExplosion();
-  this.particles.addExplosion(x, y, TD.EXPLOSION_RADIUS * 0.8, this.terrain.palette);
+  this.particles.addExplosion(
+    x,
+    y,
+    TD.EXPLOSION_RADIUS * 0.8,
+    this.terrain.palette,
+  );
 
   tank.takeDamage(TD.MAX_DAMAGE);
 
@@ -1751,12 +1909,15 @@ TD.GameEngine.prototype._afterExplosion = function () {
 
   var dead = -1;
   for (var i = 0; i < this.tanks.length; i++) {
-    if (!this.tanks[i].alive) { dead = i; break; }
+    if (!this.tanks[i].alive) {
+      dead = i;
+      break;
+    }
   }
 
   if (dead >= 0) {
     var bothDead = !this.tanks[0].alive && !this.tanks[1].alive;
-    this._endRound(bothDead ? this.currentTurn : (dead === 0 ? 1 : 0));
+    this._endRound(bothDead ? this.currentTurn : dead === 0 ? 1 : 0);
     return;
   }
 
@@ -1775,7 +1936,10 @@ TD.GameEngine.prototype._nextTurn = function () {
 TD.GameEngine.prototype._endRound = function (winnerIndex) {
   this.scores[winnerIndex]++;
 
-  if (this.scores[0] > this.maxRounds / 2 || this.scores[1] > this.maxRounds / 2) {
+  if (
+    this.scores[0] > this.maxRounds / 2 ||
+    this.scores[1] > this.maxRounds / 2
+  ) {
     this.state = TD.STATES.GAME_OVER;
     this.stateTimer = TD.GAME_OVER_DELAY;
     this._saveState();
@@ -1812,7 +1976,10 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
      may occupy either slot. For LOCAL/GUEST the engine keeps player 1 = index 0,
      so localSlot 0 reproduces the original behavior exactly. */
   var localSlot = 0;
-  if (this._onlineBattle && typeof this._onlineBattle.localServerSlot === 'number') {
+  if (
+    this._onlineBattle &&
+    typeof this._onlineBattle.localServerSlot === "number"
+  ) {
     localSlot = this._onlineBattle.localServerSlot;
   }
 
@@ -1830,39 +1997,43 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
     opponentWins = this.scores[1 - localSlot] || 0;
   }
 
-  var result = 'loss';
-  if (playerWins > opponentWins) result = 'win';
-  else if (playerWins === opponentWins) result = 'win';
+  var result = "loss";
+  if (playerWins > opponentWins) result = "win";
+  else if (playerWins === opponentWins) result = "win";
 
   localName =
-    this.tanks && this.tanks[localSlot] ? this.tanks[localSlot].name : this.playerName;
+    this.tanks && this.tanks[localSlot]
+      ? this.tanks[localSlot].name
+      : this.playerName;
   oppTank =
-    this.tanks && this.tanks[1 - localSlot] ? this.tanks[1 - localSlot].name : this.opponentName;
+    this.tanks && this.tanks[1 - localSlot]
+      ? this.tanks[1 - localSlot].name
+      : this.opponentName;
 
-  localStorage.setItem('tankDuelLastResult', result);
-  localStorage.setItem('tankDuelLastPlayerScore', String(playerWins));
-  localStorage.setItem('tankDuelLastOpponentScore', String(opponentWins));
-  localStorage.setItem('tankDuelLastPlayerName', localName);
-  localStorage.setItem('tankDuelLastOpponentName', oppTank);
+  localStorage.setItem("tankDuelsLastResult", result);
+  localStorage.setItem("tankDuelsLastPlayerScore", String(playerWins));
+  localStorage.setItem("tankDuelsLastOpponentScore", String(opponentWins));
+  localStorage.setItem("tankDuelsLastPlayerName", localName);
+  localStorage.setItem("tankDuelsLastOpponentName", oppTank);
 
   /* ONLINE: stamp the battle identity so the results page can re-fetch the
      authoritative server state by battle_id (requirements 5-7) and never
      shows stale data from a previous match. */
   if (this._online) {
-    localStorage.setItem('tankDuelLastResultOnline', 'true');
-    localStorage.setItem('tankDuelLastBattleId', (ctx && ctx.battle_id) || '');
-    localStorage.setItem('tankDuelLastLocalSlot', String(localSlot));
+    localStorage.setItem("tankDuelsLastResultOnline", "true");
+    localStorage.setItem("tankDuelsLastBattleId", (ctx && ctx.battle_id) || "");
+    localStorage.setItem("tankDuelsLastLocalSlot", String(localSlot));
     TD.clearActiveMatch();
     this._onlineNavigatedAway = true;
     this.cleanup();
-    window.location.href = './results.html';
+    window.location.href = "./results.html";
     return;
   }
 
-  var games = Number(localStorage.getItem('tankDuelGames')) || 0;
-  var wins = Number(localStorage.getItem('tankDuelWins')) || 0;
-  localStorage.setItem('tankDuelGames', String(games + 1));
-  if (result === 'win') localStorage.setItem('tankDuelWins', String(wins + 1));
+  var games = Number(localStorage.getItem("tankDuelsGames")) || 0;
+  var wins = Number(localStorage.getItem("tankDuelsWins")) || 0;
+  localStorage.setItem("tankDuelsGames", String(games + 1));
+  if (result === "win") localStorage.setItem("tankDuelsWins", String(wins + 1));
 
   // Record the completed match in history (only reached when the match
   // actually finishes — never on quit/refresh/interruption). Guest Mode stays
@@ -1871,19 +2042,21 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
   // never updates player_statistics. The keepalive POST finishes even though
   // this method navigates to the results page immediately after.
   var isAuthenticated =
-    typeof TD_isAuthenticated === 'function' && TD_isAuthenticated();
+    typeof TD_isAuthenticated === "function" && TD_isAuthenticated();
 
   if (isAuthenticated) {
-    if (typeof TD.saveLocalBattle === 'function') {
+    if (typeof TD.saveLocalBattle === "function") {
       TD.saveLocalBattle({
         player1_name: this.playerName,
         player2_name: this.opponentName,
-        winner: this.scores[0] >= this.scores[1] ? 'PLAYER1' : 'PLAYER2',
+        winner: this.scores[0] >= this.scores[1] ? "PLAYER1" : "PLAYER2",
         player1_score: this.scores[0],
         player2_score: this.scores[1],
         map: TD.resolveMap(this.mapType),
-        rounds: this.maxRounds
-      }).catch(function () { /* best-effort history persistence */ });
+        rounds: this.maxRounds,
+      }).catch(function () {
+        /* best-effort history persistence */
+      });
     }
   } else {
     TD.addLocalMatchToHistory({
@@ -1895,14 +2068,14 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
       playerTwoColor: findPlayerColorHex(this.playerTwoColorId),
       mapKey: TD.resolveMap(this.mapType),
       rounds: this.maxRounds,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
     });
   }
 
   TD.clearActiveMatch();
 
   this.cleanup();
-  window.location.href = './results.html';
+  window.location.href = "./results.html";
 };
 
 /* =========================
@@ -1911,12 +2084,17 @@ TD.GameEngine.prototype._saveAndNavigate = function () {
 
 TD.GameEngine.prototype._saveState = function () {
   if (!this.tanks || this.tanks.length !== 2) return;
-  if (!this.terrain || !this.terrain.heights || this.terrain.heights.length !== TD.W) return;
+  if (
+    !this.terrain ||
+    !this.terrain.heights ||
+    this.terrain.heights.length !== TD.W
+  )
+    return;
 
   var saved = {
     version: 1,
     active: true,
-    status: 'active',
+    status: "active",
     online: this._online === true,
     map: this.terrain.type,
     seed: this._terrainSeed || this.terrain._s,
@@ -1942,7 +2120,7 @@ TD.GameEngine.prototype._saveState = function () {
         y: this.tanks[0].y,
         health: this.tanks[0].health,
         angle: this.tanks[0].angle,
-        power: this.tanks[0].power
+        power: this.tanks[0].power,
       },
       player2: {
         name: this.opponentName,
@@ -1951,9 +2129,9 @@ TD.GameEngine.prototype._saveState = function () {
         y: this.tanks[1].y,
         health: this.tanks[1].health,
         angle: this.tanks[1].angle,
-        power: this.tanks[1].power
-      }
-    }
+        power: this.tanks[1].power,
+      },
+    },
   };
 
   if (this._isOnlineBattle()) {
@@ -1962,18 +2140,20 @@ TD.GameEngine.prototype._saveState = function () {
       my_user_id: this._onlineBattle.my_user_id,
       player1_id: this._onlineBattle.player1_id,
       player2_id: this._onlineBattle.player2_id,
-      localServerSlot: this._onlineBattle.localServerSlot
+      localServerSlot: this._onlineBattle.localServerSlot,
     };
   }
 
   try {
-    localStorage.setItem('tankDuelActiveMatch', JSON.stringify(saved));
-  } catch (e) { /* storage may be unavailable or full */ }
+    localStorage.setItem("tankDuelsActiveMatch", JSON.stringify(saved));
+  } catch (e) {
+    /* storage may be unavailable or full */
+  }
 };
 
 TD.GameEngine.prototype.restore = function (saved, config) {
   config = config || {};
-  this.accentColor = config.accentColor || '#ff8933';
+  this.accentColor = config.accentColor || "#ff8933";
   this.reducedMotion = config.reducedMotion || false;
   this._applyMotionPref();
 
@@ -1985,9 +2165,11 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   this.playerTwoColorId = saved.players.player2.color;
   this.trajectoryTrail = saved.trajectoryTrail !== false;
   this._online = saved.online === true;
-  this._onlineBattle = config.onlineBattle || (saved.battle || null);
-  if (config.battleData && typeof this._onlineShotSignature === 'function') {
-    this._lastOnlineShotSignature = this._onlineShotSignature(config.battleData);
+  this._onlineBattle = config.onlineBattle || saved.battle || null;
+  if (config.battleData && typeof this._onlineShotSignature === "function") {
+    this._lastOnlineShotSignature = this._onlineShotSignature(
+      config.battleData,
+    );
   } else if (config.lastShotSignature) {
     this._lastOnlineShotSignature = config.lastShotSignature;
   }
@@ -2012,8 +2194,22 @@ TD.GameEngine.prototype.restore = function (saved, config) {
   var dir0 = saved.players.player1.x < saved.players.player2.x ? 1 : -1;
 
   this.tanks = [
-    new TD.Tank(0, this.playerName, saved.players.player1.x, this.terrain, p1colors, dir0),
-    new TD.Tank(1, this.opponentName, saved.players.player2.x, this.terrain, p2colors, -dir0)
+    new TD.Tank(
+      0,
+      this.playerName,
+      saved.players.player1.x,
+      this.terrain,
+      p1colors,
+      dir0,
+    ),
+    new TD.Tank(
+      1,
+      this.opponentName,
+      saved.players.player2.x,
+      this.terrain,
+      p2colors,
+      -dir0,
+    ),
   ];
 
   this.tanks[0].x = saved.players.player1.x;
@@ -2055,8 +2251,8 @@ TD.GameEngine.prototype.restore = function (saved, config) {
     }
   }
 
-  document.addEventListener('keydown', this._onKeyDown);
-  document.addEventListener('keyup', this._onKeyUp);
+  document.addEventListener("keydown", this._onKeyDown);
+  document.addEventListener("keyup", this._onKeyUp);
 
   this.running = true;
   this.lastTime = performance.now();
@@ -2095,12 +2291,15 @@ TD.GameEngine.prototype._resolveExplosionOutcome = function () {
 
   var dead = -1;
   for (var i = 0; i < this.tanks.length; i++) {
-    if (!this.tanks[i].alive) { dead = i; break; }
+    if (!this.tanks[i].alive) {
+      dead = i;
+      break;
+    }
   }
 
   if (dead >= 0) {
     var bothDead = !this.tanks[0].alive && !this.tanks[1].alive;
-    this._endRound(bothDead ? this.currentTurn : (dead === 0 ? 1 : 0));
+    this._endRound(bothDead ? this.currentTurn : dead === 0 ? 1 : 0);
     return;
   }
 
@@ -2110,7 +2309,7 @@ TD.GameEngine.prototype._resolveExplosionOutcome = function () {
 TD.loadActiveMatch = function () {
   var raw;
   try {
-    raw = localStorage.getItem('tankDuelActiveMatch');
+    raw = localStorage.getItem("tankDuelsActiveMatch");
   } catch (e) {
     return null;
   }
@@ -2123,8 +2322,9 @@ TD.loadActiveMatch = function () {
     return null;
   }
 
-  if (!s || typeof s !== 'object') return null;
-  if (s.version !== 1 || s.active !== true || s.status === 'completed') return null;
+  if (!s || typeof s !== "object") return null;
+  if (s.version !== 1 || s.active !== true || s.status === "completed")
+    return null;
 
   var resolvedMap = TD.resolveMap(s.map);
   if (TD.MAP_KEYS.indexOf(resolvedMap) === -1) return null;
@@ -2163,25 +2363,32 @@ TD.loadActiveMatch = function () {
 
   var wind = Number(s.wind);
   if (!isFinite(wind)) wind = 0;
-  s.wind = Math.max(-TD.WIND_ABS_MAX, Math.min(TD.WIND_ABS_MAX, Math.round(wind)));
+  s.wind = Math.max(
+    -TD.WIND_ABS_MAX,
+    Math.min(TD.WIND_ABS_MAX, Math.round(wind)),
+  );
 
   var colorIds = {};
   for (var c = 0; c < TD.PLAYER_COLORS.length; c++) {
     colorIds[TD.PLAYER_COLORS[c].id] = true;
   }
 
-  var pls = s.players && typeof s.players === 'object' ? s.players : {};
+  var pls = s.players && typeof s.players === "object" ? s.players : {};
   var defaults = [
-    ['PLAYER', 'orange'],
-    ['OPPONENT', 'blue']
+    ["PLAYER", "orange"],
+    ["OPPONENT", "blue"],
   ];
   for (var pi = 0; pi < 2; pi++) {
-    var key = 'player' + (pi + 1);
-    var stored = pls[key] && typeof pls[key] === 'object' ? pls[key] : {};
-    var name = typeof stored.name === 'string' && stored.name.trim()
-      ? stored.name.trim().substring(0, 16)
-      : defaults[pi][0];
-    var color = typeof stored.color === 'string' && colorIds[stored.color] ? stored.color : defaults[pi][1];
+    var key = "player" + (pi + 1);
+    var stored = pls[key] && typeof pls[key] === "object" ? pls[key] : {};
+    var name =
+      typeof stored.name === "string" && stored.name.trim()
+        ? stored.name.trim().substring(0, 16)
+        : defaults[pi][0];
+    var color =
+      typeof stored.color === "string" && colorIds[stored.color]
+        ? stored.color
+        : defaults[pi][1];
 
     var hp = Math.round(Number(stored.health));
     if (!isFinite(hp)) return null;
@@ -2210,18 +2417,30 @@ TD.loadActiveMatch = function () {
       y: py,
       health: hp,
       angle: ang,
-      power: pow
+      power: pow,
     };
   }
 
   s.trajectoryTrail = s.trajectoryTrail !== false;
 
   var st = s.state;
-  s.state = (st === 'aiming' || st === 'turn_start' || st === 'exploding' || st === 'flying' || st === 'game_over')
-    ? st
-    : 'turn_start';
+  s.state =
+    st === "aiming" ||
+    st === "turn_start" ||
+    st === "exploding" ||
+    st === "flying" ||
+    st === "game_over"
+      ? st
+      : "turn_start";
 
-  var arr = ['stars', 'clouds', 'bgMountains', 'bgHills', 'decorations', 'details'];
+  var arr = [
+    "stars",
+    "clouds",
+    "bgMountains",
+    "bgHills",
+    "decorations",
+    "details",
+  ];
   for (var a = 0; a < arr.length; a++) {
     if (!Array.isArray(s[arr[a]])) s[arr[a]] = [];
   }
@@ -2231,8 +2450,10 @@ TD.loadActiveMatch = function () {
 
 TD.clearActiveMatch = function () {
   try {
-    localStorage.removeItem('tankDuelActiveMatch');
-  } catch (e) { /* ignore */ }
+    localStorage.removeItem("tankDuelsActiveMatch");
+  } catch (e) {
+    /* ignore */
+  }
 };
 
 function findPlayerColorHex(colorId) {

@@ -1,0 +1,210 @@
+/* =========================
+   ABOUT PAGE LAYOUT
+========================= */
+
+.about-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+  color: var(--text-primary);
+}
+
+.about-content {
+  flex: 1;
+  width: min(800px, 100%);
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-xl) var(--space-4xl);
+}
+
+
+/* =========================
+   BACK LINK
+========================= */
+
+.about-back {
+  display: inline-block;
+  margin-bottom: var(--space-xl);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.about-back:hover {
+  color: var(--color-primary);
+}
+
+
+/* =========================
+   SECTIONS
+========================= */
+
+.about-section {
+  margin-top: var(--space-3xl);
+}
+
+.about-section h2 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-primary);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase;
+}
+
+.about-section p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  line-height: 1.6;
+}
+
+
+/* =========================
+   GRID & CARDS
+========================= */
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+.about-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-primary);
+  padding: var(--space-lg);
+  border-radius: var(--border-radius-sm);
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.about-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  background: var(--bg-elevated);
+}
+
+.about-card h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+}
+
+.about-card p {
+  margin-bottom: 0;
+  font-size: var(--font-size-sm);
+}
+
+
+/* =========================
+   TECH STACK
+========================= */
+
+.tech-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.tech-stack span {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-primary);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--border-radius-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+
+/* =========================
+   GITHUB LINK
+========================= */
+
+.about-github {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-xl);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text-on-primary);
+  background: var(--color-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 3px 3px 0 var(--button-shadow);
+  transition:
+    transform var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.about-github:hover {
+  background: var(--color-primary-light);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--button-shadow-hover);
+}
+
+.about-github:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--button-shadow);
+}
+
+
+/* =========================
+   BACKGROUND LAYERS
+========================= */
+
+.about-page .animated-background,
+.about-page .menu-grid,
+.about-page .menu-glow {
+  pointer-events: none;
+}
+
+.about-page .about-content,
+.about-page .main-menu-footer {
+  position: relative;
+  z-index: 3;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+  .about-content {
+    padding: var(--space-lg) var(--space-md) var(--space-3xl);
+  }
+
+  .about-back {
+    margin-bottom: var(--space-lg);
+  }
+
+  .about-section h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+}

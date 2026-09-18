@@ -2,7 +2,7 @@
    ONLINE BATTLE (1v1 MULTIPLAYER)
    Create / join an online battle against another authenticated player and
    translate the authoritative backend battle_state into the same active-match
-   state the game engine already understands (tankDuelActiveMatch).
+   state the game engine already understands (tankDuelsActiveMatch).
 
    Guest Mode is not allowed here: this page authenticates with the backend
    JWT, so an unsigned visitor is redirected to the existing login flow and
@@ -15,7 +15,7 @@
                                                         ▼
                                              enter game (game.html)
 
-   ONLINE battle state is written into tankDuelActiveMatch with the ENGINE
+   ONLINE battle state is written into tankDuelsActiveMatch with the ENGINE
    player index mapped 1:1 to the SERVER slot (index 0 = backend player1,
    index 1 = backend player2) so both clients display and drive the same
    authoritative assignment. Deterministic online colors: slot 1 = orange,
@@ -25,7 +25,7 @@
 ========================= */
 
 (function () {
-  'use strict';
+  "use strict";
 
   /* =========================
      CONSTANTS / STATE
@@ -33,43 +33,47 @@
 
   var POLL_INTERVAL_MS = 2000;
 
-  var ONLINE_KEY = 'tankDuelOnlineBattle';
+  var ONLINE_KEY = "tankDuelsOnlineBattle";
 
   var el = {};
-  var currentBattle = null;       // latest battle snapshot from the server
+  var currentBattle = null; // latest battle snapshot from the server
   var pollTimer = null;
   var pollInFlight = false;
-  var profileCache = null;        // promise resolving to TD.profile() payload
+  var profileCache = null; // promise resolving to TD.profile() payload
 
   /* =========================
      HELPERS
   ========================== */
 
-  function $(id) { return document.getElementById(id); }
+  function $(id) {
+    return document.getElementById(id);
+  }
 
   function unwrapBattle(json) {
-    return json && typeof json.battle === 'object' ? json.battle : (json || null);
+    return json && typeof json.battle === "object" ? json.battle : json || null;
   }
 
   function isAuthenticatedUser() {
-    return localStorage.getItem('tankDuelPlayerType') === 'user' &&
-      typeof TD_isAuthenticated === 'function' &&
-      TD_isAuthenticated();
+    return (
+      localStorage.getItem("tankDuelsPlayerType") === "user" &&
+      typeof TD_isAuthenticated === "function" &&
+      TD_isAuthenticated()
+    );
   }
 
   function requireLogin() {
-    window.location.href = './login.html';
+    window.location.href = "./login.html";
   }
 
   function getMyUserId(profile) {
-    return profile && profile.player ? String(profile.player.player_id) : '';
+    return profile && profile.player ? String(profile.player.player_id) : "";
   }
 
   function getMyName(profile) {
     if (profile && profile.player && profile.player.username) {
       return profile.player.username;
     }
-    return localStorage.getItem('tankDuelPlayerName') || 'PLAYER';
+    return localStorage.getItem("tankDuelsPlayerName") || "PLAYER";
   }
 
   function getProfile() {
@@ -84,16 +88,17 @@
   }
 
   function friendlyError(err) {
-    if (!err) return 'Something went wrong. Please try again.';
-    if (err.status === 401) return 'Your session has expired. Please log in again.';
-    if (typeof err.error === 'string' && err.error) return err.error;
-    return 'Could not reach the server. Please try again.';
+    if (!err) return "Something went wrong. Please try again.";
+    if (err.status === 401)
+      return "Your session has expired. Please log in again.";
+    if (typeof err.error === "string" && err.error) return err.error;
+    return "Could not reach the server. Please try again.";
   }
 
   function handleAuthError(err) {
     if (err && err.status === 401) {
-      if (typeof TD_clearSession === 'function') TD_clearSession();
-      localStorage.removeItem('tankDuelPlayerType');
+      if (typeof TD_clearSession === "function") TD_clearSession();
+      localStorage.removeItem("tankDuelsPlayerType");
       requireLogin();
       return true;
     }
@@ -102,18 +107,27 @@
 
   function saveOnlineBattle(battle) {
     try {
-      localStorage.setItem(ONLINE_KEY, JSON.stringify({
-        version: 1,
-        battle_id: battle.battle_id,
-        battle_code: battle.battle_code,
-        status: battle.status,
-        created_at: battle.created_at || null
-      }));
-    } catch (e) { /* storage unavailable — polling still continues in memory */ }
+      localStorage.setItem(
+        ONLINE_KEY,
+        JSON.stringify({
+          version: 1,
+          battle_id: battle.battle_id,
+          battle_code: battle.battle_code,
+          status: battle.status,
+          created_at: battle.created_at || null,
+        }),
+      );
+    } catch (e) {
+      /* storage unavailable — polling still continues in memory */
+    }
   }
 
   function clearOnlineBattle() {
-    try { localStorage.removeItem(ONLINE_KEY); } catch (e) { /* ignore */ }
+    try {
+      localStorage.removeItem(ONLINE_KEY);
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   /* =========================
@@ -121,13 +135,13 @@
   ========================== */
 
   function showView(name) {
-    var views = document.querySelectorAll('.online-view');
+    var views = document.querySelectorAll(".online-view");
     for (var i = 0; i < views.length; i++) {
-      views[i].hidden = views[i].getAttribute('data-view') !== name;
+      views[i].hidden = views[i].getAttribute("data-view") !== name;
     }
-    hideError('create-error');
-    hideError('join-error');
-    hideError('waiting-error');
+    hideError("create-error");
+    hideError("join-error");
+    hideError("waiting-error");
   }
 
   function showError(id, message) {
@@ -152,55 +166,61 @@
   var selectedTrajectory = true;
 
   function readStoredSelection() {
-    var m = localStorage.getItem('tankDuelSelectedMap');
-    selectedMap = m || 'desert';
-    var r = localStorage.getItem('tankDuelSelectedRounds');
-    selectedRounds = r || '1';
-    var t = localStorage.getItem('tankDuelSelectedTrajectory');
-    selectedTrajectory = t === null ? true : t === 'on';
+    var m = localStorage.getItem("tankDuelsSelectedMap");
+    selectedMap = m || "desert";
+    var r = localStorage.getItem("tankDuelsSelectedRounds");
+    selectedRounds = r || "1";
+    var t = localStorage.getItem("tankDuelsSelectedTrajectory");
+    selectedTrajectory = t === null ? true : t === "on";
   }
 
   function applySelection() {
-    var mapButtons = $('online-map-options');
-    var maps = mapButtons.querySelectorAll('.setup-option');
+    var mapButtons = $("online-map-options");
+    var maps = mapButtons.querySelectorAll(".setup-option");
     for (var i = 0; i < maps.length; i++) {
-      maps[i].classList.toggle('active', maps[i].getAttribute('data-map') === selectedMap);
+      maps[i].classList.toggle(
+        "active",
+        maps[i].getAttribute("data-map") === selectedMap,
+      );
     }
-    var roundButtons = el.matchOptions.querySelectorAll('.match-option');
+    var roundButtons = el.matchOptions.querySelectorAll(".match-option");
     for (var j = 0; j < roundButtons.length; j++) {
-      roundButtons[j].classList.toggle('active', roundButtons[j].getAttribute('data-rounds') === selectedRounds);
+      roundButtons[j].classList.toggle(
+        "active",
+        roundButtons[j].getAttribute("data-rounds") === selectedRounds,
+      );
     }
-    var trailBtns = document.querySelectorAll('.trajectory-btn');
+    var trailBtns = document.querySelectorAll(".trajectory-btn");
     for (var k = 0; k < trailBtns.length; k++) {
-      var isOn = trailBtns[k].getAttribute('data-trail') === 'on';
+      var isOn = trailBtns[k].getAttribute("data-trail") === "on";
       var active = isOn === selectedTrajectory;
-      trailBtns[k].classList.toggle('active', active);
-      trailBtns[k].setAttribute('aria-checked', active ? 'true' : 'false');
-      trailBtns[k].setAttribute('tabindex', active ? '0' : '-1');
+      trailBtns[k].classList.toggle("active", active);
+      trailBtns[k].setAttribute("aria-checked", active ? "true" : "false");
+      trailBtns[k].setAttribute("tabindex", active ? "0" : "-1");
     }
   }
 
   function wireSelection() {
-    var mapOptions = $('online-map-options');
+    var mapOptions = $("online-map-options");
     if (!mapOptions) return;
-    mapOptions.addEventListener('click', function (e) {
-      var option = e.target.closest('.setup-option');
+    mapOptions.addEventListener("click", function (e) {
+      var option = e.target.closest(".setup-option");
       if (!option) return;
-      selectedMap = option.getAttribute('data-map');
+      selectedMap = option.getAttribute("data-map");
       applySelection();
     });
     if (el.matchOptions) {
-      el.matchOptions.addEventListener('click', function (e) {
-        var option = e.target.closest('.match-option');
+      el.matchOptions.addEventListener("click", function (e) {
+        var option = e.target.closest(".match-option");
         if (!option) return;
-        selectedRounds = option.getAttribute('data-rounds');
+        selectedRounds = option.getAttribute("data-rounds");
         applySelection();
       });
     }
-    var trailBtns = document.querySelectorAll('.trajectory-btn');
+    var trailBtns = document.querySelectorAll(".trajectory-btn");
     for (var k = 0; k < trailBtns.length; k++) {
-      trailBtns[k].addEventListener('click', function () {
-        selectedTrajectory = this.getAttribute('data-trail') === 'on';
+      trailBtns[k].addEventListener("click", function () {
+        selectedTrajectory = this.getAttribute("data-trail") === "on";
         applySelection();
       });
     }
@@ -208,18 +228,33 @@
 
   function persistSelection() {
     try {
-      localStorage.setItem('tankDuelSelectedMap', selectedMap);
-      localStorage.setItem('tankDuelSelectedRounds', selectedRounds);
-      localStorage.setItem('tankDuelSelectedTrajectory', selectedTrajectory ? 'on' : 'off');
-    } catch (e) { /* ignore */ }
+      localStorage.setItem("tankDuelsSelectedMap", selectedMap);
+      localStorage.setItem("tankDuelsSelectedRounds", selectedRounds);
+      localStorage.setItem(
+        "tankDuelsSelectedTrajectory",
+        selectedTrajectory ? "on" : "off",
+      );
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   /* The ONLINE backend must know the exact battlefield up front (it generates
      the authoritative terrain + seed). "Random" becomes a client-side random
      pick so both players share the same deterministic map. */
   function resolveOnlineMap() {
-    if (!selectedMap || selectedMap === 'random') {
-      var keys = (typeof TD !== 'undefined' && TD.MAP_KEYS) ? TD.MAP_KEYS : ['dustlands', 'valley', 'frostbite', 'ashhill', 'moonbase', 'canyon'];
+    if (!selectedMap || selectedMap === "random") {
+      var keys =
+        typeof TD !== "undefined" && TD.MAP_KEYS
+          ? TD.MAP_KEYS
+          : [
+              "dustlands",
+              "valley",
+              "frostbite",
+              "ashhill",
+              "moonbase",
+              "canyon",
+            ];
       return keys[Math.floor(Math.random() * keys.length)];
     }
     return selectedMap;
@@ -250,41 +285,43 @@ Engine shape (version 1):
     var players = setup.players || {};
     var scores = setup.scores || {};
 
-    var p1Id = String(battle.player1_id || '');
-    var p2Id = String(battle.player2_id || '');
+    var p1Id = String(battle.player1_id || "");
+    var p2Id = String(battle.player2_id || "");
     var meIsP1 = !!myId && myId === p1Id;
     var meIsP2 = !!myId && myId === p2Id;
-    var localSlot = meIsP1 ? 0 : (meIsP2 ? 1 : -1);
+    var localSlot = meIsP1 ? 0 : meIsP2 ? 1 : -1;
 
     var p1Pos = players[p1Id] || {};
     var p2Pos = players[p2Id] || {};
 
-    var p1Name = battle.player1_name || 'PLAYER';
-    var p2Name = battle.player2_name || 'OPPONENT';
+    var p1Name = battle.player1_name || "PLAYER";
+    var p2Name = battle.player2_name || "OPPONENT";
 
     /* Deterministic ONLINE identity by server slot — the local customization
        colors are NEVER used for online visuals. */
-    var P1_COLOR = 'orange';
-    var P2_COLOR = 'blue';
+    var P1_COLOR = "orange";
+    var P2_COLOR = "blue";
 
-    var p1x = typeof p1Pos.x === 'number' ? p1Pos.x : 40;
-    var p2x = typeof p2Pos.x === 'number' ? p2Pos.x : 600;
+    var p1x = typeof p1Pos.x === "number" ? p1Pos.x : 40;
+    var p2x = typeof p2Pos.x === "number" ? p2Pos.x : 600;
 
     var currentTurn = 0; // engine index == server slot
-    if (String(battle.current_turn || '') === p2Id) currentTurn = 1;
+    if (String(battle.current_turn || "") === p2Id) currentTurn = 1;
 
-    var heights = (setup.terrain && Array.isArray(setup.terrain.heights))
-      ? setup.terrain.heights.slice()
-      : [];
+    var heights =
+      setup.terrain && Array.isArray(setup.terrain.heights)
+        ? setup.terrain.heights.slice()
+        : [];
 
-    var maxHealth = (typeof TD !== 'undefined' && TD.MAX_HEALTH) ? TD.MAX_HEALTH : 100;
+    var maxHealth =
+      typeof TD !== "undefined" && TD.MAX_HEALTH ? TD.MAX_HEALTH : 100;
     return {
       version: 1,
       active: true,
-      status: 'active',
+      status: "active",
       online: true,
-      map: setup.map || 'dustlands',
-      seed: typeof setup.seed === 'number' ? setup.seed : 0,
+      map: setup.map || "dustlands",
+      seed: typeof setup.seed === "number" ? setup.seed : 0,
       terrain: heights,
       stars: [],
       clouds: [],
@@ -296,71 +333,77 @@ Engine shape (version 1):
       maxRounds: setup.max_rounds || 1,
       currentTurn: currentTurn,
       scores: [
-        typeof scores[p1Id] === 'number' ? scores[p1Id] : 0,
-        typeof scores[p2Id] === 'number' ? scores[p2Id] : 0
+        typeof scores[p1Id] === "number" ? scores[p1Id] : 0,
+        typeof scores[p2Id] === "number" ? scores[p2Id] : 0,
       ],
-      wind: typeof setup.wind === 'number' ? setup.wind : 0,
+      wind: typeof setup.wind === "number" ? setup.wind : 0,
       trajectoryTrail: setup.trajectory !== false,
       battle: {
-        battle_id: battle.battle_id || '',
+        battle_id: battle.battle_id || "",
         my_user_id: myId,
         player1_id: p1Id,
         player2_id: p2Id,
-        localServerSlot: localSlot
+        localServerSlot: localSlot,
       },
-      state: 'turn_start',
+      state: "turn_start",
       players: {
         player1: {
           name: p1Name,
           color: P1_COLOR,
           x: p1x,
-          y: typeof p1Pos.y === 'number' ? p1Pos.y : 0,
-          health: typeof p1Pos.health === 'number' ? p1Pos.health : maxHealth,
+          y: typeof p1Pos.y === "number" ? p1Pos.y : 0,
+          health: typeof p1Pos.health === "number" ? p1Pos.health : maxHealth,
           angle: p1x < p2x ? 0 : 180,
-          power: 50
+          power: 50,
         },
         player2: {
           name: p2Name,
           color: P2_COLOR,
           x: p2x,
-          y: typeof p2Pos.y === 'number' ? p2Pos.y : 0,
-          health: typeof p2Pos.health === 'number' ? p2Pos.health : maxHealth,
+          y: typeof p2Pos.y === "number" ? p2Pos.y : 0,
+          health: typeof p2Pos.health === "number" ? p2Pos.health : maxHealth,
           angle: p2x < p1x ? 0 : 180,
-          power: 50
-        }
-      }
+          power: 50,
+        },
+      },
     };
   }
 
   function enterBattle(battle) {
     stopPolling();
-    getProfile().then(function (profile) {
-      var myId = getMyUserId(profile);
-      var p1Id = String(battle.player1_id || '');
-      var p2Id = String(battle.player2_id || '');
-      if (!myId || (myId !== p1Id && myId !== p2Id)) {
+    getProfile()
+      .then(function (profile) {
+        var myId = getMyUserId(profile);
+        var p1Id = String(battle.player1_id || "");
+        var p2Id = String(battle.player2_id || "");
+        if (!myId || (myId !== p1Id && myId !== p2Id)) {
+          clearOnlineBattle();
+          stopPolling();
+          showView("menu");
+          return;
+        }
+        var activeMatch =
+          typeof TD.buildOnlineActiveMatch === "function"
+            ? TD.buildOnlineActiveMatch(battle, profile, myId)
+            : buildActiveMatch(battle, profile);
+        if (typeof TD.clearActiveMatch === "function") TD.clearActiveMatch();
+        try {
+          localStorage.setItem(
+            "tankDuelsActiveMatch",
+            JSON.stringify(activeMatch),
+          );
+        } catch (e) {}
         clearOnlineBattle();
-        stopPolling();
-        showView('menu');
-        return;
-      }
-      var activeMatch = (typeof TD.buildOnlineActiveMatch === 'function')
-        ? TD.buildOnlineActiveMatch(battle, profile, myId)
-        : buildActiveMatch(battle, profile);
-      if (typeof TD.clearActiveMatch === 'function') TD.clearActiveMatch();
-      try {
-        localStorage.setItem('tankDuelActiveMatch', JSON.stringify(activeMatch));
-      } catch (e) { }
-      clearOnlineBattle();
-      window.location.href = './game.html';
-    }).catch(function (err) {
-      if (handleAuthError(err)) return;
-      if (el.viewWaiting && !el.viewWaiting.hidden) {
-        showError('waiting-error', friendlyError(err));
-      } else {
-        showError('join-error', friendlyError(err));
-      }
-    });
+        window.location.href = "./game.html";
+      })
+      .catch(function (err) {
+        if (handleAuthError(err)) return;
+        if (el.viewWaiting && !el.viewWaiting.hidden) {
+          showError("waiting-error", friendlyError(err));
+        } else {
+          showError("join-error", friendlyError(err));
+        }
+      });
   }
 
   /* =========================
@@ -371,9 +414,10 @@ Engine shape (version 1):
     stopPolling();
     currentBattle = battle;
     saveOnlineBattle(battle);
-    showView('waiting');
-    if (el.waitingCode) el.waitingCode.textContent = battle.battle_code || '----';
-    hideError('waiting-error');
+    showView("waiting");
+    if (el.waitingCode)
+      el.waitingCode.textContent = battle.battle_code || "----";
+    hideError("waiting-error");
     pollOnce();
     pollTimer = window.setInterval(pollOnce, POLL_INTERVAL_MS);
   }
@@ -390,32 +434,34 @@ Engine shape (version 1):
     if (!currentBattle || pollInFlight) return;
     pollInFlight = true;
 
-    TD.getBattle(currentBattle.battle_id).then(function (json) {
-      pollInFlight = false;
-      var battle = unwrapBattle(json);
-      if (!battle) {
-        stopPolling();
-        showError('waiting-error', 'This battle is no longer available.');
-        return;
-      }
-      currentBattle = battle;
+    TD.getBattle(currentBattle.battle_id)
+      .then(function (json) {
+        pollInFlight = false;
+        var battle = unwrapBattle(json);
+        if (!battle) {
+          stopPolling();
+          showError("waiting-error", "This battle is no longer available.");
+          return;
+        }
+        currentBattle = battle;
 
-      if (battle.status === 'IN_PROGRESS') {
-        enterBattle(battle);
-        return;
-      }
-      if (battle.status === 'WAITING') {
-        saveOnlineBattle(battle);
-        return;
-      }
-      stopPolling();
-      showError('waiting-error', 'This battle can no longer be joined.');
-    }).catch(function (err) {
-      pollInFlight = false;
-      if (handleAuthError(err)) return;
-      stopPolling();
-      showError('waiting-error', friendlyError(err));
-    });
+        if (battle.status === "IN_PROGRESS") {
+          enterBattle(battle);
+          return;
+        }
+        if (battle.status === "WAITING") {
+          saveOnlineBattle(battle);
+          return;
+        }
+        stopPolling();
+        showError("waiting-error", "This battle can no longer be joined.");
+      })
+      .catch(function (err) {
+        pollInFlight = false;
+        if (handleAuthError(err)) return;
+        stopPolling();
+        showError("waiting-error", friendlyError(err));
+      });
   }
 
   /* =========================
@@ -425,34 +471,39 @@ Engine shape (version 1):
   function handleCreate() {
     var btn = el.createBtn;
     if (btn) btn.disabled = true;
-    hideError('create-error');
+    hideError("create-error");
     try {
-      localStorage.removeItem("tankDuelLastResultOnline");
-      localStorage.removeItem("tankDuelLastBattleId");
-      localStorage.removeItem("tankDuelLastLocalSlot");
+      localStorage.removeItem("tankDuelsLastResultOnline");
+      localStorage.removeItem("tankDuelsLastBattleId");
+      localStorage.removeItem("tankDuelsLastLocalSlot");
     } catch (e) {}
 
     var payload = {
-      game_mode: 'ONLINE',
+      game_mode: "ONLINE",
       map: resolveOnlineMap(),
       rounds: parseInt(selectedRounds, 10) || 1,
-      trajectory: selectedTrajectory !== false
+      trajectory: selectedTrajectory !== false,
     };
     persistSelection();
 
-    TD.createBattle(payload).then(function (json) {
-      if (btn) btn.disabled = false;
-      var battle = unwrapBattle(json);
-      if (!battle || !battle.battle_id) {
-        showError('create-error', 'The battle could not be created. Please try again.');
-        return;
-      }
-      startPolling(battle);
-    }).catch(function (err) {
-      if (btn) btn.disabled = false;
-      if (handleAuthError(err)) return;
-      showError('create-error', friendlyError(err));
-    });
+    TD.createBattle(payload)
+      .then(function (json) {
+        if (btn) btn.disabled = false;
+        var battle = unwrapBattle(json);
+        if (!battle || !battle.battle_id) {
+          showError(
+            "create-error",
+            "The battle could not be created. Please try again.",
+          );
+          return;
+        }
+        startPolling(battle);
+      })
+      .catch(function (err) {
+        if (btn) btn.disabled = false;
+        if (handleAuthError(err)) return;
+        showError("create-error", friendlyError(err));
+      });
   }
 
   /* =========================
@@ -462,51 +513,64 @@ Engine shape (version 1):
   var CODE_RE = /^[A-HJ-NP-Z2-9]{4}$/;
 
   function sanitizeCode(value) {
-    var cleaned = String(value || '').replace(/[\s-]/g, '').toUpperCase();
-    cleaned = cleaned.replace(/[^A-Z0-9]/g, '');
+    var cleaned = String(value || "")
+      .replace(/[\s-]/g, "")
+      .toUpperCase();
+    cleaned = cleaned.replace(/[^A-Z0-9]/g, "");
     return cleaned;
   }
 
   function handleJoin() {
     var btn = el.joinBtn;
     var input = el.codeInput;
-    var code = sanitizeCode(input ? input.value : '');
-    hideError('join-error');
+    var code = sanitizeCode(input ? input.value : "");
+    hideError("join-error");
     if (!code) {
-      showError('join-error', 'Enter the 4-character battle code.');
+      showError("join-error", "Enter the 4-character battle code.");
       if (input) input.focus();
       return;
     }
     if (code.length !== 4 || !CODE_RE.test(code)) {
-      showError('join-error', 'Codes use letters A–H, J–N, P–Z and digits 2–9.');
+      showError(
+        "join-error",
+        "Codes use letters A–H, J–N, P–Z and digits 2–9.",
+      );
       if (input) input.focus();
       return;
     }
 
     if (btn) btn.disabled = true;
     try {
-      localStorage.removeItem("tankDuelLastResultOnline");
-      localStorage.removeItem("tankDuelLastBattleId");
-      localStorage.removeItem("tankDuelLastLocalSlot");
+      localStorage.removeItem("tankDuelsLastResultOnline");
+      localStorage.removeItem("tankDuelsLastBattleId");
+      localStorage.removeItem("tankDuelsLastLocalSlot");
     } catch (e) {}
-    TD.joinBattle(code).then(function (json) {
-      if (btn) btn.disabled = false;
-      var battle = unwrapBattle(json);
-      if (!battle || !battle.battle_id) {
-        showError('join-error', 'Could not join this battle. Please try again.');
-        return;
-      }
-      if (battle.status !== 'IN_PROGRESS') {
-        showError('join-error', 'This battle is not ready yet. Please try again.');
-        return;
-      }
-      saveOnlineBattle(battle);
-      enterBattle(battle);
-    }).catch(function (err) {
-      if (btn) btn.disabled = false;
-      if (handleAuthError(err)) return;
-      showError('join-error', friendlyError(err));
-    });
+    TD.joinBattle(code)
+      .then(function (json) {
+        if (btn) btn.disabled = false;
+        var battle = unwrapBattle(json);
+        if (!battle || !battle.battle_id) {
+          showError(
+            "join-error",
+            "Could not join this battle. Please try again.",
+          );
+          return;
+        }
+        if (battle.status !== "IN_PROGRESS") {
+          showError(
+            "join-error",
+            "This battle is not ready yet. Please try again.",
+          );
+          return;
+        }
+        saveOnlineBattle(battle);
+        enterBattle(battle);
+      })
+      .catch(function (err) {
+        if (btn) btn.disabled = false;
+        if (handleAuthError(err)) return;
+        showError("join-error", friendlyError(err));
+      });
   }
 
   /* =========================
@@ -514,116 +578,145 @@ Engine shape (version 1):
   ========================== */
 
   function cacheElements() {
-    el.createChoice = $('online-create-choice');
-    el.joinChoice = $('online-join-choice');
-    el.createBack = $('create-back');
-    el.joinBack = $('join-back');
-    el.createBtn = $('online-create-btn');
-    el.joinBtn = $('online-join-btn');
-    el.codeInput = $('online-code-input');
-    el.matchOptions = $('online-match-options');
-    el.viewWaiting = $('view-waiting');
-    el.waitingCode = $('waiting-code');
-    el.copyBtn = $('waiting-copy-btn');
-    el.cancelBtn = $('waiting-cancel-btn');
+    el.createChoice = $("online-create-choice");
+    el.joinChoice = $("online-join-choice");
+    el.createBack = $("create-back");
+    el.joinBack = $("join-back");
+    el.createBtn = $("online-create-btn");
+    el.joinBtn = $("online-join-btn");
+    el.codeInput = $("online-code-input");
+    el.matchOptions = $("online-match-options");
+    el.viewWaiting = $("view-waiting");
+    el.waitingCode = $("waiting-code");
+    el.copyBtn = $("waiting-copy-btn");
+    el.cancelBtn = $("waiting-cancel-btn");
   }
 
   function wireEvents() {
-    if (el.createChoice) el.createChoice.addEventListener('click', function () { showView('create'); });
-    if (el.joinChoice) el.joinChoice.addEventListener('click', function () { showView('join'); });
-    if (el.createBack) el.createBack.addEventListener('click', function () { showView('menu'); });
-    if (el.joinBack) el.joinBack.addEventListener('click', function () { showView('menu'); });
-    if (el.createBtn) el.createBtn.addEventListener('click', handleCreate);
-    if (el.joinBtn) el.joinBtn.addEventListener('click', handleJoin);
+    if (el.createChoice)
+      el.createChoice.addEventListener("click", function () {
+        showView("create");
+      });
+    if (el.joinChoice)
+      el.joinChoice.addEventListener("click", function () {
+        showView("join");
+      });
+    if (el.createBack)
+      el.createBack.addEventListener("click", function () {
+        showView("menu");
+      });
+    if (el.joinBack)
+      el.joinBack.addEventListener("click", function () {
+        showView("menu");
+      });
+    if (el.createBtn) el.createBtn.addEventListener("click", handleCreate);
+    if (el.joinBtn) el.joinBtn.addEventListener("click", handleJoin);
     if (el.copyBtn) {
-      el.copyBtn.addEventListener('click', function () {
-        var code = (currentBattle && currentBattle.battle_code) || (el.waitingCode ? el.waitingCode.textContent : '');
+      el.copyBtn.addEventListener("click", function () {
+        var code =
+          (currentBattle && currentBattle.battle_code) ||
+          (el.waitingCode ? el.waitingCode.textContent : "");
         if (!code) return;
         function done() {
           var original = el.copyBtn.textContent;
-          el.copyBtn.textContent = 'Copied';
-          window.setTimeout(function () { el.copyBtn.textContent = original; }, 1500);
+          el.copyBtn.textContent = "Copied";
+          window.setTimeout(function () {
+            el.copyBtn.textContent = original;
+          }, 1500);
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(code).then(done).catch(done);
         } else {
-          var ta = document.createElement('textarea');
+          var ta = document.createElement("textarea");
           ta.value = code;
-          ta.style.position = 'fixed';
-          ta.style.opacity = '0';
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
           document.body.appendChild(ta);
           ta.select();
-          try { document.execCommand('copy'); } catch (e) { }
+          try {
+            document.execCommand("copy");
+          } catch (e) {}
           document.body.removeChild(ta);
           done();
         }
       });
     }
     if (el.cancelBtn) {
-      el.cancelBtn.addEventListener('click', function () {
+      el.cancelBtn.addEventListener("click", function () {
         stopPolling();
         clearOnlineBattle();
-        showView('menu');
+        showView("menu");
       });
     }
     if (el.codeInput) {
-      el.codeInput.addEventListener('input', function () {
+      el.codeInput.addEventListener("input", function () {
         el.codeInput.value = sanitizeCode(el.codeInput.value);
       });
-      el.codeInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') handleJoin();
+      el.codeInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") handleJoin();
       });
     }
   }
 
   function resumeWaitingBattle() {
     var raw = null;
-    try { raw = localStorage.getItem(ONLINE_KEY); } catch (e) { return; }
+    try {
+      raw = localStorage.getItem(ONLINE_KEY);
+    } catch (e) {
+      return;
+    }
     if (!raw) return;
     var stored = null;
-    try { stored = JSON.parse(raw); } catch (e) { return; }
-    if (!stored || !stored.battle_id || stored.status !== 'WAITING') {
+    try {
+      stored = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+    if (!stored || !stored.battle_id || stored.status !== "WAITING") {
       clearOnlineBattle();
       return;
     }
 
     // Immediately show waiting screen with stored code to eliminate menu flicker on refresh
-    showView('waiting');
-    if (el.waitingCode) el.waitingCode.textContent = stored.battle_code || '----';
+    showView("waiting");
+    if (el.waitingCode)
+      el.waitingCode.textContent = stored.battle_code || "----";
 
     // Re-validate against the server before continuing polling.
-    TD.getBattle(stored.battle_id).then(function (json) {
-      var battle = unwrapBattle(json);
-      if (!battle) {
+    TD.getBattle(stored.battle_id)
+      .then(function (json) {
+        var battle = unwrapBattle(json);
+        if (!battle) {
+          clearOnlineBattle();
+          showView("menu");
+          return;
+        }
+        if (battle.status === "IN_PROGRESS") {
+          enterBattle(battle);
+          return;
+        }
+        if (battle.status === "WAITING") {
+          startPolling(battle);
+          return;
+        }
         clearOnlineBattle();
-        showView('menu');
-        return;
-      }
-      if (battle.status === 'IN_PROGRESS') {
-        enterBattle(battle);
-        return;
-      }
-      if (battle.status === 'WAITING') {
-        startPolling(battle);
-        return;
-      }
-      clearOnlineBattle();
-      showView('menu');
-    }).catch(function (err) {
-      if (handleAuthError(err)) return;
-      if (err && (err.status === 404 || err.status === 410)) {
-        clearOnlineBattle();
-        showView('menu');
-        return;
-      }
-      // Transient error: keep waiting screen active and resume polling
-      startPolling(stored);
-      showError('waiting-error', friendlyError(err));
-    });
+        showView("menu");
+      })
+      .catch(function (err) {
+        if (handleAuthError(err)) return;
+        if (err && (err.status === 404 || err.status === 410)) {
+          clearOnlineBattle();
+          showView("menu");
+          return;
+        }
+        // Transient error: keep waiting screen active and resume polling
+        startPolling(stored);
+        showError("waiting-error", friendlyError(err));
+      });
   }
 
   function init() {
-    if (typeof TD === 'undefined' || !TD.profile || !TD.createBattle) {
+    if (typeof TD === "undefined" || !TD.profile || !TD.createBattle) {
       requireLogin();
       return;
     }
@@ -638,14 +731,14 @@ Engine shape (version 1):
     applySelection();
     wireEvents();
 
-    window.addEventListener('pagehide', stopPolling);
-    window.addEventListener('beforeunload', stopPolling);
+    window.addEventListener("pagehide", stopPolling);
+    window.addEventListener("beforeunload", stopPolling);
 
     resumeWaitingBattle();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }

@@ -1,37 +1,37 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", function () {
   /* =========================
      ELEMENTS
   ========================= */
 
-  var playerNameElement = document.querySelector('#player-one-name');
-  var opponentNameElement = document.querySelector('#player-two-name');
-  var mapNameElement = document.querySelector('#map-name');
-  var roundValueElement = document.querySelector('#round-value');
-  var gameStatusElement = document.querySelector('#game-status');
-  var fireButton = document.querySelector('#fire-button');
-  var canvas = document.querySelector('#game-canvas');
+  var playerNameElement = document.querySelector("#player-one-name");
+  var opponentNameElement = document.querySelector("#player-two-name");
+  var mapNameElement = document.querySelector("#map-name");
+  var roundValueElement = document.querySelector("#round-value");
+  var gameStatusElement = document.querySelector("#game-status");
+  var fireButton = document.querySelector("#fire-button");
+  var canvas = document.querySelector("#game-canvas");
 
-  var angleValue = document.querySelector('#angle-value');
-  var powerValue = document.querySelector('#power-value');
-  var angleMinus = document.querySelector('#angle-minus');
-  var anglePlus = document.querySelector('#angle-plus');
-  var powerMinus = document.querySelector('#power-minus');
-  var powerPlus = document.querySelector('#power-plus');
-  var angleControl = document.querySelector('#angle-control');
-  var powerControl = document.querySelector('#power-control');
-  var angleCursor = document.querySelector('#angle-cursor');
+  var angleValue = document.querySelector("#angle-value");
+  var powerValue = document.querySelector("#power-value");
+  var angleMinus = document.querySelector("#angle-minus");
+  var anglePlus = document.querySelector("#angle-plus");
+  var powerMinus = document.querySelector("#power-minus");
+  var powerPlus = document.querySelector("#power-plus");
+  var angleControl = document.querySelector("#angle-control");
+  var powerControl = document.querySelector("#power-control");
+  var angleCursor = document.querySelector("#angle-cursor");
 
-  var fullscreenBtn = document.querySelector('#fullscreen-btn');
-  var windDisplay = document.querySelector('#wind-display');
+  var fullscreenBtn = document.querySelector("#fullscreen-btn");
+  var windDisplay = document.querySelector("#wind-display");
 
-  var quitButton = document.querySelector('#quit-game-btn');
-  var quitModal = document.querySelector('#quit-modal');
-  var cancelQuitButton = document.querySelector('#cancel-quit-btn');
-  var confirmQuitButton = document.querySelector('#confirm-quit-btn');
-  var modalBackdrop = document.querySelector('#quit-modal-backdrop');
+  var quitButton = document.querySelector("#quit-game-btn");
+  var quitModal = document.querySelector("#quit-modal");
+  var cancelQuitButton = document.querySelector("#cancel-quit-btn");
+  var confirmQuitButton = document.querySelector("#confirm-quit-btn");
+  var modalBackdrop = document.querySelector("#quit-modal-backdrop");
 
-  var tankOverlay0 = document.querySelector('#tank-overlay-0');
-  var tankOverlay1 = document.querySelector('#tank-overlay-1');
+  var tankOverlay0 = document.querySelector("#tank-overlay-0");
+  var tankOverlay1 = document.querySelector("#tank-overlay-1");
 
   /* =========================
      ACTIVE-PLAYER INDICATOR SPRITE
@@ -41,28 +41,28 @@ document.addEventListener('DOMContentLoaded', function () {
   ========================= */
 
   (function buildActiveIndicatorSprite() {
-    var defsGroup = document.getElementById('active-player-indicator');
+    var defsGroup = document.getElementById("active-player-indicator");
     if (!defsGroup || !defsGroup.ownerDocument) return;
 
-    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var SVG_NS = "http://www.w3.org/2000/svg";
     var map = [
-      '......obo......',
-      '......obo......',
-      '......obo......',
-      '......obo......',
-      '..ooHbbbbbmoo..',
-      '...ooHbbbmoo...',
-      '....ooHbmoo....',
-      '.....ooboo.....',
-      '.....ooboo.....',
-      '...............'
+      "......obo......",
+      "......obo......",
+      "......obo......",
+      "......obo......",
+      "..ooHbbbbbmoo..",
+      "...ooHbbbmoo...",
+      "....ooHbmoo....",
+      ".....ooboo.....",
+      ".....ooboo.....",
+      "...............",
     ];
     var colors = {
-      o: '#0a0a0a',
-      H: 'var(--ind-hi)',
-      b: 'var(--ind-fill)',
-      m: 'var(--ind-mid)',
-      s: 'var(--ind-shade)'
+      o: "#0a0a0a",
+      H: "var(--ind-hi)",
+      b: "var(--ind-fill)",
+      m: "var(--ind-mid)",
+      s: "var(--ind-shade)",
     };
 
     var rows = [];
@@ -71,11 +71,21 @@ document.addEventListener('DOMContentLoaded', function () {
       var runs = [];
       var c = 0;
       while (c < line.length) {
-        if (line[c] === '.') { c++; continue; }
+        if (line[c] === ".") {
+          c++;
+          continue;
+        }
         var ch = line[c];
         var start = c;
         while (c < line.length && line[c] === ch) c++;
-        runs.push({ x: start, y: ri, w: c - start, h: 1, ch: ch, merged: false });
+        runs.push({
+          x: start,
+          y: ri,
+          w: c - start,
+          h: 1,
+          ch: ch,
+          merged: false,
+        });
       }
       rows.push(runs);
     }
@@ -85,7 +95,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var run = rows[ri][a];
         for (var b = 0; b < rows[ri - 1].length; b++) {
           var up = rows[ri - 1][b];
-          if (!up.merged && up.x === run.x && up.w === run.w && up.ch === run.ch) {
+          if (
+            !up.merged &&
+            up.x === run.x &&
+            up.w === run.w &&
+            up.ch === run.ch
+          ) {
             up.h += 1;
             run.merged = true;
             break;
@@ -98,12 +113,12 @@ document.addEventListener('DOMContentLoaded', function () {
       for (var a = 0; a < rows[ri].length; a++) {
         var run = rows[ri][a];
         if (run.merged || !colors[run.ch]) continue;
-        var rect = defsGroup.ownerDocument.createElementNS(SVG_NS, 'rect');
-        rect.setAttribute('x', run.x);
-        rect.setAttribute('y', run.y);
-        rect.setAttribute('width', run.w);
-        rect.setAttribute('height', run.h);
-        rect.setAttribute('fill', colors[run.ch]);
+        var rect = defsGroup.ownerDocument.createElementNS(SVG_NS, "rect");
+        rect.setAttribute("x", run.x);
+        rect.setAttribute("y", run.y);
+        rect.setAttribute("width", run.w);
+        rect.setAttribute("height", run.h);
+        rect.setAttribute("fill", colors[run.ch]);
         defsGroup.appendChild(rect);
       }
     }
@@ -115,22 +130,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var cust = null;
   try {
-    var raw = localStorage.getItem('tankDuelGameCustomization');
+    var raw = localStorage.getItem("tankDuelsGameCustomization");
     if (raw) cust = JSON.parse(raw);
-  } catch (e) { /* fall through */ }
+  } catch (e) {
+    /* fall through */
+  }
 
-  var playerName = (cust && cust.playerOneName && cust.playerOneName.trim()) ||
-                   localStorage.getItem('tankDuelPlayerName') || 'PLAYER';
-  var opponentName = (cust && cust.playerTwoName && cust.playerTwoName.trim()) || 'OPPONENT';
-  var p1ColorId = (cust && cust.playerOneColor) || 'orange';
-  var p2ColorId = (cust && cust.playerTwoColor) || 'blue';
-  var trajectoryTrail = cust ? (cust.trajectoryTrail !== false) : true;
+  var playerName =
+    (cust && cust.playerOneName && cust.playerOneName.trim()) ||
+    localStorage.getItem("tankDuelsPlayerName") ||
+    "PLAYER";
+  var opponentName =
+    (cust && cust.playerTwoName && cust.playerTwoName.trim()) || "OPPONENT";
+  var p1ColorId = (cust && cust.playerOneColor) || "orange";
+  var p2ColorId = (cust && cust.playerTwoColor) || "blue";
+  var trajectoryTrail = cust ? cust.trajectoryTrail !== false : true;
 
   /* When a saved/online match is being restored, the engine already knows the
      exact player names (an online match can't rely on the local customization
      names), so prefer them for the header before the engine takes over. */
   try {
-    if (typeof TD.loadActiveMatch === 'function') {
+    if (typeof TD.loadActiveMatch === "function") {
       var activeMatch = TD.loadActiveMatch();
       if (activeMatch && activeMatch.players) {
         if (activeMatch.players.player1 && activeMatch.players.player1.name) {
@@ -141,7 +161,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
     }
-  } catch (e) { /* fall back to customization / default names */ }
+  } catch (e) {
+    /* fall back to customization / default names */
+  }
 
   if (playerNameElement) {
     playerNameElement.textContent = playerName.toUpperCase();
@@ -155,54 +177,55 @@ document.addEventListener('DOMContentLoaded', function () {
      MAP
   ========================= */
 
-  var selectedMap = localStorage.getItem('tankDuelSelectedMap') || 'desert';
+  var selectedMap = localStorage.getItem("tankDuelsSelectedMap") || "desert";
   var mapNames = {
-    desert: 'Dustlands',
-    hills: 'Green Valley',
-    dustlands: 'Dustlands',
-    valley: 'Green Valley',
-    frostbite: 'Frostbite',
-    ashhill: 'Ashfall',
-    moonbase: 'Moonbase',
-    canyon: 'Canyon',
-    random: 'Random'
+    desert: "Dustlands",
+    hills: "Green Valley",
+    dustlands: "Dustlands",
+    valley: "Green Valley",
+    frostbite: "Frostbite",
+    ashhill: "Ashfall",
+    moonbase: "Moonbase",
+    canyon: "Canyon",
+    random: "Random",
   };
 
   if (mapNameElement) {
-    mapNameElement.textContent = mapNames[selectedMap] || 'Dustlands';
+    mapNameElement.textContent = mapNames[selectedMap] || "Dustlands";
   }
 
   /* =========================
      MATCH FORMAT
   ========================= */
 
-  var selectedRounds = Number(localStorage.getItem('tankDuelSelectedRounds')) || 1;
+  var selectedRounds =
+    Number(localStorage.getItem("tankDuelsSelectedRounds")) || 1;
 
   if (roundValueElement) {
-    roundValueElement.textContent = '1 / ' + selectedRounds;
+    roundValueElement.textContent = "1 / " + selectedRounds;
   }
 
   /* =========================
      SETTINGS
   ========================= */
 
-  var accentColor = '#ff8933';
-  var savedColor = localStorage.getItem('tankDuelAccentColor') || 'orange';
-  var savedCustomColor = localStorage.getItem('tankDuelCustomColor');
+  var accentColor = "#ff8933";
+  var savedColor = localStorage.getItem("tankDuelsAccentColor") || "orange";
+  var savedCustomColor = localStorage.getItem("tankDuelsCustomColor");
 
-  if (savedColor === 'custom' && savedCustomColor) {
+  if (savedColor === "custom" && savedCustomColor) {
     accentColor = savedCustomColor;
   } else {
     var colorMap = {
-      orange: '#ff8933',
-      blue: '#4da3ff',
-      green: '#57c785',
-      purple: '#a878ff'
+      orange: "#ff8933",
+      blue: "#4da3ff",
+      green: "#57c785",
+      purple: "#a878ff",
     };
-    accentColor = colorMap[savedColor] || '#ff8933';
+    accentColor = colorMap[savedColor] || "#ff8933";
   }
 
-  var reducedMotion = localStorage.getItem('tankDuelReducedMotion') === 'true';
+  var reducedMotion = localStorage.getItem("tankDuelsReducedMotion") === "true";
 
   /* =========================
      GAME STATUS
@@ -230,11 +253,16 @@ document.addEventListener('DOMContentLoaded', function () {
       mapName: mapNameElement,
       windDisplay: windDisplay,
       tankOverlay0: tankOverlay0,
-      tankOverlay1: tankOverlay1
+      tankOverlay1: tankOverlay1,
     });
 
     var activeMatch = TD.loadActiveMatch();
-    var isOnline = !!(activeMatch && activeMatch.online === true && activeMatch.battle && activeMatch.battle.battle_id);
+    var isOnline = !!(
+      activeMatch &&
+      activeMatch.online === true &&
+      activeMatch.battle &&
+      activeMatch.battle.battle_id
+    );
 
     if (isOnline) {
       /* =========================
@@ -245,16 +273,19 @@ document.addEventListener('DOMContentLoaded', function () {
       engine._enableControls(false);
       if (gameStatusElement) gameStatusElement.textContent = "CONNECTING...";
 
-      if (typeof TD_isAuthenticated === 'function' && !TD_isAuthenticated()) {
+      if (typeof TD_isAuthenticated === "function" && !TD_isAuthenticated()) {
         TD.clearActiveMatch();
-        window.location.href = './login.html';
+        window.location.href = "./login.html";
         return;
       }
 
       var battleId = activeMatch.battle.battle_id;
-      var profilePromise = (typeof TD.profile === 'function')
-        ? TD.profile().catch(function () { return null; })
-        : Promise.resolve(null);
+      var profilePromise =
+        typeof TD.profile === "function"
+          ? TD.profile().catch(function () {
+              return null;
+            })
+          : Promise.resolve(null);
 
       Promise.all([TD.getBattle(battleId), profilePromise])
         .then(function (results) {
@@ -264,94 +295,114 @@ document.addEventListener('DOMContentLoaded', function () {
 
           if (!battle || !battle.battle_id) {
             TD.clearActiveMatch();
-            window.location.href = './dashboard.html';
+            window.location.href = "./dashboard.html";
             return;
           }
 
-          var myId = (profile && profile.player && profile.player.player_id)
-            ? String(profile.player.player_id)
-            : String(activeMatch.battle.my_user_id || '');
-          var p1Id = String(battle.player1_id || '');
-          var p2Id = String(battle.player2_id || '');
+          var myId =
+            profile && profile.player && profile.player.player_id
+              ? String(profile.player.player_id)
+              : String(activeMatch.battle.my_user_id || "");
+          var p1Id = String(battle.player1_id || "");
+          var p2Id = String(battle.player2_id || "");
 
           if (!myId || (myId !== p1Id && myId !== p2Id)) {
             TD.clearActiveMatch();
-            window.location.href = './dashboard.html';
+            window.location.href = "./dashboard.html";
             return;
           }
 
-          var localSlot = (myId === p1Id) ? 0 : 1;
-          var status = battle.status || '';
+          var localSlot = myId === p1Id ? 0 : 1;
+          var status = battle.status || "";
 
-          if (status === 'COMPLETED') {
+          if (status === "COMPLETED") {
             var state = battle.battle_state || {};
             var setup = state.setup || {};
             var scores = setup.scores || {};
-            var p1Score = typeof scores[p1Id] === 'number' ? scores[p1Id] : 0;
-            var p2Score = typeof scores[p2Id] === 'number' ? scores[p2Id] : 0;
+            var p1Score = typeof scores[p1Id] === "number" ? scores[p1Id] : 0;
+            var p2Score = typeof scores[p2Id] === "number" ? scores[p2Id] : 0;
             var myScore = localSlot === 0 ? p1Score : p2Score;
             var oppScore = localSlot === 0 ? p2Score : p1Score;
-            var myName = localSlot === 0 ? (battle.player1_name || 'PLAYER') : (battle.player2_name || 'OPPONENT');
-            var oppName = localSlot === 0 ? (battle.player2_name || 'OPPONENT') : (battle.player1_name || 'PLAYER');
-            var result = myScore >= oppScore ? 'win' : 'loss';
+            var myName =
+              localSlot === 0
+                ? battle.player1_name || "PLAYER"
+                : battle.player2_name || "OPPONENT";
+            var oppName =
+              localSlot === 0
+                ? battle.player2_name || "OPPONENT"
+                : battle.player1_name || "PLAYER";
+            var result = myScore >= oppScore ? "win" : "loss";
 
-            localStorage.setItem('tankDuelLastResult', result);
-            localStorage.setItem('tankDuelLastPlayerScore', String(myScore));
-            localStorage.setItem('tankDuelLastOpponentScore', String(oppScore));
-            localStorage.setItem('tankDuelLastPlayerName', myName);
-            localStorage.setItem('tankDuelLastOpponentName', oppName);
-            localStorage.setItem('tankDuelLastResultOnline', 'true');
-            localStorage.setItem('tankDuelLastBattleId', battle.battle_id);
-            localStorage.setItem('tankDuelLastLocalSlot', String(localSlot));
+            localStorage.setItem("tankDuelsLastResult", result);
+            localStorage.setItem("tankDuelsLastPlayerScore", String(myScore));
+            localStorage.setItem(
+              "tankDuelsLastOpponentScore",
+              String(oppScore),
+            );
+            localStorage.setItem("tankDuelsLastPlayerName", myName);
+            localStorage.setItem("tankDuelsLastOpponentName", oppName);
+            localStorage.setItem("tankDuelsLastResultOnline", "true");
+            localStorage.setItem("tankDuelsLastBattleId", battle.battle_id);
+            localStorage.setItem("tankDuelsLastLocalSlot", String(localSlot));
 
             TD.clearActiveMatch();
-            window.location.href = './results.html';
+            window.location.href = "./results.html";
             return;
           }
 
-          if (status === 'CANCELLED') {
+          if (status === "CANCELLED") {
             TD.clearActiveMatch();
-            window.location.href = './dashboard.html';
+            window.location.href = "./dashboard.html";
             return;
           }
 
-          if (status === 'WAITING') {
-            window.location.href = './online.html';
+          if (status === "WAITING") {
+            window.location.href = "./online.html";
             return;
           }
 
-          var authoritativeMatch = (typeof TD.buildOnlineActiveMatch === 'function')
-            ? TD.buildOnlineActiveMatch(battle, profile, myId)
-            : activeMatch;
+          var authoritativeMatch =
+            typeof TD.buildOnlineActiveMatch === "function"
+              ? TD.buildOnlineActiveMatch(battle, profile, myId)
+              : activeMatch;
 
           /* Preserve local player's angle/power adjustments if it is their turn */
           if (activeMatch && activeMatch.players) {
             if (localSlot === 0 && activeMatch.players.player1) {
-              if (typeof activeMatch.players.player1.angle === 'number') {
-                authoritativeMatch.players.player1.angle = activeMatch.players.player1.angle;
+              if (typeof activeMatch.players.player1.angle === "number") {
+                authoritativeMatch.players.player1.angle =
+                  activeMatch.players.player1.angle;
               }
-              if (typeof activeMatch.players.player1.power === 'number') {
-                authoritativeMatch.players.player1.power = activeMatch.players.player1.power;
+              if (typeof activeMatch.players.player1.power === "number") {
+                authoritativeMatch.players.player1.power =
+                  activeMatch.players.player1.power;
               }
             } else if (localSlot === 1 && activeMatch.players.player2) {
-              if (typeof activeMatch.players.player2.angle === 'number') {
-                authoritativeMatch.players.player2.angle = activeMatch.players.player2.angle;
+              if (typeof activeMatch.players.player2.angle === "number") {
+                authoritativeMatch.players.player2.angle =
+                  activeMatch.players.player2.angle;
               }
-              if (typeof activeMatch.players.player2.power === 'number') {
-                authoritativeMatch.players.player2.power = activeMatch.players.player2.power;
+              if (typeof activeMatch.players.player2.power === "number") {
+                authoritativeMatch.players.player2.power =
+                  activeMatch.players.player2.power;
               }
             }
           }
 
           try {
-            localStorage.setItem('tankDuelActiveMatch', JSON.stringify(authoritativeMatch));
+            localStorage.setItem(
+              "tankDuelsActiveMatch",
+              JSON.stringify(authoritativeMatch),
+            );
           } catch (e) {}
 
           if (playerNameElement && authoritativeMatch.players.player1.name) {
-            playerNameElement.textContent = authoritativeMatch.players.player1.name.toUpperCase();
+            playerNameElement.textContent =
+              authoritativeMatch.players.player1.name.toUpperCase();
           }
           if (opponentNameElement && authoritativeMatch.players.player2.name) {
-            opponentNameElement.textContent = authoritativeMatch.players.player2.name.toUpperCase();
+            opponentNameElement.textContent =
+              authoritativeMatch.players.player2.name.toUpperCase();
           }
 
           var onlineBattle = authoritativeMatch.battle;
@@ -359,22 +410,24 @@ document.addEventListener('DOMContentLoaded', function () {
             accentColor: accentColor,
             reducedMotion: reducedMotion,
             onlineBattle: onlineBattle,
-            battleData: battle
+            battleData: battle,
           });
 
           engine._restoreOnlineControls();
         })
         .catch(function (err) {
           if (err && err.status === 401) {
-            if (typeof TD_clearSession === 'function') TD_clearSession();
-            try { localStorage.removeItem('tankDuelPlayerType'); } catch (e) {}
+            if (typeof TD_clearSession === "function") TD_clearSession();
+            try {
+              localStorage.removeItem("tankDuelsPlayerType");
+            } catch (e) {}
             TD.clearActiveMatch();
-            window.location.href = './login.html';
+            window.location.href = "./login.html";
             return;
           }
           if (err && (err.status === 404 || err.status === 410)) {
             TD.clearActiveMatch();
-            window.location.href = './dashboard.html';
+            window.location.href = "./dashboard.html";
             return;
           }
           /* Transient network failure: fallback to local cache and retry via polling */
@@ -382,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function () {
           engine.restore(activeMatch, {
             accentColor: accentColor,
             reducedMotion: reducedMotion,
-            onlineBattle: onlineBattle
+            onlineBattle: onlineBattle,
           });
           engine._restoreOnlineControls();
         });
@@ -392,15 +445,15 @@ document.addEventListener('DOMContentLoaded', function () {
          Local matches remain entirely offline and untouched.
       ========================= */
       try {
-        localStorage.removeItem('tankDuelLastResultOnline');
-        localStorage.removeItem('tankDuelLastBattleId');
-        localStorage.removeItem('tankDuelLastLocalSlot');
+        localStorage.removeItem("tankDuelsLastResultOnline");
+        localStorage.removeItem("tankDuelsLastBattleId");
+        localStorage.removeItem("tankDuelsLastLocalSlot");
       } catch (e) {}
 
       if (activeMatch) {
         engine.restore(activeMatch, {
           accentColor: accentColor,
-          reducedMotion: reducedMotion
+          reducedMotion: reducedMotion,
         });
       } else {
         engine.init({
@@ -412,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
           mapType: selectedMap,
           playerOneColor: p1ColorId,
           playerTwoColor: p2ColorId,
-          trajectoryTrail: trajectoryTrail
+          trajectoryTrail: trajectoryTrail,
         });
 
         engine._enableControls(false);
@@ -425,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function () {
   ========================= */
 
   if (fireButton) {
-    fireButton.addEventListener('click', function () {
+    fireButton.addEventListener("click", function () {
       if (engine) {
         engine.audio.resume();
         endControlMode();
@@ -471,7 +524,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!angleCursor || !engine) return;
     /* Online: always reference the local player's tank; Same Device / Guest:
        the current-turn tank (existing behaviour). _displaySlot() handles both. */
-    var tank = engine.tanks[engine._displaySlot ? engine._displaySlot() : engine.currentTurn];
+    var tank =
+      engine.tanks[
+        engine._displaySlot ? engine._displaySlot() : engine.currentTurn
+      ];
     if (!tank || !tank.alive) return;
     /* Ride the EXACT predicted trajectory: the engine steps the same launch
        vector (cos/-sin of the shared angle), gravity and wind as the preview,
@@ -479,28 +535,34 @@ document.addEventListener('DOMContentLoaded', function () {
        No independent angle-to-vector conversion is done here. */
     var pt = engine.getTrajectoryPointAtRadius(tank, TD.ANGLE_CURSOR_RADIUS);
     var rect = canvas.getBoundingClientRect();
-    angleCursor.style.left = (rect.left + pt.x * (rect.width / TD.W)) + 'px';
-    angleCursor.style.top = (rect.top + pt.y * (rect.height / TD.H)) + 'px';
-    angleCursor.style.setProperty('--cursor-angle', deg + 'deg');
-    angleCursor.classList.add('is-visible');
+    angleCursor.style.left = rect.left + pt.x * (rect.width / TD.W) + "px";
+    angleCursor.style.top = rect.top + pt.y * (rect.height / TD.H) + "px";
+    angleCursor.style.setProperty("--cursor-angle", deg + "deg");
+    angleCursor.classList.add("is-visible");
   }
 
   function hideAngleCursor() {
-    if (angleCursor) angleCursor.classList.remove('is-visible');
+    if (angleCursor) angleCursor.classList.remove("is-visible");
   }
 
   function endControlMode() {
-    if (activeControlEl && activePointerId !== null && activeControlEl.releasePointerCapture) {
+    if (
+      activeControlEl &&
+      activePointerId !== null &&
+      activeControlEl.releasePointerCapture
+    ) {
       try {
         activeControlEl.releasePointerCapture(activePointerId);
-      } catch (e) { /* capture already released */ }
+      } catch (e) {
+        /* capture already released */
+      }
     }
     activeControl = null;
     activeControlEl = null;
     activePointerId = null;
     hideAngleCursor();
-    if (angleControl) angleControl.classList.remove('is-active');
-    if (powerControl) powerControl.classList.remove('is-active');
+    if (angleControl) angleControl.classList.remove("is-active");
+    if (powerControl) powerControl.classList.remove("is-active");
   }
 
   /* ---------------- ANGLE (click-activated, horizontal-delta mouse aim) ---------------- */
@@ -521,10 +583,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function enterAngleControl(e) {
     if (!controlInputEnabled()) return;
     endControlMode();
-    activeControl = 'angle';
+    activeControl = "angle";
     activeControlEl = angleControl;
     activePointerId = null;
-    if (angleControl) angleControl.classList.add('is-active');
+    if (angleControl) angleControl.classList.add("is-active");
     angleBaseValue = engine ? engine.getAngle() : TD.ANGLE_DEFAULT;
     /* The click's X position is the reference; the current angle is kept
        exactly as-is until the mouse moves after this moment. */
@@ -534,20 +596,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function confirmAngleControl() {
-    if (activeControl !== 'angle') return;
+    if (activeControl !== "angle") return;
     endControlMode();
     suppressNextClick = true;
   }
 
   function cancelAngleControl() {
-    if (activeControl !== 'angle') return;
+    if (activeControl !== "angle") return;
     if (engine) engine.setAngle(angleBaseValue);
     endControlMode();
   }
 
   function handleAngleControlDown(e) {
     if (e.button !== 0) return;
-    if (activeControl === 'angle') {
+    if (activeControl === "angle") {
       confirmAngleControl();
       return;
     }
@@ -557,7 +619,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   if (angleControl) {
-    angleControl.addEventListener('pointerdown', handleAngleControlDown);
+    angleControl.addEventListener("pointerdown", handleAngleControlDown);
   }
 
   /* ANGLE is controlled by RELATIVE HORIZONTAL mouse movement only:
@@ -567,7 +629,7 @@ document.addEventListener('DOMContentLoaded', function () {
      adjustment mode cannot cause a 57 -> 360 jump. */
 
   function handleAngleMove(e) {
-    if (activeControl !== 'angle') return;
+    if (activeControl !== "angle") return;
     if (!controlInputEnabled()) {
       endControlMode();
       return;
@@ -584,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function () {
     placeAngleCursor(deg);
   }
 
-  document.addEventListener('pointermove', handleAngleMove);
+  document.addEventListener("pointermove", handleAngleMove);
 
   /* ---------------- POWER (click-activated, horizontal delta) ---------------- */
 
@@ -596,31 +658,31 @@ document.addEventListener('DOMContentLoaded', function () {
   function enterPowerControl(e) {
     if (!controlInputEnabled()) return;
     endControlMode();
-    activeControl = 'power';
+    activeControl = "power";
     activeControlEl = powerControl;
     activePointerId = null;
-    if (powerControl) powerControl.classList.add('is-active');
+    if (powerControl) powerControl.classList.add("is-active");
     powerBaseValue = engine ? engine.getPower() : TD.POWER_DEFAULT;
     powerAccum = 0;
     lastPointerX = e.clientX;
   }
 
   function confirmPowerControl() {
-    if (activeControl !== 'power') return;
+    if (activeControl !== "power") return;
     if (engine) engine.setPower(getPowerFromAccum());
     endControlMode();
     suppressNextClick = true;
   }
 
   function cancelPowerControl() {
-    if (activeControl !== 'power') return;
+    if (activeControl !== "power") return;
     if (engine) engine.setPower(powerBaseValue);
     endControlMode();
   }
 
   function handlePowerControlDown(e) {
     if (e.button !== 0) return;
-    if (activeControl === 'power') {
+    if (activeControl === "power") {
       confirmPowerControl();
       return;
     }
@@ -630,11 +692,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   if (powerControl) {
-    powerControl.addEventListener('pointerdown', handlePowerControlDown);
+    powerControl.addEventListener("pointerdown", handlePowerControlDown);
   }
 
   function handlePowerMove(e) {
-    if (activeControl !== 'power') return;
+    if (activeControl !== "power") return;
     if (!controlInputEnabled()) {
       endControlMode();
       return;
@@ -645,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (engine) engine.setPower(getPowerFromAccum());
   }
 
-  document.addEventListener('pointermove', handlePowerMove);
+  document.addEventListener("pointermove", handlePowerMove);
 
   /* A left click anywhere while aim mode (ANGLE or POWER) is active CONFIRMS.
      Run in the capture phase and swallow the event so the confirming click
@@ -655,14 +717,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.button !== 0 || !activeControl) return;
     e.preventDefault();
     e.stopPropagation();
-    if (activeControl === 'angle') {
+    if (activeControl === "angle") {
       confirmAngleControl();
-    } else if (activeControl === 'power') {
+    } else if (activeControl === "power") {
       confirmPowerControl();
     }
   }
 
-  document.addEventListener('pointerdown', handleConfirmMouseDown, true);
+  document.addEventListener("pointerdown", handleConfirmMouseDown, true);
 
   /* The confirming click still dispatches a click event; eat it once. */
 
@@ -673,50 +735,54 @@ document.addEventListener('DOMContentLoaded', function () {
     e.stopPropagation();
   }
 
-  document.addEventListener('click', handleConsumeConfirmClick, true);
+  document.addEventListener("click", handleConsumeConfirmClick, true);
 
   /* ESC exits aim control mode (before the engine's quit-modal handler).
      For ANGLE / POWER it cancels and restores the value at mode start. */
 
-  document.addEventListener('keydown', function (e) {
-    if (e.code === 'Escape' && activeControl) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (activeControl === 'angle') {
-        cancelAngleControl();
-      } else if (activeControl === 'power') {
-        cancelPowerControl();
+  document.addEventListener(
+    "keydown",
+    function (e) {
+      if (e.code === "Escape" && activeControl) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (activeControl === "angle") {
+          cancelAngleControl();
+        } else if (activeControl === "power") {
+          cancelPowerControl();
+        }
       }
-    }
-  }, true);
+    },
+    true,
+  );
 
   /* +/- buttons. ANGLE and POWER buttons only act when their mode is NOT
      active (a click while active confirms instead). */
 
   if (angleMinus && engine) {
-    angleMinus.addEventListener('click', function () {
-      if (activeControl === 'angle') return;
+    angleMinus.addEventListener("click", function () {
+      if (activeControl === "angle") return;
       engine.adjustAngle(-TD.ANGLE_STEP);
     });
   }
 
   if (anglePlus && engine) {
-    anglePlus.addEventListener('click', function () {
-      if (activeControl === 'angle') return;
+    anglePlus.addEventListener("click", function () {
+      if (activeControl === "angle") return;
       engine.adjustAngle(TD.ANGLE_STEP);
     });
   }
 
   if (powerMinus && engine) {
-    powerMinus.addEventListener('click', function () {
-      if (activeControl === 'power') return;
+    powerMinus.addEventListener("click", function () {
+      if (activeControl === "power") return;
       engine.adjustPower(-TD.POWER_STEP);
     });
   }
 
   if (powerPlus && engine) {
-    powerPlus.addEventListener('click', function () {
-      if (activeControl === 'power') return;
+    powerPlus.addEventListener("click", function () {
+      if (activeControl === "power") return;
       engine.adjustPower(TD.POWER_STEP);
     });
   }
@@ -727,11 +793,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateFullscreenBtn() {
     if (!fullscreenBtn) return;
-    fullscreenBtn.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+    fullscreenBtn.classList.toggle(
+      "is-fullscreen",
+      !!document.fullscreenElement,
+    );
   }
 
   if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', function () {
+    fullscreenBtn.addEventListener("click", function () {
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(function () {});
       } else {
@@ -739,7 +808,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    document.addEventListener('fullscreenchange', updateFullscreenBtn);
+    document.addEventListener("fullscreenchange", updateFullscreenBtn);
     updateFullscreenBtn();
   }
 
@@ -749,30 +818,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function openQuitModal() {
     if (!quitModal) return;
-    quitModal.classList.add('is-open');
-    quitModal.setAttribute('aria-hidden', 'false');
+    quitModal.classList.add("is-open");
+    quitModal.setAttribute("aria-hidden", "false");
   }
 
   function closeQuitModal() {
     if (!quitModal) return;
-    quitModal.classList.remove('is-open');
-    quitModal.setAttribute('aria-hidden', 'true');
+    quitModal.classList.remove("is-open");
+    quitModal.setAttribute("aria-hidden", "true");
   }
 
   if (quitButton) {
-    quitButton.addEventListener('click', openQuitModal);
+    quitButton.addEventListener("click", openQuitModal);
   }
 
   if (cancelQuitButton) {
-    cancelQuitButton.addEventListener('click', closeQuitModal);
+    cancelQuitButton.addEventListener("click", closeQuitModal);
   }
 
   if (modalBackdrop) {
-    modalBackdrop.addEventListener('click', closeQuitModal);
+    modalBackdrop.addEventListener("click", closeQuitModal);
   }
 
   if (confirmQuitButton) {
-    confirmQuitButton.addEventListener('click', function () {
+    confirmQuitButton.addEventListener("click", function () {
       TD.clearActiveMatch();
       if (engine) {
         engine.cleanup();
@@ -780,7 +849,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(function () {});
       }
-      window.location.href = './dashboard.html';
+      window.location.href = "./dashboard.html";
     });
   }
 });

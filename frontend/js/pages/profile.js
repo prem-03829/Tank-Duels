@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const playerType = localStorage.getItem("tankDuelPlayerType");
-  const playerName = localStorage.getItem("tankDuelPlayerName");
+  const playerType = localStorage.getItem("tankDuelsPlayerType");
+  const playerName = localStorage.getItem("tankDuelsPlayerName");
 
   // No active session -> return to main menu
   if (!playerType) {
@@ -15,55 +15,57 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===========================
 
   let validPresetIds = ["tank-00"]; // Loaded dynamically from avatars.json
-  let savedAvatarType  = "preset";
+  let savedAvatarType = "preset";
   let savedAvatarValue = "tank-00";
   let tempSelectedAvatarValue = "tank-00"; // Preset tab temp selection
-  let activeTab = "preset";               // "preset" | "custom"
+  let activeTab = "preset"; // "preset" | "custom"
 
   // Crop state
-  let cropImage      = null;  // HTMLImageElement loaded from file picker
-  let cropOffsetX    = 0;
-  let cropOffsetY    = 0;
-  let cropScale      = 1;
+  let cropImage = null; // HTMLImageElement loaded from file picker
+  let cropOffsetX = 0;
+  let cropOffsetY = 0;
+  let cropScale = 1;
   let cropIsDragging = false;
   let cropDragStartX = 0;
   let cropDragStartY = 0;
-  let cropPinchStartDist  = 0;
+  let cropPinchStartDist = 0;
   let cropPinchStartScale = 1;
-  let pendingCustomBlob   = null; // WebP blob ready to upload when SAVE is clicked
+  let pendingCustomBlob = null; // WebP blob ready to upload when SAVE is clicked
 
   // ===========================
   // DOM ELEMENTS
   // ===========================
 
-  const profileNameEl        = document.querySelector("#profile-name");
-  const profileInitialEl     = document.querySelector("#profile-initial");
-  const profileTypeEl        = document.querySelector("#profile-type");
+  const profileNameEl = document.querySelector("#profile-name");
+  const profileInitialEl = document.querySelector("#profile-initial");
+  const profileTypeEl = document.querySelector("#profile-type");
   const profileAccountTypeEl = document.querySelector("#profile-account-type");
-  const profileAvatarImgEl   = document.querySelector("#profile-avatar-img");
-  const editAvatarBtn        = document.querySelector("#edit-avatar-btn");
-  const avatarEditorSection  = document.querySelector("#avatar-editor-section");
-  const avatarTabsEl         = document.querySelector("#avatar-tabs");
-  const tabPresetBtn         = document.querySelector("#tab-preset");
-  const tabCustomBtn         = document.querySelector("#tab-custom");
-  const panelPreset          = document.querySelector("#panel-preset");
-  const panelCustom          = document.querySelector("#panel-custom");
-  const avatarGridEl         = document.querySelector("#avatar-grid");
-  const saveAvatarBtn        = document.querySelector("#save-avatar-btn");
-  const cancelAvatarBtn      = document.querySelector("#cancel-avatar-btn");
-  const closeAvatarEditorBtn = document.querySelector("#close-avatar-editor-btn");
+  const profileAvatarImgEl = document.querySelector("#profile-avatar-img");
+  const editAvatarBtn = document.querySelector("#edit-avatar-btn");
+  const avatarEditorSection = document.querySelector("#avatar-editor-section");
+  const avatarTabsEl = document.querySelector("#avatar-tabs");
+  const tabPresetBtn = document.querySelector("#tab-preset");
+  const tabCustomBtn = document.querySelector("#tab-custom");
+  const panelPreset = document.querySelector("#panel-preset");
+  const panelCustom = document.querySelector("#panel-custom");
+  const avatarGridEl = document.querySelector("#avatar-grid");
+  const saveAvatarBtn = document.querySelector("#save-avatar-btn");
+  const cancelAvatarBtn = document.querySelector("#cancel-avatar-btn");
+  const closeAvatarEditorBtn = document.querySelector(
+    "#close-avatar-editor-btn",
+  );
 
   // Custom panel elements
   const avatarUploadZone = document.querySelector("#avatar-upload-zone");
-  const avatarFileInput  = document.querySelector("#avatar-file-input");
-  const cancelCustomBtn  = document.querySelector("#cancel-custom-btn");
+  const avatarFileInput = document.querySelector("#avatar-file-input");
+  const cancelCustomBtn = document.querySelector("#cancel-custom-btn");
 
   // Crop modal elements
-  const cropOverlay    = document.querySelector("#avatar-crop-overlay");
-  const cropCanvas     = document.querySelector("#avatar-crop-canvas");
-  const cropCancelBtn  = document.querySelector("#crop-cancel-btn");
+  const cropOverlay = document.querySelector("#avatar-crop-overlay");
+  const cropCanvas = document.querySelector("#avatar-crop-canvas");
+  const cropCancelBtn = document.querySelector("#crop-cancel-btn");
   const cropCancelBtn2 = document.querySelector("#crop-cancel-btn-2");
-  const cropApplyBtn   = document.querySelector("#crop-apply-btn");
+  const cropApplyBtn = document.querySelector("#crop-apply-btn");
 
   // ===========================
   // PLAYER IDENTITY
@@ -71,14 +73,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const displayName = playerName || "PLAYER";
   if (profileNameEl) profileNameEl.textContent = displayName;
-  if (profileInitialEl) profileInitialEl.textContent = displayName.charAt(0).toUpperCase();
+  if (profileInitialEl)
+    profileInitialEl.textContent = displayName.charAt(0).toUpperCase();
 
   // ===========================
   // ACCOUNT TYPE
   // ===========================
 
   if (profileTypeEl) {
-    profileTypeEl.textContent = isGuest ? "GUEST OPERATIVE" : "REGISTERED OPERATIVE";
+    profileTypeEl.textContent = isGuest
+      ? "GUEST OPERATIVE"
+      : "REGISTERED OPERATIVE";
   }
   if (profileAccountTypeEl) {
     profileAccountTypeEl.textContent = isGuest ? "Guest" : "Registered";
@@ -113,12 +118,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHeaderAvatar(avatarValue, avatarType) {
     if (!profileAvatarImgEl) return;
     const resolvedType = avatarType || "preset";
-    const url = (typeof TD !== "undefined" && typeof TD.resolveAvatarUrl === "function")
-      ? TD.resolveAvatarUrl(
-          { player: { avatar_type: resolvedType, avatar_value: avatarValue } },
-          { basePath: "../assets/images/avatars/" }
-        )
-      : "../assets/images/avatars/" + avatarValue + ".png";
+    const url =
+      typeof TD !== "undefined" && typeof TD.resolveAvatarUrl === "function"
+        ? TD.resolveAvatarUrl(
+            {
+              player: { avatar_type: resolvedType, avatar_value: avatarValue },
+            },
+            { basePath: "../assets/images/avatars/" },
+          )
+        : "../assets/images/avatars/" + avatarValue + ".png";
 
     profileAvatarImgEl.src = url;
     profileAvatarImgEl.onerror = () => {
@@ -156,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function loadSavedAvatar() {
     if (isGuest) {
-      const storedGuestAvatar = localStorage.getItem("tankDuelGuestAvatar");
+      const storedGuestAvatar = localStorage.getItem("tankDuelsGuestAvatar");
       if (storedGuestAvatar && validPresetIds.includes(storedGuestAvatar)) {
         savedAvatarValue = storedGuestAvatar;
       } else {
@@ -171,25 +179,25 @@ document.addEventListener("DOMContentLoaded", () => {
         return TD.profile()
           .then((res) => {
             if (res && res.player && res.player.avatar_value) {
-              savedAvatarType  = res.player.avatar_type || "preset";
+              savedAvatarType = res.player.avatar_type || "preset";
               savedAvatarValue = res.player.avatar_value;
               tempSelectedAvatarValue = savedAvatarValue;
               updateHeaderAvatar(savedAvatarValue, savedAvatarType);
             } else {
-              savedAvatarType  = "preset";
+              savedAvatarType = "preset";
               savedAvatarValue = "tank-00";
               tempSelectedAvatarValue = savedAvatarValue;
               updateHeaderAvatar("tank-00", "preset");
             }
           })
           .catch(() => {
-            savedAvatarType  = "preset";
+            savedAvatarType = "preset";
             savedAvatarValue = "tank-00";
             tempSelectedAvatarValue = savedAvatarValue;
             updateHeaderAvatar("tank-00", "preset");
           });
       } else {
-        savedAvatarType  = "preset";
+        savedAvatarType = "preset";
         savedAvatarValue = "tank-00";
         tempSelectedAvatarValue = savedAvatarValue;
         updateHeaderAvatar("tank-00", "preset");
@@ -210,7 +218,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const option = document.createElement("div");
       option.className =
         "avatar-option" +
-        (avatarId === tempSelectedAvatarValue && activeTab === "preset" ? " selected" : "");
+        (avatarId === tempSelectedAvatarValue && activeTab === "preset"
+          ? " selected"
+          : "");
       option.setAttribute("role", "button");
       option.setAttribute("tabindex", "0");
       option.setAttribute("aria-label", "Select " + avatarId);
@@ -222,9 +232,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       option.addEventListener("click", () => {
         tempSelectedAvatarValue = avatarId;
-        avatarGridEl.querySelectorAll(".avatar-option").forEach((opt) =>
-          opt.classList.remove("selected")
-        );
+        avatarGridEl
+          .querySelectorAll(".avatar-option")
+          .forEach((opt) => opt.classList.remove("selected"));
         option.classList.add("selected");
       });
 
@@ -256,11 +266,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (panelPreset) panelPreset.style.display = tab === "preset" ? "" : "none";
-    if (panelCustom) panelCustom.style.display  = tab === "custom"  ? "" : "none";
+    if (panelCustom) panelCustom.style.display = tab === "custom" ? "" : "none";
   }
 
-  if (tabPresetBtn) tabPresetBtn.addEventListener("click", () => switchTab("preset"));
-  if (tabCustomBtn) tabCustomBtn.addEventListener("click", () => switchTab("custom"));
+  if (tabPresetBtn)
+    tabPresetBtn.addEventListener("click", () => switchTab("preset"));
+  if (tabCustomBtn)
+    tabCustomBtn.addEventListener("click", () => switchTab("custom"));
 
   // ===========================
   // EDITOR OPEN / CLOSE
@@ -273,7 +285,10 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAvatarGrid();
     if (avatarEditorSection) {
       avatarEditorSection.style.display = "block";
-      avatarEditorSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      avatarEditorSection.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
     }
   }
 
@@ -297,8 +312,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (isGuest) {
-      localStorage.setItem("tankDuelGuestAvatar", tempSelectedAvatarValue);
-      savedAvatarType  = "preset";
+      localStorage.setItem("tankDuelsGuestAvatar", tempSelectedAvatarValue);
+      savedAvatarType = "preset";
       savedAvatarValue = tempSelectedAvatarValue;
       updateHeaderAvatar(savedAvatarValue, "preset");
       closeEditor();
@@ -308,9 +323,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       setSaveBtnLoading(true);
 
-      TD.updateProfile({ avatar_type: "preset", avatar_value: tempSelectedAvatarValue })
+      TD.updateProfile({
+        avatar_type: "preset",
+        avatar_value: tempSelectedAvatarValue,
+      })
         .then(() => {
-          savedAvatarType  = "preset";
+          savedAvatarType = "preset";
           savedAvatarValue = tempSelectedAvatarValue;
           updateHeaderAvatar(savedAvatarValue, "preset");
           closeEditor();
@@ -341,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===========================
 
   const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
-  const ALLOWED_TYPES  = ["image/jpeg", "image/png", "image/webp"];
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
   function handleFileSelected(file) {
     if (!file) return;
@@ -402,7 +420,8 @@ document.addEventListener("DOMContentLoaded", () => {
     avatarUploadZone.addEventListener("drop", (e) => {
       e.preventDefault();
       avatarUploadZone.classList.remove("drag-over");
-      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      const file =
+        e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if (file) handleFileSelected(file);
     });
   }
@@ -434,14 +453,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // Wait one animation frame for layout to settle, then size + draw.
     requestAnimationFrame(() => {
       const viewport = cropCanvas.parentElement;
-      const vw = (viewport && viewport.clientWidth  > 0) ? viewport.clientWidth  : 400;
-      const vh = (viewport && viewport.clientHeight > 0) ? viewport.clientHeight : 400;
+      const vw =
+        viewport && viewport.clientWidth > 0 ? viewport.clientWidth : 400;
+      const vh =
+        viewport && viewport.clientHeight > 0 ? viewport.clientHeight : 400;
 
-      cropCanvas.width  = vw;
+      cropCanvas.width = vw;
       cropCanvas.height = vh;
 
       // Fit image to canvas (cover style — fills the square)
-      const imgAspect  = cropImage.width / cropImage.height;
+      const imgAspect = cropImage.width / cropImage.height;
       const canvAspect = vw / vh;
 
       if (imgAspect > canvAspect) {
@@ -451,7 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Centre image
-      cropOffsetX = (vw - cropImage.width  * cropScale) / 2;
+      cropOffsetX = (vw - cropImage.width * cropScale) / 2;
       cropOffsetY = (vh - cropImage.height * cropScale) / 2;
 
       drawCrop();
@@ -471,8 +492,8 @@ document.addEventListener("DOMContentLoaded", () => {
       cropImage,
       cropOffsetX,
       cropOffsetY,
-      cropImage.width  * cropScale,
-      cropImage.height * cropScale
+      cropImage.width * cropScale,
+      cropImage.height * cropScale,
     );
   }
 
@@ -496,60 +517,76 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ---- Wheel zoom ----
-    cropCanvas.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 1.08 : 0.93;
-      const cx = cropCanvas.width  / 2;
-      const cy = cropCanvas.height / 2;
-      cropOffsetX = cx - (cx - cropOffsetX) * delta;
-      cropOffsetY = cy - (cy - cropOffsetY) * delta;
-      cropScale  *= delta;
-      drawCrop();
-    }, { passive: false });
+    cropCanvas.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 1.08 : 0.93;
+        const cx = cropCanvas.width / 2;
+        const cy = cropCanvas.height / 2;
+        cropOffsetX = cx - (cx - cropOffsetX) * delta;
+        cropOffsetY = cy - (cy - cropOffsetY) * delta;
+        cropScale *= delta;
+        drawCrop();
+      },
+      { passive: false },
+    );
 
     // ---- Touch pan + pinch zoom ----
     let lastTouchX = 0;
     let lastTouchY = 0;
 
-    cropCanvas.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 1) {
-        cropIsDragging = true;
-        lastTouchX = e.touches[0].clientX;
-        lastTouchY = e.touches[0].clientY;
-      } else if (e.touches.length === 2) {
+    cropCanvas.addEventListener(
+      "touchstart",
+      (e) => {
+        if (e.touches.length === 1) {
+          cropIsDragging = true;
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+          cropIsDragging = false;
+          cropPinchStartDist = getTouchDist(e.touches);
+          cropPinchStartScale = cropScale;
+        }
+      },
+      { passive: true },
+    );
+
+    cropCanvas.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && cropIsDragging) {
+          const dx = e.touches[0].clientX - lastTouchX;
+          const dy = e.touches[0].clientY - lastTouchY;
+          cropOffsetX += dx;
+          cropOffsetY += dy;
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+          drawCrop();
+        } else if (e.touches.length === 2) {
+          const dist = getTouchDist(e.touches);
+          const ratio = dist / cropPinchStartDist;
+          const newScale = cropPinchStartScale * ratio;
+          const cx = cropCanvas.width / 2;
+          const cy = cropCanvas.height / 2;
+          const factor = newScale / cropScale;
+          cropOffsetX = cx - (cx - cropOffsetX) * factor;
+          cropOffsetY = cy - (cy - cropOffsetY) * factor;
+          cropScale = newScale;
+          drawCrop();
+        }
+      },
+      { passive: false },
+    );
+
+    cropCanvas.addEventListener(
+      "touchend",
+      () => {
         cropIsDragging = false;
-        cropPinchStartDist  = getTouchDist(e.touches);
-        cropPinchStartScale = cropScale;
-      }
-    }, { passive: true });
-
-    cropCanvas.addEventListener("touchmove", (e) => {
-      e.preventDefault();
-      if (e.touches.length === 1 && cropIsDragging) {
-        const dx = e.touches[0].clientX - lastTouchX;
-        const dy = e.touches[0].clientY - lastTouchY;
-        cropOffsetX += dx;
-        cropOffsetY += dy;
-        lastTouchX = e.touches[0].clientX;
-        lastTouchY = e.touches[0].clientY;
-        drawCrop();
-      } else if (e.touches.length === 2) {
-        const dist   = getTouchDist(e.touches);
-        const ratio  = dist / cropPinchStartDist;
-        const newScale = cropPinchStartScale * ratio;
-        const cx = cropCanvas.width  / 2;
-        const cy = cropCanvas.height / 2;
-        const factor = newScale / cropScale;
-        cropOffsetX = cx - (cx - cropOffsetX) * factor;
-        cropOffsetY = cy - (cy - cropOffsetY) * factor;
-        cropScale   = newScale;
-        drawCrop();
-      }
-    }, { passive: false });
-
-    cropCanvas.addEventListener("touchend", () => {
-      cropIsDragging = false;
-    }, { passive: true });
+      },
+      { passive: true },
+    );
   }
 
   function getTouchDist(touches) {
@@ -563,9 +600,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!cropCanvas || !cropImage) return;
 
     const out = document.createElement("canvas");
-    out.width  = CROP_SIZE;
+    out.width = CROP_SIZE;
     out.height = CROP_SIZE;
-    const ctx  = out.getContext("2d");
+    const ctx = out.getContext("2d");
 
     const displayW = cropCanvas.width;
     const displayH = cropCanvas.height;
@@ -576,8 +613,8 @@ document.addEventListener("DOMContentLoaded", () => {
       cropImage,
       cropOffsetX * scaleX,
       cropOffsetY * scaleY,
-      cropImage.width  * cropScale * scaleX,
-      cropImage.height * cropScale * scaleY
+      cropImage.width * cropScale * scaleX,
+      cropImage.height * cropScale * scaleY,
     );
 
     out.toBlob(
@@ -600,7 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showCustomSaveButton();
       },
       "image/webp",
-      0.85
+      0.85,
     );
   }
 
@@ -611,7 +648,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!saveBtn) {
       saveBtn = document.createElement("button");
       saveBtn.type = "button";
-      saveBtn.id   = "save-custom-avatar-btn";
+      saveBtn.id = "save-custom-avatar-btn";
       saveBtn.className = "btn btn-primary";
       saveBtn.textContent = "SAVE AVATAR";
       saveBtn.addEventListener("click", saveCustomAvatar);
@@ -640,7 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Pad to multiple of 4
       while (payload.length % 4) payload += "=";
       var decoded = JSON.parse(atob(payload));
-      return (decoded && decoded.sub) ? String(decoded.sub) : null;
+      return decoded && decoded.sub ? String(decoded.sub) : null;
     } catch (e) {
       return null;
     }
@@ -658,22 +695,33 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveCustomAvatar() {
     if (!pendingCustomBlob) {
       if (typeof TD !== "undefined" && typeof TD.notify === "function") {
-        TD.notify("No cropped image ready. Please select and crop an image first.", "error");
+        TD.notify(
+          "No cropped image ready. Please select and crop an image first.",
+          "error",
+        );
       }
       return;
     }
 
-    const saveBtn = panelCustom && panelCustom.querySelector("#save-custom-avatar-btn");
-    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "UPLOADING..."; }
+    const saveBtn =
+      panelCustom && panelCustom.querySelector("#save-custom-avatar-btn");
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "UPLOADING...";
+    }
 
-    const accessToken  = (typeof TD_getAccessToken  === "function") ? TD_getAccessToken()  : null;
-    const refreshToken = localStorage.getItem("tankDuelRefreshToken") || null;
+    const accessToken =
+      typeof TD_getAccessToken === "function" ? TD_getAccessToken() : null;
+    const refreshToken = localStorage.getItem("tankDuelsRefreshToken") || null;
 
     if (!accessToken) {
       if (typeof TD !== "undefined" && typeof TD.notify === "function") {
         TD.notify("Not authenticated. Please log in and try again.", "error");
       }
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "SAVE AVATAR"; }
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "SAVE AVATAR";
+      }
       return;
     }
 
@@ -682,27 +730,31 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((client) => {
         // Step 2 — inject the app's current session into the SDK client so
         // that auth.uid() resolves correctly in Storage RLS.
-        return client.auth.setSession({
-          access_token:  accessToken,
-          refresh_token: refreshToken || "",
-        }).then((sessionRes) => {
-          if (sessionRes.error) {
-            // Non-fatal: setSession might warn on missing refresh token.
-            // As long as access_token is valid, upload will still succeed.
-            console.warn("setSession warning:", sessionRes.error.message);
-          }
-          return client;
-        });
+        return client.auth
+          .setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          })
+          .then((sessionRes) => {
+            if (sessionRes.error) {
+              // Non-fatal: setSession might warn on missing refresh token.
+              // As long as access_token is valid, upload will still succeed.
+              console.warn("setSession warning:", sessionRes.error.message);
+            }
+            return client;
+          });
       })
       .then((client) => {
         // Step 3 — resolve auth.uid() from the now-authenticated SDK session.
         // This is the exact UUID Supabase uses for RLS comparisons.
         return client.auth.getUser().then((userRes) => {
-          const authUid = userRes.data && userRes.data.user ? userRes.data.user.id : null;
+          const authUid =
+            userRes.data && userRes.data.user ? userRes.data.user.id : null;
           if (!authUid) {
             // Fallback: decode JWT sub if SDK session not fully established
             const fallbackUid = _getAuthUidFromToken(accessToken);
-            if (!fallbackUid) throw new Error("Could not determine authenticated user ID.");
+            if (!fallbackUid)
+              throw new Error("Could not determine authenticated user ID.");
             return { client, authUid: fallbackUid };
           }
           return { client, authUid };
@@ -717,23 +769,27 @@ document.addEventListener("DOMContentLoaded", () => {
           .from("user-avatars")
           .upload(storagePath, pendingCustomBlob, {
             contentType: "image/webp",
-            upsert: true,           // create or replace
+            upsert: true, // create or replace
           })
           .then((uploadRes) => {
             if (uploadRes.error) {
-              throw new Error("Storage upload failed: " + uploadRes.error.message);
+              throw new Error(
+                "Storage upload failed: " + uploadRes.error.message,
+              );
             }
             return storagePath;
           });
       })
       .then((storagePath) => {
         // Step 5 — record the custom avatar in the player profile.
-        return TD.updateProfile({ avatar_type: "custom", avatar_value: storagePath })
-          .then(() => storagePath);
+        return TD.updateProfile({
+          avatar_type: "custom",
+          avatar_value: storagePath,
+        }).then(() => storagePath);
       })
       .then((storagePath) => {
-        savedAvatarType   = "custom";
-        savedAvatarValue  = storagePath;
+        savedAvatarType = "custom";
+        savedAvatarValue = storagePath;
         pendingCustomBlob = null;
         hideCustomSaveButton();
         closeEditor();
@@ -746,20 +802,25 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Custom avatar save error:", err);
         if (typeof TD !== "undefined" && typeof TD.notify === "function") {
           TD.notify(
-            (err && err.message) ? err.message : "Failed to upload avatar. Please try again.",
-            "error"
+            err && err.message
+              ? err.message
+              : "Failed to upload avatar. Please try again.",
+            "error",
           );
         }
       })
       .finally(() => {
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "SAVE AVATAR"; }
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "SAVE AVATAR";
+        }
       });
   }
 
   // Crop modal button wiring
-  if (cropCancelBtn)  cropCancelBtn.addEventListener("click",  closeCropModal);
+  if (cropCancelBtn) cropCancelBtn.addEventListener("click", closeCropModal);
   if (cropCancelBtn2) cropCancelBtn2.addEventListener("click", closeCropModal);
-  if (cropApplyBtn)   cropApplyBtn.addEventListener("click",   applyCrop);
+  if (cropApplyBtn) cropApplyBtn.addEventListener("click", applyCrop);
 
   // ===========================
   // EDITOR TOGGLE + CANCEL
@@ -767,7 +828,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (editAvatarBtn) {
     editAvatarBtn.addEventListener("click", () => {
-      if (avatarEditorSection && avatarEditorSection.style.display === "block") {
+      if (
+        avatarEditorSection &&
+        avatarEditorSection.style.display === "block"
+      ) {
         closeEditor();
       } else {
         openEditor();
@@ -775,8 +839,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (cancelAvatarBtn)      cancelAvatarBtn.addEventListener("click", closeEditor);
-  if (closeAvatarEditorBtn) closeAvatarEditorBtn.addEventListener("click", closeEditor);
+  if (cancelAvatarBtn) cancelAvatarBtn.addEventListener("click", closeEditor);
+  if (closeAvatarEditorBtn)
+    closeAvatarEditorBtn.addEventListener("click", closeEditor);
 
   // ===========================
   // INITIALIZATION

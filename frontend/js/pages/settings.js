@@ -31,10 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   };
 
-  const savedColor = localStorage.getItem("tankDuelAccentColor") || "orange";
+  const savedColor = localStorage.getItem("tankDuelsAccentColor") || "orange";
 
   const savedCustomColor =
-    localStorage.getItem("tankDuelCustomColor") || "#ff8933";
+    localStorage.getItem("tankDuelsCustomColor") || "#ff8933";
 
   if (savedColor === "custom") {
     applyAccentColor(savedCustomColor);
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      localStorage.setItem("tankDuelAccentColor", selectedColor);
+      localStorage.setItem("tankDuelsAccentColor", selectedColor);
 
       applyPresetColor(selectedColor);
       setActiveColor(selectedColor);
@@ -71,8 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
   customColorPicker?.addEventListener("input", (event) => {
     const selectedColor = event.target.value;
 
-    localStorage.setItem("tankDuelAccentColor", "custom");
-    localStorage.setItem("tankDuelCustomColor", selectedColor);
+    localStorage.setItem("tankDuelsAccentColor", "custom");
+    localStorage.setItem("tankDuelsCustomColor", selectedColor);
 
     applyAccentColor(selectedColor);
     setActiveColor("custom");
@@ -90,14 +90,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // SOUND
   // =========================
 
-  const soundEnabled = localStorage.getItem("tankDuelSound") !== "false";
+  const soundEnabled = localStorage.getItem("tankDuelsSound") !== "false";
 
   updateToggle(soundToggle, soundEnabled);
 
   soundToggle?.addEventListener("click", () => {
     const enabled = !soundToggle.classList.contains("active");
 
-    localStorage.setItem("tankDuelSound", enabled);
+    localStorage.setItem("tankDuelsSound", enabled);
 
     updateToggle(soundToggle, enabled);
   });
@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
 
   const reducedMotion =
-    localStorage.getItem("tankDuelReducedMotion") === "true";
+    localStorage.getItem("tankDuelsReducedMotion") === "true";
 
   document.body.classList.toggle("reduced-motion", reducedMotion);
 
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
   motionToggle?.addEventListener("click", () => {
     const enabled = !motionToggle.classList.contains("active");
 
-    localStorage.setItem("tankDuelReducedMotion", enabled);
+    localStorage.setItem("tankDuelsReducedMotion", enabled);
 
     document.body.classList.toggle("reduced-motion", enabled);
 

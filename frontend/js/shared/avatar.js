@@ -19,23 +19,33 @@
   TD.resolveAvatarUrl = function (profileData, options) {
     var opts = options || {};
     var basePath = opts.basePath || "../assets/images/avatars/";
-    var isGuest = localStorage.getItem("tankDuelPlayerType") === "guest";
+    var isGuest = localStorage.getItem("tankDuelsPlayerType") === "guest";
 
     if (isGuest) {
-      var guestAvatar = localStorage.getItem("tankDuelGuestAvatar") || "tank-00";
+      var guestAvatar =
+        localStorage.getItem("tankDuelsGuestAvatar") || "tank-00";
       return basePath + guestAvatar + ".png";
     }
 
-    var player = profileData && profileData.player ? profileData.player : profileData;
+    var player =
+      profileData && profileData.player ? profileData.player : profileData;
 
     if (player && player.avatar_type === "custom" && player.avatar_value) {
-      var supabaseUrl = localStorage.getItem("tankDuelSupabaseUrl") || window._supabaseUrl || "";
+      var supabaseUrl =
+        localStorage.getItem("tankDuelsSupabaseUrl") ||
+        window._supabaseUrl ||
+        "";
       if (supabaseUrl) {
-        return supabaseUrl.replace(/\/$/, "") + "/storage/v1/object/public/user-avatars/" + player.avatar_value;
+        return (
+          supabaseUrl.replace(/\/$/, "") +
+          "/storage/v1/object/public/user-avatars/" +
+          player.avatar_value
+        );
       }
     }
 
-    var avatarValue = (player && player.avatar_value) ? player.avatar_value : "tank-00";
+    var avatarValue =
+      player && player.avatar_value ? player.avatar_value : "tank-00";
     return basePath + avatarValue + ".png";
   };
 
@@ -48,7 +58,7 @@
   TD.renderUserAvatars = function (elements, options) {
     var opts = options || {};
     var basePath = opts.basePath || "../assets/images/avatars/";
-    var isGuest = localStorage.getItem("tankDuelPlayerType") === "guest";
+    var isGuest = localStorage.getItem("tankDuelsPlayerType") === "guest";
 
     function applyUrlToElements(url) {
       var targetEls = [];
@@ -61,7 +71,9 @@
         }
       } else {
         targetEls = Array.from(
-          document.querySelectorAll("#profile-avatar-img, [data-user-avatar], .account-menu-trigger, #account-menu-toggle")
+          document.querySelectorAll(
+            "#profile-avatar-img, [data-user-avatar], .account-menu-trigger, #account-menu-toggle",
+          ),
         );
       }
 
@@ -74,7 +86,10 @@
           el.onerror = function () {
             el.src = basePath + "tank-00.png";
           };
-        } else if (el.classList.contains("account-menu-trigger") || el.id === "account-menu-toggle") {
+        } else if (
+          el.classList.contains("account-menu-trigger") ||
+          el.id === "account-menu-toggle"
+        ) {
           var existingImg = el.querySelector("img.account-avatar-img");
           if (!existingImg) {
             existingImg = document.createElement("img");

@@ -11,8 +11,11 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(function (res) {
       if (res && res.player) {
         var name = res.player.username || "Player";
-        localStorage.setItem("tankDuelPlayerType", "user");
-        localStorage.setItem("tankDuelPlayerName", String(name).replace(/[<>&"']/g, ""));
+        localStorage.setItem("tankDuelsPlayerType", "user");
+        localStorage.setItem(
+          "tankDuelsPlayerName",
+          String(name).replace(/[<>&"']/g, ""),
+        );
         window.location.href = "./dashboard.html";
       } else {
         showForm();
@@ -23,7 +26,9 @@ document.addEventListener("DOMContentLoaded", function () {
         showForm();
       } else {
         TD.notify("Session error. Please log in again.", "error");
-        setTimeout(function () { window.location.href = "./login.html"; }, 2000);
+        setTimeout(function () {
+          window.location.href = "./login.html";
+        }, 2000);
       }
     });
 
@@ -35,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (form) {
     var usernameInput = form.querySelector("#username");
     if (usernameInput) {
-      usernameInput.addEventListener("input", function() {
+      usernameInput.addEventListener("input", function () {
         TD.formErrorClear(form);
       });
     }
@@ -73,8 +78,11 @@ document.addEventListener("DOMContentLoaded", function () {
           var player = (payload && payload.player) || {};
           var createdName = player.username || username;
 
-          localStorage.setItem("tankDuelPlayerType", "user");
-          localStorage.setItem("tankDuelPlayerName", String(createdName).replace(/[<>&"']/g, ""));
+          localStorage.setItem("tankDuelsPlayerType", "user");
+          localStorage.setItem(
+            "tankDuelsPlayerName",
+            String(createdName).replace(/[<>&"']/g, ""),
+          );
 
           window.location.href = "./dashboard.html";
         })
@@ -83,11 +91,17 @@ document.addEventListener("DOMContentLoaded", function () {
             submitButton.disabled = false;
             submitButton.textContent = originalLabel;
           }
-          if (error && error.status === 409 && error.error === "Username already taken") {
+          if (
+            error &&
+            error.status === 409 &&
+            error.error === "Username already taken"
+          ) {
             TD.formError(form, "Username already taken");
             return;
           }
-          var msg = (error && error.error) || "Could not create profile. Please try again.";
+          var msg =
+            (error && error.error) ||
+            "Could not create profile. Please try again.";
           TD.formError(form, msg);
         });
     });

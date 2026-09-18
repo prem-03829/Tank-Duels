@@ -21,8 +21,8 @@ function getPlayerStats() {
   const placeholder = "—";
 
   // The local console tally still exists for game functionality/history:
-  const localGames = Number(localStorage.getItem("tankDuelGames")) || 0;
-  const localWins = Number(localStorage.getItem("tankDuelWins")) || 0;
+  const localGames = Number(localStorage.getItem("tankDuelsGames")) || 0;
+  const localWins = Number(localStorage.getItem("tankDuelsWins")) || 0;
   const localWinRate =
     localGames > 0 ? `${Math.round((localWins / localGames) * 100)}%` : "—";
 

@@ -11,7 +11,7 @@ TD.AudioManager = function () {
 };
 
 TD.AudioManager.prototype.init = function () {
-  this.enabled = localStorage.getItem('tankDuelSound') !== 'false';
+  this.enabled = localStorage.getItem("tankDuelsSound") !== "false";
   if (!this.enabled) return;
   try {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -22,12 +22,17 @@ TD.AudioManager.prototype.init = function () {
 };
 
 TD.AudioManager.prototype.resume = function () {
-  if (this.ctx && this.ctx.state === 'suspended') {
+  if (this.ctx && this.ctx.state === "suspended") {
     this.ctx.resume();
   }
 };
 
-TD.AudioManager.prototype.playNoise = function (duration, freq, rampDown, volume) {
+TD.AudioManager.prototype.playNoise = function (
+  duration,
+  freq,
+  rampDown,
+  volume,
+) {
   if (!this.enabled || !this.ctx) return;
   this.resume();
   var ctx = this.ctx;
@@ -36,7 +41,7 @@ TD.AudioManager.prototype.playNoise = function (duration, freq, rampDown, volume
   var buf = ctx.createBuffer(1, len, sr);
   var data = buf.getChannelData(0);
   for (var i = 0; i < len; i++) {
-    data[i] = (Math.random() * 2 - 1);
+    data[i] = Math.random() * 2 - 1;
   }
   var src = ctx.createBufferSource();
   src.buffer = buf;
@@ -44,9 +49,12 @@ TD.AudioManager.prototype.playNoise = function (duration, freq, rampDown, volume
   gain.gain.setValueAtTime(volume, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + rampDown);
   var filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
+  filter.type = "lowpass";
   filter.frequency.value = freq;
-  filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 0.1, 20), ctx.currentTime + rampDown);
+  filter.frequency.exponentialRampToValueAtTime(
+    Math.max(freq * 0.1, 20),
+    ctx.currentTime + rampDown,
+  );
   src.connect(filter);
   filter.connect(gain);
   gain.connect(ctx.destination);
@@ -74,7 +82,7 @@ TD.AudioManager.prototype.playTone = function (freq, dur, vol) {
   var ctx = this.ctx;
   var osc = ctx.createOscillator();
   var gain = ctx.createGain();
-  osc.type = 'square';
+  osc.type = "square";
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(vol, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);

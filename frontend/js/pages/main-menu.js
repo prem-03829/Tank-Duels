@@ -3,8 +3,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (guestButton) {
     guestButton.addEventListener("click", () => {
-      localStorage.setItem("tankDuelPlayerType", "guest");
-      localStorage.setItem("tankDuelPlayerName", "Guest");
+      localStorage.setItem("tankDuelsPlayerType", "guest");
+      localStorage.setItem("tankDuelsPlayerName", "Guest");
     });
   }
 
@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // user navigates here, and it must NEVER make authenticated API calls
   // (Guest Mode lives 100% in localStorage and never reaches the backend).
   // So we detect an existing session with the SAME localStorage marker the
-  // dashboard and auth pages use: tankDuelPlayerType === "user".
+  // dashboard and auth pages use: tankDuelsPlayerType === "user".
   //
   // Authenticated → reveal the hidden #menu-authed "CONTINUE AS <name>"
   // button and replace the anonymous cluster (guest / divider / login /
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // nothing is cleared, and no authenticated call is ever made on this page.
   // This preserves Guest Mode 100% as-is.
 
-  if (localStorage.getItem("tankDuelPlayerType") !== "user") {
+  if (localStorage.getItem("tankDuelsPlayerType") !== "user") {
     return;
   }
 
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .map((selector) => document.querySelector(selector))
     .filter(Boolean);
 
-  const storedName = localStorage.getItem("tankDuelPlayerName") || "PLAYER";
+  const storedName = localStorage.getItem("tankDuelsPlayerName") || "PLAYER";
   const safeName = String(storedName).replace(/[<>&"']/g, "");
 
   anonymousEls.forEach((el) => {

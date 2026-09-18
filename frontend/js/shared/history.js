@@ -1,6 +1,6 @@
 /* =========================
    CENTRALIZED MATCH HISTORY
-   Single store for completed Tank Duel matches.
+   Single store for completed Tank Duels matches.
 
    Every page reads completed matches through TD.getMatchHistory(). Completed
    local 1v1 matches are recorded exactly once via TD.addLocalMatchToHistory()

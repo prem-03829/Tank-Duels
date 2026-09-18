@@ -14,18 +14,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const redirectTo = window.location.origin + "/pages/login.html";
 
-      TD.getSupabaseClient().then((supabase) => {
-        return supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: redirectTo,
-          },
+      TD.getSupabaseClient()
+        .then((supabase) => {
+          return supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: redirectTo,
+            },
+          });
+        })
+        .catch((err) => {
+          googleBtn.disabled = false;
+          googleBtn.innerHTML = originalHtml;
+          TD.notify(
+            (err && err.message) || "Failed to initialize Google Sign-In.",
+            "error",
+          );
         });
-      }).catch((err) => {
-        googleBtn.disabled = false;
-        googleBtn.innerHTML = originalHtml;
-        TD.notify((err && err.message) || "Failed to initialize Google Sign-In.", "error");
-      });
     });
   }
   // =========================
@@ -34,53 +39,69 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (loginForm) {
     // Check for returning Google OAuth session on page load
-    if (typeof TD !== "undefined" && typeof TD.getSupabaseClient === "function") {
+    if (
+      typeof TD !== "undefined" &&
+      typeof TD.getSupabaseClient === "function"
+    ) {
       const hash = window.location.hash || "";
       const search = window.location.search || "";
-      if (hash.includes("access_token=") || hash.includes("error=") || search.includes("code=")) {
-        TD.getSupabaseClient().then((supabase) => {
-          return supabase.auth.getSession();
-        }).then((res) => {
-          if (!res) return;
-          const session = res.data ? res.data.session : null;
-          const error = res.error;
+      if (
+        hash.includes("access_token=") ||
+        hash.includes("error=") ||
+        search.includes("code=")
+      ) {
+        TD.getSupabaseClient()
+          .then((supabase) => {
+            return supabase.auth.getSession();
+          })
+          .then((res) => {
+            if (!res) return;
+            const session = res.data ? res.data.session : null;
+            const error = res.error;
 
-          if (window.history && window.history.replaceState) {
-            window.history.replaceState(null, "", window.location.pathname);
-          }
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState(null, "", window.location.pathname);
+            }
 
-          if (error || !session) {
-            if (error) TD.notify("Google Sign-In failed: " + (error.message || "Unknown error"), "error");
-            return;
-          }
+            if (error || !session) {
+              if (error)
+                TD.notify(
+                  "Google Sign-In failed: " +
+                    (error.message || "Unknown error"),
+                  "error",
+                );
+              return;
+            }
 
-          // Use existing session storage mechanism
-          TD_saveSession(session);
-          localStorage.setItem("tankDuelPlayerType", "user");
+            // Use existing session storage mechanism
+            TD_saveSession(session);
+            localStorage.setItem("tankDuelsPlayerType", "user");
 
-          // Call existing authenticated profile GET /api/player/me
-          return TD.profile()
-            .then((profileRes) => {
-              const player = profileRes.player || {};
-              const username = player.username || "Player";
-              localStorage.setItem("tankDuelPlayerName", String(username).replace(/[<>&"']/g, ""));
-              window.location.href = "./dashboard.html";
-            })
-            .catch((profileErr) => {
-              if (profileErr && profileErr.status === 404) {
-                // First-time Google user: no profile yet
-                window.location.href = "./username-setup.html";
-              } else {
-                handleAuthError(profileErr);
-              }
-            });
-        }).catch(() => {
-          /* ignored if client fails */
-        });
+            // Call existing authenticated profile GET /api/player/me
+            return TD.profile()
+              .then((profileRes) => {
+                const player = profileRes.player || {};
+                const username = player.username || "Player";
+                localStorage.setItem(
+                  "tankDuelsPlayerName",
+                  String(username).replace(/[<>&"']/g, ""),
+                );
+                window.location.href = "./dashboard.html";
+              })
+              .catch((profileErr) => {
+                if (profileErr && profileErr.status === 404) {
+                  // First-time Google user: no profile yet
+                  window.location.href = "./username-setup.html";
+                } else {
+                  handleAuthError(profileErr);
+                }
+              });
+          })
+          .catch(() => {
+            /* ignored if client fails */
+          });
       }
     }
-
-
 
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -111,8 +132,11 @@ document.addEventListener("DOMContentLoaded", () => {
           const emailValue = user.email || email;
           const username = String(emailValue).split("@")[0] || "Player";
 
-          localStorage.setItem("tankDuelPlayerType", "user");
-          localStorage.setItem("tankDuelPlayerName", username.replace(/[<>&"']/g, ""));
+          localStorage.setItem("tankDuelsPlayerType", "user");
+          localStorage.setItem(
+            "tankDuelsPlayerName",
+            username.replace(/[<>&"']/g, ""),
+          );
 
           window.location.href = "./dashboard.html";
         })
@@ -133,8 +157,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (signupForm) {
     const usernameInput = signupForm.querySelector("#username");
     const passwordInput = signupForm.querySelector("#password");
-    const dotsContainer = signupForm.querySelector("#password-strength-container");
-    const dots = dotsContainer ? dotsContainer.querySelectorAll(".strength-dot") : [];
+    const dotsContainer = signupForm.querySelector(
+      "#password-strength-container",
+    );
+    const dots = dotsContainer
+      ? dotsContainer.querySelectorAll(".strength-dot")
+      : [];
 
     function updatePasswordStrength(val) {
       if (!dots || dots.length === 0) return;
@@ -148,9 +176,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Colors: score 1 = red, 2 = orange, 3-4 = yellow/gold, 5 = green
       let color = "rgba(255, 255, 255, 0.15)";
-      if (score === 1) color = "#ff4d4d"; // red
-      else if (score === 2) color = "#ff944d"; // orange
-      else if (score >= 3 && score < 5) color = "#ffd11a"; // yellow
+      if (score === 1)
+        color = "#ff4d4d"; // red
+      else if (score === 2)
+        color = "#ff944d"; // orange
+      else if (score >= 3 && score < 5)
+        color = "#ffd11a"; // yellow
       else if (score === 5) color = "#2ecc71"; // green
 
       dots.forEach((dot, index) => {
@@ -181,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const username = signupForm.username.value.trim();
       const email = signupForm.email.value.trim();
       const password = signupForm.password.value;
-      const confirmPassword = signupForm['confirm-password'].value;
+      const confirmPassword = signupForm["confirm-password"].value;
 
       if (!username || !email || !password || !confirmPassword) {
         TD.formError(signupForm, "Please fill in all fields.");
@@ -189,7 +220,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (password.length < 8) {
-        TD.formError(signupForm, "Password must be at least 8 characters long.");
+        TD.formError(
+          signupForm,
+          "Password must be at least 8 characters long.",
+        );
         return;
       }
 
@@ -204,7 +238,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!/[^a-zA-Z0-9]/.test(password)) {
-        TD.formError(signupForm, "Password must contain at least 1 symbol or special character.");
+        TD.formError(
+          signupForm,
+          "Password must contain at least 1 symbol or special character.",
+        );
         return;
       }
 
@@ -226,22 +263,34 @@ document.addEventListener("DOMContentLoaded", () => {
           // A 201 with a session is common (email confirmation disabled).
           if (payload.session) {
             TD_saveSession(payload.session);
-            localStorage.setItem("tankDuelPlayerType", "user");
-            localStorage.setItem("tankDuelPlayerName", username.replace(/[<>&"']/g, ""));
+            localStorage.setItem("tankDuelsPlayerType", "user");
+            localStorage.setItem(
+              "tankDuelsPlayerName",
+              username.replace(/[<>&"']/g, ""),
+            );
             window.location.href = "./dashboard.html";
             return;
           }
 
           // No session yet (email confirmation required): show inline success and redirect.
-          TD.notify("Account created! Please check your email to confirm, then log in.", "success");
-          setTimeout(function () { window.location.href = "./login.html"; }, 2500);
+          TD.notify(
+            "Account created! Please check your email to confirm, then log in.",
+            "success",
+          );
+          setTimeout(function () {
+            window.location.href = "./login.html";
+          }, 2500);
         })
         .catch((error) => {
           if (submitButton) {
             submitButton.disabled = false;
             submitButton.textContent = originalLabel;
           }
-          if (error && error.status === 409 && error.error === "Username already taken") {
+          if (
+            error &&
+            error.status === 409 &&
+            error.error === "Username already taken"
+          ) {
             TD.formError(signupForm, "Username already taken");
             return;
           }
@@ -262,7 +311,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (status === 404) {
       msg = (error && error.error) || "Account not found.";
     } else if (status === 409) {
-      msg = (error && error.error) || "An account with these details already exists.";
+      msg =
+        (error && error.error) ||
+        "An account with these details already exists.";
     } else if (status === 429) {
       msg = "Too many attempts. Please try again later.";
     } else if (status >= 500) {
