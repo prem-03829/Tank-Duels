@@ -53,22 +53,65 @@
 
     <!-- Avatar Editor Section -->
     <section class="profile-section avatar-editor-section" id="avatar-editor-section" style="display: none;">
-      <div class="profile-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="profile-section-header avatar-editor-header">
         <span class="section-label">SELECT AVATAR</span>
-        <button type="button" id="close-avatar-editor-btn" aria-label="Close Editor" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 0.25rem;">✕</button>
+        <button type="button" id="close-avatar-editor-btn" aria-label="Close avatar editor" class="avatar-editor-close">✕</button>
       </div>
 
-      <div class="avatar-editor-content" style="padding: var(--space-lg);">
+      <!-- Tab bar (only shown to authenticated users via JS) -->
+      <div class="avatar-tabs" id="avatar-tabs" style="display: none;">
+        <button type="button" class="avatar-tab active" id="tab-preset" data-tab="preset" aria-pressed="true">PRESETS</button>
+        <button type="button" class="avatar-tab" id="tab-custom" data-tab="custom" aria-pressed="false">CUSTOM</button>
+      </div>
+
+      <!-- Preset panel -->
+      <div class="avatar-editor-content" id="panel-preset">
         <div class="avatar-grid" id="avatar-grid">
           <!-- Dynamically loaded from avatars.json -->
         </div>
-
-        <div class="avatar-editor-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+        <div class="avatar-editor-actions">
           <button type="button" id="cancel-avatar-btn" class="btn btn-secondary">CANCEL</button>
           <button type="button" id="save-avatar-btn" class="btn btn-primary">SAVE AVATAR</button>
         </div>
       </div>
+
+      <!-- Custom upload panel (initially hidden, only for authenticated users) -->
+      <div class="avatar-editor-content" id="panel-custom" style="display: none;">
+        <!-- Drop / click zone -->
+        <div class="avatar-upload-zone" id="avatar-upload-zone" role="button" tabindex="0" aria-label="Upload a custom avatar image">
+          <svg class="avatar-upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p class="avatar-upload-hint">Click or drag &amp; drop an image here</p>
+          <p class="avatar-upload-hint-sub">JPEG · PNG · WebP &nbsp;·&nbsp; max 5 MB</p>
+        </div>
+        <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" aria-label="Choose avatar image file" style="display: none;" />
+        <div class="avatar-editor-actions">
+          <button type="button" id="cancel-custom-btn" class="btn btn-secondary">CANCEL</button>
+        </div>
+      </div>
     </section>
+
+    <!-- Canvas Crop Modal -->
+    <div class="avatar-crop-overlay" id="avatar-crop-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="Crop your avatar">
+      <div class="avatar-crop-modal">
+        <div class="avatar-crop-header">
+          <span class="section-label">CROP AVATAR</span>
+          <button type="button" id="crop-cancel-btn" class="avatar-editor-close" aria-label="Cancel crop">✕</button>
+        </div>
+        <div class="avatar-crop-viewport">
+          <canvas id="avatar-crop-canvas" aria-label="Avatar crop canvas"></canvas>
+          <div class="avatar-crop-frame" aria-hidden="true"></div>
+        </div>
+        <p class="avatar-crop-hint">Drag to pan &nbsp;·&nbsp; Scroll / pinch to zoom</p>
+        <div class="avatar-crop-actions">
+          <button type="button" id="crop-cancel-btn-2" class="btn btn-secondary">CANCEL</button>
+          <button type="button" id="crop-apply-btn" class="btn btn-primary">APPLY CROP</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Statistics -->
     <section class="profile-section">
@@ -133,6 +176,7 @@
   </main>
 
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/app.js"></script>
   <script src="../js/animated-background.js"></script>
   <script src="../js/shared/api.js"></script>

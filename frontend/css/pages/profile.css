@@ -72,10 +72,199 @@
    AVATAR EDITOR
 ========================= */
 
+.avatar-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.avatar-editor-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  transition: color var(--transition-fast);
+}
+
+.avatar-editor-close:hover {
+  color: var(--text-primary);
+}
+
+/* Tab bar */
+.avatar-tabs {
+  display: flex;
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+
+.avatar-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  margin-bottom: -1px; /* overlap section border */
+}
+
+.avatar-tab:hover {
+  color: var(--text-secondary);
+}
+
+.avatar-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Panels */
+.avatar-editor-content {
+  padding: var(--space-lg);
+}
+
+.avatar-editor-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* Preset grid */
 .avatar-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 1rem;
+}
+
+/* Upload zone */
+.avatar-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 180px;
+  border: var(--border-width) dashed var(--border-subtle);
+  border-radius: var(--border-radius-sm, 4px);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.avatar-upload-zone:hover,
+.avatar-upload-zone.drag-over {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--bg-secondary));
+}
+
+.avatar-upload-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+}
+
+.avatar-upload-hint {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.avatar-upload-hint-sub {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* =========================
+   CROP MODAL
+========================= */
+
+.avatar-crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.avatar-crop-modal {
+  width: min(100%, 500px);
+  background: var(--bg-panel, #151715);
+  border: var(--border-width) solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.avatar-crop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem var(--space-lg);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+
+.avatar-crop-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #000;
+  touch-action: none; /* prevent scroll while pinching/panning */
+}
+
+.avatar-crop-viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.avatar-crop-viewport canvas:active {
+  cursor: grabbing;
+}
+
+/* Bright crop frame overlay (1:1 square) */
+.avatar-crop-frame {
+  position: absolute;
+  inset: 0;
+  border: 3px solid color-mix(in srgb, var(--color-primary) 70%, transparent);
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); /* dim outside frame */
+}
+
+.avatar-crop-hint {
+  margin: 0;
+  padding: 0.6rem var(--space-lg);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  border-top: var(--border-width) solid var(--border-subtle);
+  text-align: center;
+}
+
+.avatar-crop-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 1.25rem var(--space-lg);
+  border-top: var(--border-width) solid var(--border-subtle);
 }
 
 .avatar-option {
