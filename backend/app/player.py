@@ -1,3 +1,4 @@
+import re
 import traceback
 
 from flask import Blueprint, current_app, g, jsonify, request
@@ -15,9 +16,26 @@ from app.supabase import get_authenticated_client
 player_bp = Blueprint("player", __name__)
 
 _MAX_USERNAME_LENGTH = 50
-_PLAYER_COLUMNS = "player_id,username,created_at,updated_at"
+_PLAYER_COLUMNS = "player_id,username,avatar_type,avatar_value,created_at,updated_at"
 _STATISTICS_COLUMNS = "player_id,battles_played,battles_won,battles_lost,total_damage,updated_at"
 _INTERNAL_ERROR = {"error": "Internal server error"}
+
+_PRESET_AVATAR_REGEX = re.compile(r"^tank-[0-9]{2}$")
+
+
+def _validate_avatar(avatar_type, avatar_value, user_id):
+    if not isinstance(avatar_type, str) or avatar_type not in ("preset", "custom"):
+        return "avatar_type must be 'preset' or 'custom'"
+    if not isinstance(avatar_value, str):
+        return "avatar_value must be a string"
+    if avatar_type == "preset":
+        if not _PRESET_AVATAR_REGEX.match(avatar_value):
+            return "Invalid preset avatar_value"
+    elif avatar_type == "custom":
+        expected_path = f"{user_id}/avatar.webp"
+        if avatar_value != expected_path:
+            return "Invalid custom avatar path for authenticated user"
+    return None
 
 
 @player_bp.get("/api/player/me")
@@ -111,22 +129,45 @@ def update_profile():
     if data is None:
         return jsonify({"error": "Request body must be valid JSON"}), 400
 
-    username = data.get("username")
-    if username is None or not isinstance(username, str):
-        return jsonify({"error": "username is required"}), 400
-    if not username.strip():
-        return jsonify({"error": "username must not be empty"}), 400
-    if len(username) > _MAX_USERNAME_LENGTH:
-        return jsonify({"error": "username must be 50 characters or fewer"}), 400
-
     user_id = _get_obj_field(g.user, "id")
+    update_payload = {}
+
+    has_username = "username" in data
+    has_avatar_type = "avatar_type" in data
+    has_avatar_value = "avatar_value" in data
+
+    if not has_username and not has_avatar_type and not has_avatar_value:
+        return jsonify({"error": "username or avatar fields required"}), 400
+
+    if has_username:
+        username = data.get("username")
+        if username is None or not isinstance(username, str):
+            return jsonify({"error": "username is required"}), 400
+        username = username.strip()
+        if not username:
+            return jsonify({"error": "username must not be empty"}), 400
+        if len(username) > _MAX_USERNAME_LENGTH:
+            return jsonify({"error": "username must be 50 characters or fewer"}), 400
+        update_payload["username"] = username
+
+    if has_avatar_type or has_avatar_value:
+        if not has_avatar_type or not has_avatar_value:
+            return jsonify({"error": "Both avatar_type and avatar_value must be provided"}), 400
+        avatar_type = data.get("avatar_type")
+        avatar_value = data.get("avatar_value")
+        error_msg = _validate_avatar(avatar_type, avatar_value, user_id)
+        if error_msg:
+            return jsonify({"error": error_msg}), 400
+        update_payload["avatar_type"] = avatar_type
+        update_payload["avatar_value"] = avatar_value
+
     token = _extract_bearer_token()
 
     try:
         result = (
             get_authenticated_client(token)
             .table("player")
-            .update({"username": username})
+            .update(update_payload)
             .eq("player_id", user_id)
             .execute()
         )
@@ -178,6 +219,8 @@ def _player_payload(row):
     return {
         "player_id": _get_obj_field(row, "player_id"),
         "username": _get_obj_field(row, "username"),
+        "avatar_type": _get_obj_field(row, "avatar_type") or "preset",
+        "avatar_value": _get_obj_field(row, "avatar_value") or "tank-00",
         "created_at": _get_obj_field(row, "created_at"),
         "updated_at": _get_obj_field(row, "updated_at"),
     }

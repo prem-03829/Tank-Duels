@@ -170,6 +170,9 @@ TD.getSupabaseClient = function () {
     return Promise.resolve(_supabaseInstance);
   }
   return TD_apiRequest("GET", "/api/auth/config", undefined, false).then(function (cfg) {
+    if (cfg && cfg.supabase_url) {
+      try { localStorage.setItem("tankDuelSupabaseUrl", cfg.supabase_url); } catch (e) {}
+    }
     if (typeof window.supabase === "undefined" || typeof window.supabase.createClient !== "function") {
       throw new Error("Supabase JS SDK not loaded");
     }
@@ -192,6 +195,10 @@ TD.profile = function () {
 
 TD.createProfile = function (username) {
   return TD_apiRequest("POST", "/api/player/me", { username: username }, true);
+};
+
+TD.updateProfile = function (data) {
+  return TD_apiRequest("PATCH", "/api/player/me", data, true);
 };
 
 TD.stats = function () {

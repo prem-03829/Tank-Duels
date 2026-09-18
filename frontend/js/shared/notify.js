@@ -1,4 +1,4 @@
-﻿/* =========================
+/* =========================
    TD.notify — lightweight toast notification
    TD.formError — inline form-level error banner
 
@@ -52,7 +52,7 @@
       bg: "rgba(125,156,98,0.12)",
       border: "rgba(125,156,98,0.35)",
       color: "#9dc874",
-      icon: "v",
+      icon: "✓",
     },
     warning: {
       bg: "rgba(255,204,51,0.1)",

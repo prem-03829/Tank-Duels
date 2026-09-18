@@ -31,7 +31,8 @@
 
     <!-- Page Header -->
     <section class="profile-header">
-      <div class="profile-avatar" aria-hidden="true">
+      <div class="profile-avatar" id="profile-avatar-container" aria-hidden="true">
+        <img id="profile-avatar-img" src="../assets/images/avatars/tank-00.png" alt="Profile Avatar" style="display: none;" />
         <span id="profile-initial">P</span>
       </div>
 
@@ -43,6 +44,29 @@
         <p id="profile-type">
           GUEST OPERATIVE
         </p>
+
+        <button type="button" id="edit-avatar-btn" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem; align-self: flex-start; padding: 0.4rem 0.85rem; font-size: 0.75rem;">
+          EDIT AVATAR
+        </button>
+      </div>
+    </section>
+
+    <!-- Avatar Editor Section -->
+    <section class="profile-section avatar-editor-section" id="avatar-editor-section" style="display: none;">
+      <div class="profile-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="section-label">SELECT AVATAR</span>
+        <button type="button" id="close-avatar-editor-btn" aria-label="Close Editor" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 0.25rem;">✕</button>
+      </div>
+
+      <div class="avatar-editor-content" style="padding: var(--space-lg);">
+        <div class="avatar-grid" id="avatar-grid">
+          <!-- Dynamically loaded from avatars.json -->
+        </div>
+
+        <div class="avatar-editor-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+          <button type="button" id="cancel-avatar-btn" class="btn btn-secondary">CANCEL</button>
+          <button type="button" id="save-avatar-btn" class="btn btn-primary">SAVE AVATAR</button>
+        </div>
       </div>
     </section>
 
@@ -111,6 +135,9 @@
   <!-- Scripts -->
   <script src="../js/app.js"></script>
   <script src="../js/animated-background.js"></script>
+  <script src="../js/shared/api.js"></script>
+  <script src="../js/shared/notify.js"></script>
+  <script src="../js/shared/avatar.js"></script>
   <script src="../js/shared/statistics.js"></script>
   <script src="../js/pages/profile.js"></script>
   <script defer src="https://cloud.umami.is/script.js" data-website-id="924d3042-3358-4f71-a9cc-cb7e8e51c27a"></script>
