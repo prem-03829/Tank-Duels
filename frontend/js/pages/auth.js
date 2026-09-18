@@ -132,6 +132,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (signupForm) {
     const usernameInput = signupForm.querySelector("#username");
+    const passwordInput = signupForm.querySelector("#password");
+    const dotsContainer = signupForm.querySelector("#password-strength-container");
+    const dots = dotsContainer ? dotsContainer.querySelectorAll(".strength-dot") : [];
+
+    function updatePasswordStrength(val) {
+      if (!dots || dots.length === 0) return;
+
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[a-zA-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^a-zA-Z0-9]/.test(val)) score++;
+      if (score === 4) score = 5; // All 4 criteria satisfied = 5/5 overall valid/strong
+
+      // Colors: score 1 = red, 2 = orange, 3-4 = yellow/gold, 5 = green
+      let color = "rgba(255, 255, 255, 0.15)";
+      if (score === 1) color = "#ff4d4d"; // red
+      else if (score === 2) color = "#ff944d"; // orange
+      else if (score >= 3 && score < 5) color = "#ffd11a"; // yellow
+      else if (score === 5) color = "#2ecc71"; // green
+
+      dots.forEach((dot, index) => {
+        if (index < score) {
+          dot.style.background = color;
+        } else {
+          dot.style.background = "rgba(255, 255, 255, 0.15)";
+        }
+      });
+    }
+
+    if (passwordInput) {
+      passwordInput.addEventListener("input", (e) => {
+        TD.formErrorClear(signupForm);
+        updatePasswordStrength(e.target.value);
+      });
+    }
+
     if (usernameInput) {
       usernameInput.addEventListener("input", () => {
         TD.formErrorClear(signupForm);
@@ -148,6 +185,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!username || !email || !password || !confirmPassword) {
         TD.formError(signupForm, "Please fill in all fields.");
+        return;
+      }
+
+      if (password.length < 8) {
+        TD.formError(signupForm, "Password must be at least 8 characters long.");
+        return;
+      }
+
+      if (!/[a-zA-Z]/.test(password)) {
+        TD.formError(signupForm, "Password must contain at least 1 letter.");
+        return;
+      }
+
+      if (!/[0-9]/.test(password)) {
+        TD.formError(signupForm, "Password must contain at least 1 number.");
+        return;
+      }
+
+      if (!/[^a-zA-Z0-9]/.test(password)) {
+        TD.formError(signupForm, "Password must contain at least 1 symbol or special character.");
         return;
       }
 

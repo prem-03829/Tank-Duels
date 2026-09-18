@@ -70,7 +70,20 @@
             </label>
 
             <input class="form-input" type="password" id="password" name="password" placeholder="Create a password"
-              autocomplete="new-password" minlength="6" required />
+              autocomplete="new-password" required />
+
+            <div class="password-strength-container" id="password-strength-container" style="margin-top: 4px;">
+              <div class="password-strength-dots" style="display: flex; gap: 6px; margin-bottom: 4px;">
+                <span class="strength-dot" style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); transition: background 0.2s;"></span>
+                <span class="strength-dot" style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); transition: background 0.2s;"></span>
+                <span class="strength-dot" style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); transition: background 0.2s;"></span>
+                <span class="strength-dot" style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); transition: background 0.2s;"></span>
+                <span class="strength-dot" style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); transition: background 0.2s;"></span>
+              </div>
+              <div class="form-helper" style="font-size: 0.75rem; color: var(--text-muted, #888);">
+                Use 8+ characters with a letter, number and symbol
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -79,7 +92,7 @@
             </label>
 
             <input class="form-input" type="password" id="confirm-password" name="confirm-password"
-              placeholder="Confirm your password" autocomplete="new-password" minlength="6" required />
+              placeholder="Confirm your password" autocomplete="new-password" required />
           </div>
 
           <button type="submit" class="btn btn-primary btn-block">
